@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "version": "f4fbe9bd829b8d52a540fd18",
-  "totalBytes": 360263,
+  "version": "34b08eab1d8f09c786e1a23e",
+  "totalBytes": 361033,
   "assetCount": 27,
   "assets": [
     {
@@ -16,8 +16,8 @@
     },
     {
       "url": "benchmark-report.js",
-      "bytes": 2185,
-      "sha256": "c60f7342503b550d1d549692ea91a5ec4df41b087a1667cb39ce0c99b62d921e"
+      "bytes": 2955,
+      "sha256": "5c0249237dd82f77ca3c5cab52e2d66adebb1410594a28a23ee5f7aa9bffba21"
     },
     {
       "url": "certificate-ui.js",
