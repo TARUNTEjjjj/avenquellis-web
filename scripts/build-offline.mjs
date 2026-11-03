@@ -5,7 +5,7 @@ import {fileURLToPath,pathToFileURL} from 'node:url';
 
 const projectRoot=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const extensions=new Set(['.html','.js','.mjs','.css','.json','.svg','.png','.jpg','.jpeg','.webp','.ico','.woff','.woff2','.wasm','.webmanifest']);
-const excluded=new Set(['sw.js','offline-assets.json']);
+const excluded=new Set(['sw.js','offline-assets.json','_routes.json']);
 export const MAX_ASSET_BYTES=10*1024*1024;
 export const MAX_SNAPSHOT_BYTES=32*1024*1024;
 const hash=value=>createHash('sha256').update(value).digest('hex');
@@ -15,7 +15,7 @@ async function collect(directory,prefix='') {
   const assets=[],skipped=[];
   for (const entry of (await readdir(directory,{withFileTypes:true})).sort((a,b)=>a.name.localeCompare(b.name,'en'))) {
     const relative=prefix+entry.name;
-    if (entry.name.startsWith('.') || sensitiveName.test(entry.name)) {skipped.push(relative);continue;}
+    if (relative === 'device-runtime' || entry.name.startsWith('.') || sensitiveName.test(entry.name)) {skipped.push(relative);continue;}
     if (entry.isDirectory()) {const child=await collect(join(directory,entry.name),relative+'/');assets.push(...child.assets);skipped.push(...child.skipped);continue;}
     if (!entry.isFile() || excluded.has(relative) || !extensions.has(extname(entry.name).toLowerCase())) continue;
     const file=join(directory,entry.name),size=(await stat(file)).size;

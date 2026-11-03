@@ -34,6 +34,9 @@ const components = [
     source: "src/certificate.js",
     destination: "dist/lib/certificate.js",
   },
+  ...['index.js','provider.js','service.js','pages.js'].map(name=>({
+    repository:'noether-proof-grader',source:`src/${name}`,destination:`server/grader/${name}`
+  })),
   ...browserFiles.map((name) => ({
     repository: "noether-question-engine",
     source: `browser/${name}`,

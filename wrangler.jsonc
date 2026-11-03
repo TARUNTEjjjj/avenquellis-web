@@ -1,5 +1,15 @@
 {
   "name": "noether-math-lab",
   "pages_build_output_dir": "./dist",
-  "compatibility_date": "2026-11-03"
+  "compatibility_date": "2026-11-03",
+  "ai": {
+    "binding": "AI"
+  },
+  "vars": {
+    "NOETHER_HOSTED_GRADING": "enabled",
+    "EVALUATOR_PROVIDER": "workers-ai",
+    "EVALUATOR_MODEL": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+    "EVALUATOR_MAX_TOKENS": "900",
+    "EVALUATOR_TIMEOUT_MS": "55000"
+  }
 }

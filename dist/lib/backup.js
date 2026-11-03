@@ -281,6 +281,71 @@ function review(value) {
   };
 }
 
+/** Restore suggestions as unverified practice records. Recalculate totals from criterion marks. */
+export function validateModelReviews(value, imported = true) {
+  const records = list(value, "model reviews", 40);
+  const seen = new Set();
+  const keys = new Set();
+  return records.map((record) => {
+    object(record, "model review record");
+    const key = text(record.key, "review key", 64, false);
+    if (!/^[a-f0-9]{64}$/.test(key)) fail("Invalid review key.");
+    const r = object(record.review, "model review");
+    if (!["workers-ai", "browser-webllm"].includes(r.provider)) fail("Unknown model provider.");
+    const pair = `${key}:${r.provider}`;
+    keys.add(key);
+    if (keys.size > 20 || seen.has(pair)) fail("Repeated review or too many reviewed answers.");
+    seen.add(pair);
+    const date = text(r.date, "model review date", 40, false);
+    if (!Number.isFinite(Date.parse(date))) fail("Invalid model review date.");
+    const max = number(r.max, "model maximum", 1, 1000, true);
+    const rubricIds = new Set();
+    const criteria = list(r.criteria, "model rubric", 30).map((c) => {
+      object(c, "model criterion");
+      const criterionId = id(c.id, "model criterion id");
+      if (rubricIds.has(criterionId)) fail("Repeated model criterion.");
+      rubricIds.add(criterionId);
+      const maxPoints = number(c.maxPoints, "criterion maximum", 1, max, true);
+      const reviewers = list(c.reviewers, "criterion readings", 2).map((v, index) => {
+        object(v, "criterion reading");
+        if (v.reviewer !== index + 1) fail("Invalid criterion reader.");
+        return {reviewer: v.reviewer, points: v.points === null ? null : number(v.points, "reading points", 0, maxPoints, true),
+          quotes: list(v.quotes, "reading excerpts", 100).map(q => text(q, "reading excerpt", 6000, false))};
+      });
+      if (reviewers.length !== 2) fail("Missing criterion reading.");
+      const [a, b] = reviewers.map(v => v.points);
+      const matched = a !== null && a === b;
+      return {id: criterionId, description: text(c.description, "criterion description", 3000, false), maxPoints, reviewers,
+        agreedPoints: matched ? a : null, status: matched ? "agreement" : a === null || b === null ? "insufficient_reviews" : "disagreement"};
+    });
+    if (criteria.reduce((n,c) => n + c.maxPoints, 0) !== max) fail("Invalid model rubric total.");
+    const reviews = list(r.reviews, "model readings", 2).map((v, index) => {
+      object(v, "model reading");
+      if (v.number !== index + 1 || !["proposal", "failed", "invalid"].includes(v.status)) fail("Invalid model reading.");
+      const reading = {number: v.number, status: v.status};
+      const points = criteria.map(c => c.reviewers[index].points);
+      if (v.status === "proposal") {
+        if (points.includes(null) || points.reduce((a, b) => a + b, 0) !== v.score) fail("Reading marks do not add up.");
+        reading.score = v.score;
+        reading.rationale = text(v.rationale, "model rationale", 10000, false);
+        reading.gaps = list(v.gaps, "model gaps", 50).map(g => text(g, "model gap", 2000));
+      } else if (points.some(p => p !== null)) fail("Failed reading cannot award marks.");
+      if (v.code != null) reading.code = text(v.code, "model error", 100);
+      return reading;
+    });
+    if (reviews.length !== 2 || !reviews.some(v => v.status === "proposal")) fail("Missing model proposal.");
+    const both = reviews.every(v => v.status === "proposal");
+    const scores = reviews.map(v => v.score);
+    const agreed = both && criteria.every(c => c.status === "agreement");
+    const suggested = agreed ? scores[0] : null;
+    if (r.suggested !== suggested) fail("Suggestion contradicts the readings.");
+    return {key, review: {model: text(r.model, "model", 200, false), provider: r.provider,
+      promptVersion: text(r.promptVersion, "model prompt version", 200, false), date, max, suggested,
+      range: both ? {min: Math.min(...scores), max: Math.max(...scores)} : null,
+      criteria, reviews, imported: imported || r.imported === true}};
+  });
+}
+
 /** Validate then whitelist all persisted fields. This never trusts imported scores. */
 export function validateBackup(raw) {
   if (typeof raw === "string") {
@@ -334,6 +399,7 @@ export function validateBackup(raw) {
   }
   return {
     mode: "full",
+    modelReviews: raw.modelReviews === undefined ? null : validateModelReviews(raw.modelReviews),
     history,
     reviews,
     session: active,

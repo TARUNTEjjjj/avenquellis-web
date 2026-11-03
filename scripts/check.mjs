@@ -119,6 +119,12 @@ console.log(
 );
 
 const hash = (bytes) => createHash("sha256").update(bytes).digest("hex");
+const runtime = JSON.parse(await readFile(join(dist,"device-runtime/provenance.json"),"utf8"));
+for (const asset of runtime.assets) {
+  const bytes = await readFile(join(dist,"device-runtime",asset.name));
+  assert.equal(bytes.length,asset.bytes,`Incomplete device runtime: ${asset.name}`);
+  assert.equal(hash(bytes),asset.sha256,`Unexpected device runtime: ${asset.name}`);
+}
 const provenance = JSON.parse(
   await readFile(join(dist, "lib/vendor-provenance.json"), "utf8"),
 );

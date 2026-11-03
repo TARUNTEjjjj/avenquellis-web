@@ -1,0 +1,16 @@
+const modules = DESCRIPTOR;
+export async function onRequest({request,env}) {
+ const url=new URL(request.url); const entry=modules[url.pathname.split('/').pop()];
+ if(!entry || !['HEAD','GET'].includes(request.method))return new Response(null,{status:404});
+ const headers={'Content-Type':entry.mime,'Cache-Control':'public, max-age=0, must-revalidate','X-Content-Type-Options':'nosniff'};
+ if(request.method==='HEAD')return new Response(null,{headers});
+ let i=0;
+ const bytes=new ReadableStream({async pull(controller){
+   if(i===entry.parts.length){controller.close();return;}
+   const uri=new URL('./packed/'+entry.parts[i++],url);
+   const r=await env.ASSETS.fetch(new Request(uri));
+   if(!r.ok)throw new Error('Missing device module asset.');
+   controller.enqueue(new Uint8Array(await r.arrayBuffer()));
+ }});
+ return new Response(bytes.pipeThrough(new DecompressionStream('gzip')),{headers});
+}

@@ -1,0 +1,102 @@
+import {validateModelReviews} from './lib/backup.js';
+import {resolveQuestionRef} from './lib/questions.js';
+const storageKey='noether.prose-reviews.v1';
+const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const refFor=q=>({templateId:q.templateId,seed:q.generator?.seed,exam:q.exam,difficulty:q.requestedDifficulty});
+function canonical(q){const known=resolveQuestionRef({id:q.id,...refFor(q)});return known?.type==='proof' && known.statement===q.statement && JSON.stringify(known.rubric)===JSON.stringify(q.rubric)?known:null;}
+async function keyFor(q,answer){const bytes=new TextEncoder().encode(JSON.stringify([q.id,q.statement,q.rubric,answer]));const hash=await crypto.subtle.digest('SHA-256',bytes);return [...new Uint8Array(hash)].map(n=>n.toString(16).padStart(2,'0')).join('');}
+let cachedText, cachedRecords = [];
+export function modelReviewRecords() {
+  try {
+    const text = localStorage.getItem(storageKey);
+    if (text !== cachedText) {
+      cachedRecords = validateModelReviews(JSON.parse(text) ?? [], false);
+      cachedText = text;
+    }
+    return cachedRecords;
+  } catch { return []; }
+}
+export function replaceModelReviews(records) {
+  try {
+    const checked = validateModelReviews(records, false);
+    const encoded = JSON.stringify(checked);
+    localStorage.setItem(storageKey, encoded);
+    cachedText = encoded;
+    cachedRecords = checked;
+    return true;
+  } catch { return false; }
+}
+export async function rememberModelReview(q, answer, review) {
+  const key = await keyFor(q, answer);
+  const records = modelReviewRecords().filter(row => row.key !== key || row.review.provider !== review.provider);
+  const latest = [{key, review}, ...records];
+  // Evict both readings of the least recent answer together.
+  const keys = new Set([...new Set(latest.map(row => row.key))].slice(0, 20));
+  return replaceModelReviews(latest.filter(row => keys.has(row.key)));
+}
+export async function storedModelReviews(q, answer) {
+  if (q?.type !== 'proof' || !answer) return [];
+  const key = await keyFor(q, answer);
+  return modelReviewRecords().filter(row => row.key === key).map(row => row.review)
+    .sort((a, b) => Number(a.provider === 'browser-webllm') - Number(b.provider === 'browser-webllm'));
+}
+function compact(r,q){return {model:r.provenance?.model,provider:r.provenance?.provider,promptVersion:r.provenance?.promptVersion,date:new Date().toISOString(),max:q.maxMarks,suggested:r.suggestedScore,range:r.reviewerScoreRange,criteria:r.criterionProposals||[],reviews:(r.reviews||[]).map(v=>({number:v.reviewer,status:v.status,score:v.score,rationale:v.rationale,gaps:v.gaps,code:v.failure?.code})),notice:r.uncertainty?.explanation};}
+export function modelResult(r){
+ const local=r.provider==='browser-webllm';
+ const valid=r.reviews.filter(v=>v.status==='proposal');
+ const title=Number.isInteger(r.suggested)?`Suggested mark · ${r.suggested} / ${r.max}`:r.range?`Readings differ · ${r.range.min}–${r.range.max} / ${r.max}`:valid.length?'One reading available · needs another review':'Could not assign a mark';
+ const reason=r.reviews.some(v=>v.code==='daily_quota')?'The free daily allowance has been reached.':r.reviews.some(v=>v.code==='timeout')?'A reading timed out.':!valid.length?'Neither reading supplied valid rubric evidence.':'';
+ return `<section class="model-result" aria-label="Model marking proposal"><h3>${local?'Experimental local feedback':escape(title)}</h3>${local?'<p>The local model matched 3 of its 12 proposed marks in our 24-proof pilot. Use its comments to revisit your proof; ask a human to decide the mark.</p>':''}<p class="tiny">Practice feedback · ${escape(r.model)} · ${escape(new Date(r.date).toLocaleDateString())}</p>${r.imported?'<p class="tiny">Imported practice review · provider identity and result unverified.</p>':''}${reason?`<p>${escape(reason)}</p>`:''}${r.criteria.map(c=>`<div class="rubric-row"><div><strong>${escape(c.description)}</strong>${c.reviewers.map(v=>`<p class="tiny">Reading ${escape(v.reviewer)}: ${v.points==null?'unavailable':escape(v.points)+' / '+escape(c.maxPoints)}${(v.quotes||[]).slice(0,2).map(t=>`<br>“${escape(t)}”`).join('')}</p>`).join('')}</div></div>`).join('')}${valid.map(v=>`<details class="details"><summary>Reading ${escape(v.number)} · ${escape(v.score)} / ${escape(r.max)}</summary><p>${escape(v.rationale)}</p>${(v.gaps||[]).map(g=>`<p class="tiny">${escape(g)}</p>`).join('')}</details>`).join('')}<p class="tiny spacer">Two readings use the same model. A human reviewer can assess an alternative argument or resolve a disputed mark.</p></section>`;
+}
+export function modelPanel(){return `<section class="card spacer" id="prose-model"><span class="eyebrow">FREE-FORM PROOF MARKING</span><h3>Get marks for your own argument</h3><p>Write your proof above. Two readings check it against the problem rubric and show which lines earned credit. The marks are practice suggestions. A disagreement leaves a range for review. <a href="#sources">See the comparison with human graders.</a></p><div data-host-choice hidden><button class="button violet" data-host-grade type="button">Mark my proof</button><p class="tiny">This sends your proof and the problem to Cloudflare Workers AI for practice marking.</p></div><div data-device-choice><details class="details"><summary>Experimental feedback on this device</summary><p class="tiny">Runs locally on a WebGPU-capable device. The first use downloads roughly 1 GB of Qwen3 model files and needs about 2 GB of GPU memory. Your proof stays in this browser. In a 24-proof pilot this model agreed on a mark 12 times and matched the human score only 3 times.</p><button class="button secondary" data-device-grade type="button">Load model for local feedback</button></details></div><p data-model-status class="tiny" role="status"></p><div data-model-result aria-live="polite"></div></section>`;}
+async function hostedAvailable(){try{const response=await fetch('./api/grade-status',{cache:'no-store',signal:AbortSignal.timeout(10000)});return response.ok && (await response.json()).available===true;}catch{return false;}}
+export function bindModelPanel(q,field){
+ const panel=document.getElementById('prose-model');if(!panel||!field)return;
+ const status=panel.querySelector('[data-model-status]'),output=panel.querySelector('[data-model-result]'),host=panel.querySelector('[data-host-grade]'),device=panel.querySelector('[data-device-grade]');
+ const question=canonical(q);if(!question){panel.hidden=true;return;}
+ let revision=0,busy=false;
+ const current=(rev)=>panel.isConnected && rev===revision;
+ const refresh = async () => {
+   const rev = ++revision;
+   output.replaceChildren();
+   status.textContent = '';
+   const prior = await storedModelReviews(q, field.value);
+   if (current(rev)) output.innerHTML = prior.map(modelResult).join('');
+ };
+ field.addEventListener('input',refresh);void refresh();
+ void hostedAvailable().then(available=>{if(!panel.isConnected)return;panel.querySelector('[data-host-choice]').hidden=!available;const details=panel.querySelector('[data-device-choice] details');details.open=!available;if(!navigator.gpu){device.disabled=true;details.querySelector('p').textContent='This browser does not expose WebGPU. Try a WebGPU-capable browser or use hosted marking when available.';}});
+ const grade=async(location)=>{
+   if(busy)return;const answer=field.value;if(!answer.trim()||answer.length>20000){status.textContent='Enter a proof of 1–20,000 characters first.';return;}
+   const rev=++revision;busy=true;host.disabled=true;device.disabled=true;output.replaceChildren();status.textContent=location==='cloud'?'Reading your proof twice…':'Preparing the on-device model…';
+   try{let result;
+     if(location==='cloud'){const response=await fetch('./api/grade',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({questionId:q.id,reference:refFor(q),answer}),signal:AbortSignal.timeout(100000)});if(!response.headers.get('content-type')?.includes('application/json'))throw new Error('Hosted marking is unavailable. Try the on-device option.');const data=await response.json();if(!response.ok)throw new Error(data.error||'Hosted marking is unavailable.');result=data;}
+     else {
+       const {gradeOnDevice, releaseDeviceModel} = await import('./device-runtime/device.js');
+       try {
+         result = await gradeOnDevice(question, answer, progress => {
+           if (current(rev)) status.textContent = progress?.text || 'Reading your proof locally…';
+         });
+       } finally {
+         // Cached model files remain available for the next review without holding GPU memory between tests.
+         await releaseDeviceModel().catch(() => {});
+       }
+     }
+     const review = compact(result, q);
+     const hasMarks = review.reviews.some(v => v.status === 'proposal');
+     const persisted = hasMarks && await rememberModelReview(q, answer, review);
+     if (!current(rev) || field.value !== answer) return;
+     const prior = await storedModelReviews(q, answer);
+     if (!current(rev)) return;
+     // A failed retry remains visible without replacing the previous completed review.
+     const display = persisted ? prior : [...prior, review];
+     output.innerHTML = display.map(modelResult).join('');
+     status.textContent = persisted ? 'Practice review saved on this device.' : hasMarks ? 'Practice review ready. Browser storage is unavailable.' : 'Review incomplete. You can try again or request human review.';
+   }catch(error){if(current(rev))status.textContent=error?.name==='TimeoutError'?'The reviewer timed out. Your draft is saved.':error?.message||'Marking failed. Your draft is saved.';}
+   finally{busy=false;host.disabled=false;device.disabled=!navigator.gpu;}
+ };host.onclick=()=>grade('cloud');device.onclick=()=>grade('device');
+}
+export async function showModelReport(q, answer, slot) {
+  if (!slot) return;
+  const reviews = await storedModelReviews(q, answer);
+  if (slot.isConnected) slot.innerHTML = reviews.map(modelResult).join('');
+}

@@ -1,18 +1,23 @@
 {
   "schemaVersion": 1,
-  "version": "1c38d86777dd13a90c2a3f9a",
-  "totalBytes": 338644,
-  "assetCount": 25,
+  "version": "f4fbe9bd829b8d52a540fd18",
+  "totalBytes": 360263,
+  "assetCount": 27,
   "assets": [
     {
       "url": "app.js",
-      "bytes": 59969,
-      "sha256": "31e86bffffbb1f26ae540ff50db407b18ca1ce2ef787cc4addf9f163d5207e05"
+      "bytes": 61438,
+      "sha256": "32ba0c3ee217a1c88e0ae29627064e8b62ec33fa67230b2108b7e20e2e50dcaa"
     },
     {
       "url": "archive.json",
       "bytes": 50898,
       "sha256": "0566012666843dca36cef9430576c36c2446e69426f34988fc1c3468f2333635"
+    },
+    {
+      "url": "benchmark-report.js",
+      "bytes": 2185,
+      "sha256": "c60f7342503b550d1d549692ea91a5ec4df41b087a1667cb39ce0c99b62d921e"
     },
     {
       "url": "certificate-ui.js",
@@ -41,8 +46,8 @@
     },
     {
       "url": "lib/backup.js",
-      "bytes": 11751,
-      "sha256": "061e36ec76db7f07d905ca884a55dfab076b3266abbf815dce45179e6a49df75"
+      "bytes": 15923,
+      "sha256": "5ca41a01565d1996d07c773069b59e0067bef710f1d70bcab30e3967f23ffde2"
     },
     {
       "url": "lib/certificate.js",
@@ -66,8 +71,8 @@
     },
     {
       "url": "lib/questions.js",
-      "bytes": 24011,
-      "sha256": "188ccceac981517d40df609117288441f5e9d1ee405b9631b8ee32016c1db510"
+      "bytes": 26454,
+      "sha256": "f84b47234b23252a6852b61c920a1f218bc9d95260675d63fde746a6c62b37fa"
     },
     {
       "url": "lib/session.js",
@@ -76,8 +81,8 @@
     },
     {
       "url": "lib/vendor-provenance.json",
-      "bytes": 3399,
-      "sha256": "92e212c2bd713819864d9d15514919968757fafe10d87df76dc64fc0183706f9"
+      "bytes": 4569,
+      "sha256": "6f43398f942f4b648d97d657854c0dcbbd90935aa1b6be85e1ec76a93a23f0b6"
     },
     {
       "url": "manifest.webmanifest",
@@ -110,6 +115,11 @@
       "sha256": "aca510769378e3867ddb161c9ab6df4eb72de455c838473847b6e209c3c319fe"
     },
     {
+      "url": "model-review.js",
+      "bytes": 10081,
+      "sha256": "9cfa7a477ec7d3dc0779927576cc150297216463abea8144c301a564c3267064"
+    },
+    {
       "url": "orbit.js",
       "bytes": 8909,
       "sha256": "aa87aab616c044efa87e2eae38f39af8c89c85a2793a73abed2ee695615a4629"
@@ -126,11 +136,13 @@
     },
     {
       "url": "style.css",
-      "bytes": 32190,
-      "sha256": "a246efcb502f5fc6681ecec78302d306de01ee1f249654b08226c8421049da27"
+      "bytes": 32289,
+      "sha256": "9c33fd66d2d2ca85eb7808cbae340ffec41da3abd3e1f02d8393dbfd811c0118"
     }
   ],
-  "skipped": [],
+  "skipped": [
+    "device-runtime"
+  ],
   "limits": {
     "maxAssetBytes": 10485760,
     "maxSnapshotBytes": 33554432

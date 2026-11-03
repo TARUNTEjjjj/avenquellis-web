@@ -1,3 +1,5 @@
+import {benchmarkReport} from "./benchmark-report.js";
+import {modelPanel,bindModelPanel,showModelReport,storedModelReviews,modelReviewRecords,replaceModelReviews} from "./model-review.js";
 import {
   topics,
   topicLabels,
@@ -259,7 +261,7 @@ function tests() {
       )
       .join(
         "",
-      )}</div><div class="notice">Practice sets use our own question mix and marks. For the exact paper structure, choose an official paper below. Free-form proofs stay pending for review; supported structured proofs can earn verified marks.</div><div class="section-heading"><h2>From the official archives</h2><span class="tiny">Verified 3 November 2026</span></div><div class="filters">${["all", "CMI", "ISI", "RMO"].map((e) => `<button class="filter ${examFilter === e ? "active" : ""}" data-filter="${e}">${e === "all" ? "All tracks" : e}</button>`).join("")}<input class="search-input" id="paper-search" aria-label="Search papers by year or title" placeholder="Search year or paper…" value="${esc(search)}"></div>${archiveError ? '<div class="notice warning">The archive could not load. Reload to try again.</div>' : ""}<div class="paper-grid">${papers.map((p) => `<article class="card paper-card">${badge(p.label)}<h3>${esc(p.title)}</h3><div class="card-meta"><span>${p.questionCount ?? "See PDF"} questions / groups</span><span>${p.durationMinutes ? p.durationMinutes + " min" : "Timing: see paper"}</span></div><p>${p.kind === "official-sample" ? "Official sample/model set, as labeled by ISI." : "Study from the institution’s original PDF."}</p><div class="button-group"><button class="button small secondary" data-paper="${p.id}">Timed companion ↗</button><a class="button small ghost" href="${esc(p.url)}" target="_blank" rel="noopener noreferrer">PDF ↗</a></div></article>`).join("") || '<div class="empty">No papers match this search.</div>'}</div>`
+      )}</div><div class="notice">Practice sets use our own question mix and marks. For the exact paper structure, choose an official paper below. Free-form proofs can receive suggested model marks after submission. Structured proofs in supported families can earn verified marks.</div><div class="section-heading"><h2>From the official archives</h2><span class="tiny">Verified 3 November 2026</span></div><div class="filters">${["all", "CMI", "ISI", "RMO"].map((e) => `<button class="filter ${examFilter === e ? "active" : ""}" data-filter="${e}">${e === "all" ? "All tracks" : e}</button>`).join("")}<input class="search-input" id="paper-search" aria-label="Search papers by year or title" placeholder="Search year or paper…" value="${esc(search)}"></div>${archiveError ? '<div class="notice warning">The archive could not load. Reload to try again.</div>' : ""}<div class="paper-grid">${papers.map((p) => `<article class="card paper-card">${badge(p.label)}<h3>${esc(p.title)}</h3><div class="card-meta"><span>${p.questionCount ?? "See PDF"} questions / groups</span><span>${p.durationMinutes ? p.durationMinutes + " min" : "Timing: see paper"}</span></div><p>${p.kind === "official-sample" ? "Official sample/model set, as labeled by ISI." : "Study from the institution’s original PDF."}</p><div class="button-group"><button class="button small secondary" data-paper="${p.id}">Timed companion ↗</button><a class="button small ghost" href="${esc(p.url)}" target="_blank" rel="noopener noreferrer">PDF ↗</a></div></article>`).join("") || '<div class="empty">No papers match this search.</div>'}</div>`
   );
 }
 function chapters() {
@@ -320,7 +322,7 @@ function proof() {
       )
       .join(
         "",
-      )}</select><div class="question-statement">${esc(currentProof.statement)}</div>${badge(currentProof.difficulty)} <span class="tiny">${currentProof.maxMarks} marks · original practice</span></div><div class="card spacer"><label for="proof-answer">Your argument</label><div class="math-toolbar" role="group" aria-label="Insert mathematics symbol">${["∀", "∃", "⇒", "⇔", "∈", "ℝ", "ℤ", "≤", "≥", "≠", "≡", "Σ", "√", "²", "□"].map((symbol) => `<button type="button" data-insert="${symbol}" aria-label="Insert ${symbol}">${symbol}</button>`).join("")}</div><textarea class="text-area" id="proof-answer" maxlength="50000" placeholder="Begin with what is given. State the claim, justify each step, and finish with your conclusion. Plain text and Unicode mathematics work here.">${esc(proofDraft)}</textarea>${certificateGuide(currentProof)}<div id="arithmetic-feedback"></div><div class="saved-text" id="proof-save">Draft saved on this device · ${proofDraft.trim() ? proofDraft.trim().split(/\s+/).length : 0} words</div><div class="button-group"><button class="button violet" id="assess">Prepare review ∴</button><button class="button secondary" id="audit-proof">Check arithmetic =</button><button class="button ghost" id="export-proof">Export submission ↓</button></div></div><div id="proof-feedback">${proofResult ? feedbackView(proofResult) : ""}</div></section><aside class="card rubric-card"><span class="eyebrow">WHAT A COMPLETE ARGUMENT NEEDS</span><h3 class="compact-heading">Problem-specific rubric</h3>${rubric(currentProof)}<div class="notice">The C++ checker verifies explicit arithmetic equalities. The structured certificate checker verifies witnesses for supported problems. A reviewer assesses free-form arguments against this rubric. Automatic language-model review requires a configured evaluation service; no expert accuracy claim has been validated.</div><details><summary>Reference solution</summary><div class="solution">${esc(currentProof.solution)}</div></details><p class="tiny spacer">Review methods draw on published IMO coordination and UKMT marking guidance. No institutional affiliation or endorsement.</p><a class="text-link" href="#sources">Read the grading method ↗</a></aside></div>`
+      )}</select><div class="question-statement">${esc(currentProof.statement)}</div>${badge(currentProof.difficulty)} <span class="tiny">${currentProof.maxMarks} marks · original practice</span></div><div class="card spacer"><label for="proof-answer">Your argument</label><div class="math-toolbar" role="group" aria-label="Insert mathematics symbol">${["∀", "∃", "⇒", "⇔", "∈", "ℝ", "ℤ", "≤", "≥", "≠", "≡", "Σ", "√", "²", "□"].map((symbol) => `<button type="button" data-insert="${symbol}" aria-label="Insert ${symbol}">${symbol}</button>`).join("")}</div><textarea class="text-area" id="proof-answer" maxlength="50000" placeholder="Begin with what is given. State the claim, justify each step, and finish with your conclusion. Plain text and Unicode mathematics work here.">${esc(proofDraft)}</textarea>${certificateGuide(currentProof)}${modelPanel()}<div id="arithmetic-feedback"></div><div class="saved-text" id="proof-save">Draft saved on this device · ${proofDraft.trim() ? proofDraft.trim().split(/\s+/).length : 0} words</div><div class="button-group"><button class="button violet" id="assess">Prepare review ∴</button><button class="button secondary" id="audit-proof">Check arithmetic =</button><button class="button ghost" id="export-proof">Export submission ↓</button></div></div><div id="proof-feedback">${proofResult ? feedbackView(proofResult) : ""}</div></section><aside class="card rubric-card"><span class="eyebrow">WHAT A COMPLETE ARGUMENT NEEDS</span><h3 class="compact-heading">Problem-specific rubric</h3>${rubric(currentProof)}<div class="notice">The C++ checker verifies explicit arithmetic equalities. The structured certificate checker verifies witnesses for supported problems. A reviewer assesses free-form arguments against this rubric. Model readings give practice marks with excerpts from your own proof. Human assessments and verified certificate marks are shown separately.</div><details><summary>Reference solution</summary><div class="solution">${esc(currentProof.solution)}</div></details><p class="tiny spacer">Review methods draw on published IMO coordination and UKMT marking guidance. No institutional affiliation or endorsement.</p><a class="text-link" href="#sources">Read the grading method ↗</a></aside></div>`
   );
 }
 function feedbackView(result) {
@@ -332,7 +334,7 @@ function sources() {
       "Clear sources. Honest methods.",
       "Know where each question comes from, and what a mark can mean.",
     ) +
-    `<div class="split"><section class="card"><h2>Official question archives</h2><p>Original institution-hosted PDFs, with paper years and question references checked. Source questions remain in their official documents.</p><ul class="sources-list">${archive.sources.map((s) => `<li><a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">${esc(s.title)} ↗</a></li>`).join("")}</ul><h3 class="compact-heading">How the catalog is organized</h3><p>${archive.papers.length} paper/sample records and ${archive.questionReferences.length} chapter references. ISI documents labeled “sample” remain samples. A timed companion is a writing workspace alongside the linked PDF, not a fully transcribed paper. Unknown official timings are left unspecified; you choose a practice timer.</p><h3>Original question generation</h3><p>${engineInfo.templateCount} template families vary parameters reproducibly. Their solutions and rubrics are authored with each template. Difficulty labels are estimates. Automated mathematical invariant tests cover selected families, not a guarantee of every future question.</p></section><section class="card"><h2>How proof review works</h2><p>One problem-specific rubric, a preserved submission, and explicit credit for each mathematical step. Alternative valid solutions must be considered by the reviewer.</p><ul class="sources-list">${gradingSources.map((s) => `<li><a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">${esc(s.title)} ↗</a><br><span class="tiny">${esc(s.adaptation)}</span></li>`).join("")}</ul><div class="notice warning">Expert-level automated accuracy has not been established. Free-form proofs receive no automatic final mark. Two number-theory families also accept structured proofs: verified steps earn demonstrated credit and a fully checked certificate receives the problem’s practice marks. The grader repository includes a real server-side model adapter with two blind reviews, strict evidence checks, and a benchmark runner. The hosted site supports exact arithmetic, structured proof checks and human review. Model proposals are available through the separate authenticated service once a provider is configured; independently marked proofs are still needed to measure accuracy.</div><p>Self-assessments are labeled and reviewer names are unverified. No CMI/ISI professor or olympiad examiner is connected to this workspace. Two reviews from the same model can share mistakes; agreement is not an independent guarantee.</p></section></div><section class="card spacer"><h3>Your workspace and your data</h3><p>Attempts, drafts and assessments are saved in this browser’s local storage. They are not synced across devices. Export a backup from Your progress. The browser-only practice app contains worked solutions in its code and is intended for learning, not secure examinations.</p><div class="button-group"><a class="button small secondary" href="https://github.com/TARUNTEjjjj/noether-web" target="_blank" rel="noopener noreferrer">Website repository ↗</a><a class="button small secondary" href="https://github.com/TARUNTEjjjj/noether-question-engine" target="_blank" rel="noopener noreferrer">Question engine ↗</a><a class="button small secondary" href="https://github.com/TARUNTEjjjj/noether-proof-grader" target="_blank" rel="noopener noreferrer">Proof grader ↗</a></div></section>`
+    `<div class="split"><section class="card"><h2>Official question archives</h2><p>Original institution-hosted PDFs, with paper years and question references checked. Source questions remain in their official documents.</p><ul class="sources-list">${archive.sources.map((s) => `<li><a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">${esc(s.title)} ↗</a></li>`).join("")}</ul><h3 class="compact-heading">How the catalog is organized</h3><p>${archive.papers.length} paper/sample records and ${archive.questionReferences.length} chapter references. ISI documents labeled “sample” remain samples. A timed companion is a writing workspace alongside the linked PDF, not a fully transcribed paper. Unknown official timings are left unspecified; you choose a practice timer.</p><h3>Original question generation</h3><p>${engineInfo.templateCount} template families vary parameters reproducibly. Their solutions and rubrics are authored with each template. Difficulty labels are estimates. Automated mathematical invariant tests cover selected families, not a guarantee of every future question.</p></section><section class="card"><h2>How proof review works</h2><p>One problem-specific rubric, a preserved submission, and explicit credit for each mathematical step. Alternative valid solutions must be considered by the reviewer.</p><ul class="sources-list">${gradingSources.map((s) => `<li><a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">${esc(s.title)} ↗</a><br><span class="tiny">${esc(s.adaptation)}</span></li>`).join("")}</ul><div class="notice warning">Model suggestions can differ from expert marks. Free-form proofs receive no automatic final mark. Two number-theory families also accept structured proofs: verified steps earn demonstrated credit and a fully checked certificate receives the problem’s practice marks. Hosted marking reads the same proof twice and quotes the student’s own words for each award of credit. An unresolved reading stays open for human review.</div><p>Self-assessments are labeled and reviewer names are unverified. No CMI/ISI professor or olympiad examiner is connected to this workspace. Two reviews from the same model can share mistakes; agreement is not an independent guarantee.</p></section></div>${benchmarkReport()}<section class="card spacer"><h3>Your workspace and your data</h3><p>Attempts, drafts and assessments are saved in this browser’s local storage. They are not synced across devices. Hosted marking sends your proof and its rubric to Cloudflare only when you select Mark my proof. The optional local model downloads its weights and keeps your writing on your device. Export a practice review with its proof or attempt. Worked solutions are visible in the learning app.</p><div class="button-group"><a class="button small secondary" href="https://github.com/TARUNTEjjjj/noether-web" target="_blank" rel="noopener noreferrer">Website repository ↗</a><a class="button small secondary" href="https://github.com/TARUNTEjjjj/noether-question-engine" target="_blank" rel="noopener noreferrer">Question engine ↗</a><a class="button small secondary" href="https://github.com/TARUNTEjjjj/noether-proof-grader" target="_blank" rel="noopener noreferrer">Proof grader ↗</a></div></section>`
   );
 }
 function progress() {
@@ -388,13 +390,13 @@ function report() {
       esc(a.title),
       '<button class="button secondary" id="export-report">Export this attempt ↓</button>',
     ) +
-    `<section class="card"><div class="question-top"><div><span class="eyebrow">AUTOMATICALLY CHECKED MARKS</span><div class="result-number">${max ? `${earned} <span class="muted" style="font-size:22px">/ ${max}</span>` : "—"}</div></div><div>${badge(a.results.filter((r) => (r.status === "needs_review" || r.status === "checker_unavailable") && !reviews.some((v) => v.attemptId === a.attemptId && v.questionId === r.id)).length + " responses need review", "violet")}</div></div><p class="subtitle">This total includes numeric answers and fully verified structured proofs. Other proofs and official-paper responses stay pending until reviewed.</p><button class="button small ghost spacer" id="retry-session">Retry this set ↻</button></section>${a.questions
+    `<section class="card"><div class="question-top"><div><span class="eyebrow">AUTOMATICALLY CHECKED MARKS</span><div class="result-number">${max ? `${earned} <span class="muted" style="font-size:22px">/ ${max}</span>` : "—"}</div></div><div>${badge(a.results.filter((r) => (r.status === "needs_review" || r.status === "checker_unavailable") && !reviews.some((v) => v.attemptId === a.attemptId && v.questionId === r.id)).length + " responses need review", "violet")}</div></div><p class="subtitle">This total includes numeric answers and fully verified structured proofs. Model marks for free-form proofs appear separately under each response. Official-paper responses require human review.</p><button class="button small ghost spacer" id="retry-session">Retry this set ↻</button></section>${a.questions
       .map((q, i) => {
         const r = a.results[i],
           record = reviews.find(
             (v) => v.attemptId === a.attemptId && v.questionId === q.id,
           );
-        return `<article class="report-section"><div class="question-top"><h3>${i + 1}. ${esc(q.title)}</h3>${badge(r.type === "numeric" ? (r.status === "checker_unavailable" ? "Exact checker unavailable" : r.score ? "Correct" : "Incorrect / blank") : r.status === "verified_certificate" ? `Verified proof: ${r.score}/${r.maxMarks}` : record ? `Recorded review: ${record.score}/${record.maxMarks}` : "Needs human review", r.score ? "mint" : "")}</div><div class="question-statement" style="font-size:16px">${esc(q.statement)}</div>${record ? `<p class="tiny">${esc(record.reviewer)} · identity unverified · ${esc(record.rationale)}</p>` : ""}${r.checker ? `<p class="tiny">Checked by ${r.checker === "axiom-cpp-wasm" ? "AxiomMath C++ / WebAssembly" : r.checker === "exact-literal-fallback" ? "exact literal arithmetic" : esc(r.checker)}${r.diagnostic ? " · " + esc(r.diagnostic) : ""}</p>` : ""}${r.certificate ? certificateResult(r.certificate) : ""}<label>Your response</label><div class="solution">${esc(r.answer || "No response submitted.")}</div>${q.source?.url ? `<a class="text-link" href="${esc(q.source.url)}" target="_blank" rel="noopener noreferrer">View official source ↗</a>` : `<details class="details"><summary>Worked solution & rubric</summary><div class="solution">${esc(q.solution)}</div>${rubric(q)}</details>`}${q.type === "proof" ? `<button class="button small secondary spacer" data-review-q="${i}">Review this proof ∴</button>` : ""}</article>`;
+        return `<article class="report-section"><div class="question-top"><h3>${i + 1}. ${esc(q.title)}</h3>${badge(r.type === "numeric" ? (r.status === "checker_unavailable" ? "Exact checker unavailable" : r.score ? "Correct" : "Incorrect / blank") : r.status === "verified_certificate" ? `Verified proof: ${r.score}/${r.maxMarks}` : record ? `Recorded review: ${record.score}/${record.maxMarks}` : "Needs human review", r.score ? "mint" : "")}</div><div class="question-statement" style="font-size:16px">${esc(q.statement)}</div>${record ? `<p class="tiny">${esc(record.reviewer)} · identity unverified · ${esc(record.rationale)}</p>` : ""}${r.checker ? `<p class="tiny">Checked by ${r.checker === "axiom-cpp-wasm" ? "AxiomMath C++ / WebAssembly" : r.checker === "exact-literal-fallback" ? "exact literal arithmetic" : esc(r.checker)}${r.diagnostic ? " · " + esc(r.diagnostic) : ""}</p>` : ""}${r.certificate ? certificateResult(r.certificate) : ""}<label>Your response</label><div class="solution">${esc(r.answer || "No response submitted.")}</div>${q.source?.url ? `<a class="text-link" href="${esc(q.source.url)}" target="_blank" rel="noopener noreferrer">View official source ↗</a>` : `<details class="details"><summary>Worked solution & rubric</summary><div class="solution">${esc(q.solution)}</div>${rubric(q)}</details>`}${q.type === "proof" ? `<div data-model-report="${i}"></div><button class="button small secondary spacer" data-review-q="${i}">Mark or review this proof ∴</button>` : ""}</article>`;
       })
       .join("")}`
   );
@@ -439,6 +441,7 @@ function download(name, data) {
   if (data?.schema === "noether-backup-v1")
     data = {
       ...data,
+      modelReviews: modelReviewRecords(),
       history: data.history.slice(0, 100),
       reviews: data.reviews.slice(0, 100),
       proofDrafts: Object.fromEntries(
@@ -707,6 +710,7 @@ function bind() {
     bindForge();
   }
   if (page === "proof") {
+    bindModelPanel(currentProof,$("#proof-answer"));
     let checkedCertificate = null;
     bindCertificateGuide(currentProof, $("#proof-answer"), {
       onCheck: (result) => {
@@ -786,13 +790,16 @@ function bind() {
         toast(err.message);
       }
     };
-    $("#export-proof").onclick = () =>
+    $("#export-proof").onclick = async () => {
+      const question = currentProof, answer = proofDraft, assessment = proofResult;
+      const modelReviews = await storedModelReviews(question, answer);
       download("noether-proof-submission.json", {
-        question: currentProof,
-        answer: proofDraft,
-        review: proofResult,
+        question, answer, review: assessment,
+        modelPracticeReview: modelReviews[0] ?? null,
+        modelPracticeReviews: modelReviews,
         certificate: checkedCertificate,
       });
+    };
     bindReview();
   }
   if (page === "session" && session) {
@@ -854,7 +861,15 @@ function bind() {
   if (page === "report") {
     const a = activeReport || history[0];
     if (a) {
-      $("#export-report").onclick = () => download("noether-attempt.json", a);
+      for (const slot of document.querySelectorAll("[data-model-report]")){const q=a.questions[Number(slot.dataset.modelReport)];void showModelReport(q,a.answers[q.id],slot);}
+      $("#export-report").onclick = async () => {
+        const pairs = await Promise.all(a.questions.map(async q => [q.id, await storedModelReviews(q, a.answers[q.id])]));
+        const reviewed = pairs.filter(([, records]) => records.length);
+        download("noether-attempt.json", {...a,
+          modelPracticeReviews: Object.fromEntries(reviewed.map(([id, records]) => [id, records[0]])),
+          modelPracticeReviewsByQuestion: Object.fromEntries(reviewed),
+        });
+      };
       $("#retry-session").onclick = () =>
         start({
           id: a.id,
@@ -971,7 +986,7 @@ async function importBackup(e) {
     if (file.size > 10000000) throw Error("Backup exceeds 10 MB.");
     const restored = validateBackup(JSON.parse(await file.text()));
     modal(
-      `<h2 class="modal-title">Restore this ${restored.mode === "active" ? "active draft" : "backup"}?</h2><p class="subtitle">${restored.mode === "active" ? "This replaces the current active test. History and proof drafts stay in place." : "This replaces completed sessions, assessments, the active test, and proof drafts on this device."} Export your current backup first if needed. Saved deadlines are preserved.</p><div class="button-group spacer"><button class="button" id="confirm-import">Restore backup</button><button class="button secondary" id="export-before-import">Export current backup ↓</button><button class="button ghost" id="cancel-import">Cancel</button></div>`,
+      `<h2 class="modal-title">Restore this ${restored.mode === "active" ? "active draft" : "backup"}?</h2><p class="subtitle">${restored.mode === "active" ? "This replaces the current active test. History and proof drafts stay in place." : "This replaces completed sessions, assessments, the active test and proof drafts. Backups that contain model reviews also replace this device’s saved practice reviews."} Export your current backup first if needed. Saved deadlines are preserved.</p><div class="button-group spacer"><button class="button" id="confirm-import">Restore backup</button><button class="button secondary" id="export-before-import">Export current backup ↓</button><button class="button ghost" id="cancel-import">Cancel</button></div>`,
     );
     $("#export-before-import").onclick = () =>
       download("noether-before-restore.json", {
@@ -988,6 +1003,10 @@ async function importBackup(e) {
       });
     $("#confirm-import").onclick = () => {
       if (restored.mode !== "active") {
+        if (restored.modelReviews !== null && !replaceModelReviews(restored.modelReviews)) {
+          toast("Browser storage could not restore the practice reviews. Your workspace was left as it was.");
+          return;
+        }
         history = restored.history.map((a) => finishSession(a, a.finishedAt));
         reviews = restored.reviews.map((r) => ({
           ...r,

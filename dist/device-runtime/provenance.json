@@ -1,0 +1,48 @@
+{
+  "model": {
+    "label": "Qwen3 1.7B · browser-local experimental review",
+    "modelId": "Qwen3-1.7B-q4f16_1-MLC",
+    "modelRevision": "80b3abcec6c3b3f5355dc0cc99cc4fb578f192bc",
+    "runtimeVersion": "0.2.87",
+    "weightBytes": 968001536,
+    "estimatedDownloadBytes": 990000000,
+    "estimatedGpuMemoryMB": 2036.66,
+    "contextWindowTokens": 4096,
+    "promptVersion": "noether-device-proof-2026-11-03-v1"
+  },
+  "wasmUrl": "https://raw.githubusercontent.com/mlc-ai/binary-mlc-llm-libs/146ed9cd4b4062e967b017fd2291f7106b50599f/web-llm-models/v0_2_87/base/Qwen3-1.7B-q4f16_1_cs1k-webgpu.wasm",
+  "wasmCommit": "146ed9cd4b4062e967b017fd2291f7106b50599f",
+  "runtimePackage": "@mlc-ai/web-llm@0.2.87",
+  "assets": [
+    {
+      "name": "device.js",
+      "bytes": 24793,
+      "sha256": "a7557a524f86db824af6b90552e9096c9ca52362fba826b0ce1256d7a21b7f84"
+    },
+    {
+      "name": "webllm-0.2.87.js",
+      "bytes": 6130537,
+      "sha256": "977e6752a93f20d3db21940e7cd7f45f79e4f7e980196b16e7735194a5f2949a"
+    },
+    {
+      "name": "qwen3-1.7b-webgpu.wasm",
+      "bytes": 6589747,
+      "sha256": "363f4dbb789f0518e52295d1f4685d2d61feae4ac4e2a6a95621e4af29450bd7"
+    },
+    {
+      "name": "LICENSE-WebLLM.txt",
+      "bytes": 11726,
+      "sha256": "87935f332472db09253871326ef23d5d6a45f4fd2e6c96772f72052866dfab0d"
+    },
+    {
+      "name": "LICENSE-loglevel.txt",
+      "bytes": 1075,
+      "sha256": "18e8cf5f0dbaf13d9562e93b9bef79aff2acff18fab698c2d589d2159375a1f9"
+    },
+    {
+      "name": "THIRD-PARTY-NOTICES.txt",
+      "bytes": 6815,
+      "sha256": "d50d74e08bb3c4f770b9d589d0d7aa59354c9f565f9a93b6bf8bf08261a70f13"
+    }
+  ]
+}

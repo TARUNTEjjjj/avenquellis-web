@@ -97,4 +97,47 @@ export function generateMock(opts={}) {
 }
 export const questionBank=templates.map((t,i)=>materialize(t,{exam:'CMI',difficulty:t.level},`bank:${i+1}`));
 export function getQuestion(id) { return questionBank.find(q=>q.id===id)||null; }
+
+const bankTemplates = new Map(questionBank.map((question, index) => [question.id, {
+  template: templates[index],
+  seed: question.generator.seed,
+}]));
+const referenceFields = new Set(['id', 'templateId', 'seed', 'exam', 'difficulty']);
+
+/** Reconstruct a question for server-side grading. Pass the exact generator.seed
+ * and requestedDifficulty from a generated question. A bank question needs only
+ * its id. The caller's question text, answer key and rubric are never accepted.
+ */
+export function resolveQuestionRef(reference) {
+  if (!reference || typeof reference !== 'object' || Array.isArray(reference)) return null;
+  const prototype = Object.getPrototypeOf(reference);
+  if (prototype !== Object.prototype && prototype !== null) return null;
+  for (const field in reference) {
+    if (!Object.hasOwn(reference, field) || !referenceFields.has(field)) return null;
+  }
+  const { id, templateId, seed, exam, difficulty } = reference;
+  if (typeof id !== 'string' || id.length > 160 || !/^[a-z0-9-]+$/.test(id)) return null;
+  if (templateId !== undefined && (typeof templateId !== 'string' || templateId.length > 100)) return null;
+  if (seed !== undefined && (typeof seed !== 'string' || seed.length === 0 || seed.length > 256)) return null;
+  if (exam !== undefined && !exams.includes(exam)) return null;
+  if (difficulty !== undefined && !difficulties.includes(difficulty)) return null;
+
+  const bank = bankTemplates.get(id);
+  if (bank) {
+    if (templateId !== undefined && templateId !== bank.template.key) return null;
+    if (seed !== undefined && seed !== bank.seed) return null;
+    if (exam !== undefined && exam !== 'CMI') return null;
+    if (difficulty !== undefined && difficulty !== bank.template.level) return null;
+    return materialize(bank.template, { exam: 'CMI', difficulty: bank.template.level }, bank.seed);
+  }
+
+  if (!templateId || !seed || !exam || !difficulty) return null;
+  const template = templates.find(candidate => candidate.key === templateId);
+  if (!template || id !== `${template.key}-${hash(seed).toString(36)}`) return null;
+  const mockAttempt = /:mock:(0|[1-9][0-9]{0,3})$/.exec(seed);
+  if (!seed.endsWith(':variant') && (!mockAttempt || Number(mockAttempt[1]) >= 4096)) return null;
+  const result = materialize(template, { exam, difficulty }, seed);
+  if (exam === 'RMO' && (result.type !== 'proof' || ['calculus', 'probability'].includes(result.topic))) return null;
+  return result;
+}
 export const engineInfo={version:'0.1.0',mode:'deterministic-template',templateCount:templates.length,scope:'Class 12 foundations and entrance/olympiad proof practice',limitations:['Difficulty tags are author estimates, not calibrated exam percentiles.','Standard theorem templates are finite; parameter variants are not guaranteed to be mathematically novel.','Official papers are linked separately, not represented by generated practice.']};
