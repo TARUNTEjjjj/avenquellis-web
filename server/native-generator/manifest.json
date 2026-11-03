@@ -1,0 +1,27 @@
+{
+  "component": "Avenquellis question engine",
+  "abi": 1,
+  "sourceCommit": "05ed7f3d0a1063e8b0cae6cd14a1eb4adfafa722",
+  "toolchain": "Emscripten 6.0.13",
+  "wasm": "avenquellis-questions.wasm",
+  "bytes": 237076,
+  "sha256": "669739ff7da9364aedd12c07926f6f2797d43afdf41a9a70d562153eee5846b9",
+  "adapterSha256": "cd42c78d4cc2d9362e36871d05575c8a00a2eaa65591f9550018650b79f35a8b",
+  "imports": [
+    {
+      "module": "wasi_snapshot_preview1",
+      "name": "fd_close",
+      "kind": "function"
+    },
+    {
+      "module": "wasi_snapshot_preview1",
+      "name": "environ_sizes_get",
+      "kind": "function"
+    },
+    {
+      "module": "wasi_snapshot_preview1",
+      "name": "environ_get",
+      "kind": "function"
+    }
+  ]
+}

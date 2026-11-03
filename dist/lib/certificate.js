@@ -1,5 +1,5 @@
-/** A small proof language for two exact Noether templates. All numeral checks use BigInt. */
-const HEADER = 'NOETHER-PROOF/1';
+/** A small proof language for two exact number-theory templates. All numeral checks use BigInt. */
+const HEADER = 'AVENQUELLIS-PROOF/1';
 const MAX_TEXT = 2048;
 const MAX_COEFFICIENT = 1000000n;
 const GCD_CONCLUSION = 'same-positive-divisors -> equal-maxima';
@@ -169,7 +169,7 @@ function checkGcd(fields, k) {
 /** A null result leaves the answer to its existing prose-review workflow. */
 export function verifyCertificate(question, answer) {
   const family = matchQuestion(question);
-  if (!family || typeof answer !== 'string' || !/^NOETHER-PROOF\/1(?:\r?\n|$)/.test(answer)) return null;
+  if (!family || typeof answer !== 'string' || !/^(?:AVENQUELLIS|NOETHER|VEYRA)-PROOF\/1(?:\r?\n|$)/.test(answer)) return null;
   const parsed = parseFields(answer, family, question);
   let checks;
   if (parsed.error) {

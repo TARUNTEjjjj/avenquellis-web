@@ -1,6 +1,6 @@
 // Repackage the two optional GPU downloads for reliable Pages uploads.
 // The public URLs, canonical bytes, hashes and content types stay the same.
-import {cp,mkdir,mkdtemp,readFile,writeFile,unlink} from 'node:fs/promises';
+import {cp,mkdir,mkdtemp,readFile,writeFile,unlink,rm,readdir} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {gzipSync,gunzipSync} from 'node:zlib';
 import {tmpdir} from 'node:os';
@@ -9,8 +9,14 @@ import {fileURLToPath} from 'node:url';
 import assert from 'node:assert/strict';
 
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
-const stage=process.argv[2]?resolve(process.argv[2]):await mkdtemp(join(tmpdir(),'noether-release-'));
+const stage=process.argv[2]?resolve(process.argv[2]):await mkdtemp(join(tmpdir(),'avenquellis-release-'));
 await mkdir(stage,{recursive:true});
+// The known release directory contains generated assets. Remove stale engine binaries on repeated builds.
+if (stage === join(root,'.wrangler','release')) {
+  for (const name of ['dist','server','functions']) await rm(join(stage,name),{recursive:true,force:true});
+} else if ((await readdir(stage)).length) {
+  throw new Error("Choose an empty staging directory.");
+}
 for(const directory of ['dist','server','functions']) await cp(join(root,directory),join(stage,directory),{recursive:true});
 await cp(join(root,'wrangler.jsonc'),join(stage,'wrangler.jsonc'));
 const runtime=join(stage,'dist/device-runtime'),pack=join(runtime,'packed');

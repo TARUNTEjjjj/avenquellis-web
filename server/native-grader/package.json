@@ -1,0 +1,13 @@
+{
+  "private": true,
+  "type": "module",
+  "imports": {
+    "#avenquellis-grader-module": {
+      "workerd": "./module-cloudflare.js",
+      "worker": "./module-cloudflare.js",
+      "browser": "./module-cloudflare.js",
+      "node": "./module-node.js",
+      "default": "./module-cloudflare.js"
+    }
+  }
+}

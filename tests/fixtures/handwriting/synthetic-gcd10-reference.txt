@@ -1,0 +1,4 @@
+Claim: gcd(n, n + 10) = gcd(n, 10).
+If d divides n and n + 10, then d divides (n + 10) - n = 10.
+If d divides n and 10, then d divides their sum n + 10.
+The positive common divisors are the same, so their maxima agree.

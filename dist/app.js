@@ -1,20 +1,22 @@
+import {generateOnServer, assessOnServer} from "./backend.js";
+import {preloadNativeGrader} from "./lib/native-grader.js";
+import {mountHandwriting} from "./handwriting.js";
 import {benchmarkReport} from "./benchmark-report.js";
 import {modelPanel,bindModelPanel,showModelReport,storedModelReviews,modelReviewRecords,replaceModelReviews} from "./model-review.js";
 import {
   topics,
   topicLabels,
-  generateQuestion,
-  generateMock,
   questionBank,
   engineInfo,
 } from "./lib/questions.js";
-import { assessProof, finalizeReview, gradingSources } from "./lib/grader.js";
+import { finalizeReview, gradingSources } from "./lib/grader.js";
 import {
   makeSession,
   finishSession,
   remainingSeconds,
   validSession,
   configureExactChecker,
+  configureProofChecker,
 } from "./lib/session.js";
 import { validateBackup } from "./lib/backup.js";
 import { mountOrbit, stopOrbit } from "./orbit.js";
@@ -53,11 +55,20 @@ const $ = (s) => document.querySelector(s),
           "'": "&#39;",
         })[c],
     );
-const KEY = "noether.v1";
+// Restore historical work with the same compiled proof checker used by the live service.
+let nativeGrader;
+try { nativeGrader=await preloadNativeGrader(); } catch { /* Online assessments remain available. */ }
+const nativeCertificate=(question,answer)=>{
+  let result;
+  try {result=nativeGrader?.assess(question,answer);} catch {return null;}
+  return result && ["verified_certificate","incomplete_certificate"].includes(result.status)?result:null;
+};
+configureProofChecker(nativeCertificate);
+const KEY = "avenquellis.workspace.v1";
 let storageOK = true;
 function read() {
   try {
-    return JSON.parse(localStorage.getItem(KEY)) || {};
+    return JSON.parse((localStorage.getItem(KEY) ?? localStorage.getItem("noether.v1"))) || {};
   } catch {
     storageOK = false;
     return {};
@@ -261,7 +272,7 @@ function tests() {
       )
       .join(
         "",
-      )}</div><div class="notice">Practice sets use our own question mix and marks. For the exact paper structure, choose an official paper below. Free-form proofs can receive suggested model marks after submission. Structured proofs in supported families can earn verified marks.</div><div class="section-heading"><h2>From the official archives</h2><span class="tiny">Verified 3 November 2026</span></div><div class="filters">${["all", "CMI", "ISI", "RMO"].map((e) => `<button class="filter ${examFilter === e ? "active" : ""}" data-filter="${e}">${e === "all" ? "All tracks" : e}</button>`).join("")}<input class="search-input" id="paper-search" aria-label="Search papers by year or title" placeholder="Search year or paper…" value="${esc(search)}"></div>${archiveError ? '<div class="notice warning">The archive could not load. Reload to try again.</div>' : ""}<div class="paper-grid">${papers.map((p) => `<article class="card paper-card">${badge(p.label)}<h3>${esc(p.title)}</h3><div class="card-meta"><span>${p.questionCount ?? "See PDF"} questions / groups</span><span>${p.durationMinutes ? p.durationMinutes + " min" : "Timing: see paper"}</span></div><p>${p.kind === "official-sample" ? "Official sample/model set, as labeled by ISI." : "Study from the institution’s original PDF."}</p><div class="button-group"><button class="button small secondary" data-paper="${p.id}">Timed companion ↗</button><a class="button small ghost" href="${esc(p.url)}" target="_blank" rel="noopener noreferrer">PDF ↗</a></div></article>`).join("") || '<div class="empty">No papers match this search.</div>'}</div>`
+      )}</div><div class="notice">Practice sets use our own question mix and marks. For the exact paper structure, choose an official paper below. When you finish or time runs out, written proofs go to the C++ checker. You can request model feedback on your own wording after submission. Structured proofs in supported families can earn verified marks.</div><div class="section-heading"><h2>From the official archives</h2><span class="tiny">Verified 3 November 2026</span></div><div class="filters">${["all", "CMI", "ISI", "RMO"].map((e) => `<button class="filter ${examFilter === e ? "active" : ""}" data-filter="${e}">${e === "all" ? "All tracks" : e}</button>`).join("")}<input class="search-input" id="paper-search" aria-label="Search papers by year or title" placeholder="Search year or paper…" value="${esc(search)}"></div>${archiveError ? '<div class="notice warning">The archive could not load. Reload to try again.</div>' : ""}<div class="paper-grid">${papers.map((p) => `<article class="card paper-card">${badge(p.label)}<h3>${esc(p.title)}</h3><div class="card-meta"><span>${p.questionCount ?? "See PDF"} questions / groups</span><span>${p.durationMinutes ? p.durationMinutes + " min" : "Timing: see paper"}</span></div><p>${p.kind === "official-sample" ? "Official sample/model set, as labeled by ISI." : "Study from the institution’s original PDF."}</p><div class="button-group"><button class="button small secondary" data-paper="${p.id}">Timed companion ↗</button><a class="button small ghost" href="${esc(p.url)}" target="_blank" rel="noopener noreferrer">PDF ↗</a></div></article>`).join("") || '<div class="empty">No papers match this search.</div>'}</div>`
   );
 }
 function chapters() {
@@ -326,6 +337,7 @@ function proof() {
   );
 }
 function feedbackView(result) {
+  if (result.complete !== undefined && result.lowerBoundPoints !== undefined) return certificateResult(result);
   return `<section class="card spacer"><div class="card-head"><h3 style="margin:0">Ready for a careful review</h3>${badge("AWAITING HUMAN REVIEW", "violet")}</div><p>${result.wordCount} words preserved. No automated correctness score has been assigned.</p><ul class="sources-list">${result.feedback.map((s) => `<li>${esc(s)}</li>`).join("")}</ul><details class="details"><summary>Record a human or self assessment</summary><p class="tiny spacer">Use the rubric against the complete argument. This records a local assessment; reviewer identity and expertise are not verified.</p><form id="review-form">${rubric(currentProof, true)}<div class="form-grid" style="grid-template-columns:1fr"><div><label for="reviewer">Reviewer name or “Self assessment”</label><input id="reviewer" required value="Self assessment"></div><div><label for="rationale">Reasoning behind the marks</label><textarea class="text-area" style="min-height:90px" id="rationale" required placeholder="Explain the valid steps, any gaps, and credit for alternative approaches."></textarea></div></div><button class="button secondary" type="submit">Save assessment</button></form></details></section>`;
 }
 function sources() {
@@ -334,7 +346,7 @@ function sources() {
       "Clear sources. Honest methods.",
       "Know where each question comes from, and what a mark can mean.",
     ) +
-    `<div class="split"><section class="card"><h2>Official question archives</h2><p>Original institution-hosted PDFs, with paper years and question references checked. Source questions remain in their official documents.</p><ul class="sources-list">${archive.sources.map((s) => `<li><a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">${esc(s.title)} ↗</a></li>`).join("")}</ul><h3 class="compact-heading">How the catalog is organized</h3><p>${archive.papers.length} paper/sample records and ${archive.questionReferences.length} chapter references. ISI documents labeled “sample” remain samples. A timed companion is a writing workspace alongside the linked PDF, not a fully transcribed paper. Unknown official timings are left unspecified; you choose a practice timer.</p><h3>Original question generation</h3><p>${engineInfo.templateCount} template families vary parameters reproducibly. Their solutions and rubrics are authored with each template. Difficulty labels are estimates. Automated mathematical invariant tests cover selected families, not a guarantee of every future question.</p></section><section class="card"><h2>How proof review works</h2><p>One problem-specific rubric, a preserved submission, and explicit credit for each mathematical step. Alternative valid solutions must be considered by the reviewer.</p><ul class="sources-list">${gradingSources.map((s) => `<li><a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">${esc(s.title)} ↗</a><br><span class="tiny">${esc(s.adaptation)}</span></li>`).join("")}</ul><div class="notice warning">Model suggestions can differ from expert marks. Free-form proofs receive no automatic final mark. Two number-theory families also accept structured proofs: verified steps earn demonstrated credit and a fully checked certificate receives the problem’s practice marks. Hosted marking reads the same proof twice and quotes the student’s own words for each award of credit. An unresolved reading stays open for human review.</div><p>Self-assessments are labeled and reviewer names are unverified. No CMI/ISI professor or olympiad examiner is connected to this workspace. Two reviews from the same model can share mistakes; agreement is not an independent guarantee.</p></section></div>${benchmarkReport()}<section class="card spacer"><h3>Your workspace and your data</h3><p>Attempts, drafts and assessments are saved in this browser’s local storage. They are not synced across devices. Hosted marking sends your proof and its rubric to Cloudflare only when you select Mark my proof. The optional local model downloads its weights and keeps your writing on your device. Export a practice review with its proof or attempt. Worked solutions are visible in the learning app.</p><div class="button-group"><a class="button small secondary" href="https://github.com/TARUNTEjjjj/noether-web" target="_blank" rel="noopener noreferrer">Website repository ↗</a><a class="button small secondary" href="https://github.com/TARUNTEjjjj/noether-question-engine" target="_blank" rel="noopener noreferrer">Question engine ↗</a><a class="button small secondary" href="https://github.com/TARUNTEjjjj/noether-proof-grader" target="_blank" rel="noopener noreferrer">Proof grader ↗</a></div></section>`
+    `<div class="split"><section class="card"><h2>Official question archives</h2><p>Original institution-hosted PDFs, with paper years and question references checked. Source questions remain in their official documents.</p><ul class="sources-list">${archive.sources.map((s) => `<li><a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">${esc(s.title)} ↗</a></li>`).join("")}</ul><h3 class="compact-heading">How the catalog is organized</h3><p>${archive.papers.length} paper/sample records and ${archive.questionReferences.length} chapter references. ISI documents labeled “sample” remain samples. A timed companion is a writing workspace alongside the linked PDF, not a fully transcribed paper. Unknown official timings are left unspecified; you choose a practice timer.</p><h3>Original question generation</h3><p>${engineInfo.templateCount} template families vary parameters reproducibly. Their solutions and rubrics are authored with each template. Difficulty labels are estimates. Automated mathematical invariant tests cover selected families, not a guarantee of every future question.</p></section><section class="card"><h2>How proof review works</h2><p>One problem-specific rubric, a preserved submission, and explicit credit for each mathematical step. Alternative valid solutions must be considered by the reviewer.</p><ul class="sources-list">${gradingSources.map((s) => `<li><a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">${esc(s.title)} ↗</a><br><span class="tiny">${esc(s.adaptation)}</span></li>`).join("")}</ul><div class="notice warning">Model suggestions can differ from expert marks. Free-form proofs receive no automatic final mark. Two number-theory families also accept structured proofs: verified steps earn demonstrated credit and a fully checked certificate receives the problem’s practice marks. Hosted marking reads the same proof twice and quotes the student’s own words for each award of credit. An unresolved reading stays open for human review.</div><p>Self-assessments are labeled and reviewer names are unverified. No CMI/ISI professor or olympiad examiner is connected to this workspace. Two reviews from the same model can share mistakes; agreement is not an independent guarantee.</p></section></div>${benchmarkReport()}<section class="card spacer"><h3>Your workspace and your data</h3><p>Attempts, drafts and assessments are saved in this browser’s local storage. They are not synced across devices. Finishing a test or checking a certificate sends the answer to the C++ checker on Cloudflare. Select Mark my proof to request two model readings. Transcribe photo sends the selected page to Cloudflare for transcription. You review the text before adding it to your answer. The optional local model downloads its weights and keeps your writing on your device. Export a practice review with its proof or attempt. Worked solutions are visible in the learning app.</p><div class="button-group"><a class="button small secondary" href="https://github.com/TARUNTEjjjj/avenquellis-web" target="_blank" rel="noopener noreferrer">Website repository ↗</a><a class="button small secondary" href="https://github.com/TARUNTEjjjj/avenquellis-question-engine" target="_blank" rel="noopener noreferrer">Question engine ↗</a><a class="button small secondary" href="https://github.com/TARUNTEjjjj/avenquellis-proof-grader" target="_blank" rel="noopener noreferrer">Proof grader ↗</a></div></section>`
   );
 }
 function progress() {
@@ -348,10 +360,11 @@ function progress() {
       "Your completed sessions and review records, stored on this device.",
       '<button class="button secondary" id="export-backup">Export backup ↓</button>',
     ) +
-    `<div class="stats"><div class="stat"><span class="stat-icon">▤</span><div><strong>${history.length}</strong><small>Completed sessions</small></div></div><div class="stat"><span class="stat-icon">✓</span><div><strong>${nums.length ? Math.round((correct / nums.length) * 100) + "%" : "—"}</strong><small>First-attempt numeric accuracy</small></div></div><div class="stat"><span class="stat-icon">∴</span><div><strong>${results.filter((r) => r.type !== "numeric").length}</strong><small>Proof / reference responses</small></div></div><div class="stat"><span class="stat-icon">✧</span><div><strong>${reviews.length}</strong><small>Recorded assessments</small></div></div></div><p class="tiny">Accuracy uses the first answered attempt at each distinct numeric question. Retries, blank responses, unavailable checks and proof marks are excluded. This is practice feedback, not an exam prediction.</p><div class="section-heading"><h2>Your chapter map</h2></div><div class="topic-progress">${summary.topics.map((t) => `<article><h3>${topicLabels[t.topic]}</h3><div class="progress-bar"><span style="width:${t.accuracy || 0}%"></span></div><small>${t.attempted ? `${t.correct} / ${t.attempted} first attempts correct` : "Ready for your first question"}</small></article>`).join("")}</div><div class="section-heading"><h2>Session history</h2></div>${history.length ? `<div class="card table-wrap"><table class="table"><thead><tr><th>SESSION</th><th>COMPLETED</th><th>RESPONSES</th><th>REVIEW</th></tr></thead><tbody>${history.map((a) => `<tr><td>${esc(a.title)}</td><td>${new Date(a.finishedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</td><td>${Object.values(a.answers).filter((x) => String(x).trim()).length} / ${a.questions.length}</td><td><button class="text-link" data-report="${a.attemptId}">View ↗</button></td></tr>`).join("")}</tbody></table></div>` : '<div class="empty"><strong>Your story starts with the first attempt.</strong><p>Complete a practice session to see it here.</p><button class="button" data-go="tests">Find a challenge ↗</button></div>'}${reviews.length ? `<h2 class="compact-heading">Assessment records</h2><div class="stack">${reviews.map((r) => `<div class="card"><div class="question-top"><h3>${esc(r.questionTitle)}</h3>${badge(r.score + " / " + r.maxMarks, "mint")}</div><p>${esc(r.reviewer)} · identity unverified<br>${esc(r.rationale)}</p></div>`).join("")}</div>` : ""}<div class="card spacer"><h3>Restore a backup</h3><p>Import a Noether JSON backup. Restored numeric results are recalculated; assessment records are treated as unverified local records.</p><input class="file-input" id="import-backup" type="file" accept="application/json,.json" aria-label="Import Noether backup"></div>`
+    `<div class="stats"><div class="stat"><span class="stat-icon">▤</span><div><strong>${history.length}</strong><small>Completed sessions</small></div></div><div class="stat"><span class="stat-icon">✓</span><div><strong>${nums.length ? Math.round((correct / nums.length) * 100) + "%" : "—"}</strong><small>First-attempt numeric accuracy</small></div></div><div class="stat"><span class="stat-icon">∴</span><div><strong>${results.filter((r) => r.type !== "numeric").length}</strong><small>Proof / reference responses</small></div></div><div class="stat"><span class="stat-icon">✧</span><div><strong>${reviews.length}</strong><small>Recorded assessments</small></div></div></div><p class="tiny">Accuracy uses the first answered attempt at each distinct numeric question. Retries, blank responses, unavailable checks and proof marks are excluded. This is practice feedback, not an exam prediction.</p><div class="section-heading"><h2>Your chapter map</h2></div><div class="topic-progress">${summary.topics.map((t) => `<article><h3>${topicLabels[t.topic]}</h3><div class="progress-bar"><span style="width:${t.accuracy || 0}%"></span></div><small>${t.attempted ? `${t.correct} / ${t.attempted} first attempts correct` : "Ready for your first question"}</small></article>`).join("")}</div><div class="section-heading"><h2>Session history</h2></div>${history.length ? `<div class="card table-wrap"><table class="table"><thead><tr><th>SESSION</th><th>COMPLETED</th><th>RESPONSES</th><th>REVIEW</th></tr></thead><tbody>${history.map((a) => `<tr><td>${esc(a.title)}</td><td>${new Date(a.finishedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</td><td>${Object.values(a.answers).filter((x) => String(x).trim()).length} / ${a.questions.length}</td><td><button class="text-link" data-report="${a.attemptId}">View ↗</button></td></tr>`).join("")}</tbody></table></div>` : '<div class="empty"><strong>Your story starts with the first attempt.</strong><p>Complete a practice session to see it here.</p><button class="button" data-go="tests">Find a challenge ↗</button></div>'}${reviews.length ? `<h2 class="compact-heading">Assessment records</h2><div class="stack">${reviews.map((r) => `<div class="card"><div class="question-top"><h3>${esc(r.questionTitle)}</h3>${badge(r.score + " / " + r.maxMarks, "mint")}</div><p>${esc(r.reviewer)} · identity unverified<br>${esc(r.rationale)}</p></div>`).join("")}</div>` : ""}<div class="card spacer"><h3>Restore a backup</h3><p>Import a Avenquellis backup or a backup exported under its previous name. Restored numeric results are recalculated; assessment records are treated as unverified local records.</p><input class="file-input" id="import-backup" type="file" accept="application/json,.json" aria-label="Import practice backup"></div>`
   );
 }
 function sessionView() {
+  if(completing)return heading("Checking your attempt…","Your submitted work is being assessed and saved.");
   if (!session)
     return (
       heading("No active test.", "Choose a challenge to get started.") +
@@ -405,7 +418,7 @@ function render() {
   stopOrbit();
   page = (location.hash.slice(1) || "overview").split("?")[0];
   if (!pageNames[page]) page = "overview";
-  document.title = `${pageNames[page]} · Noether`;
+  document.title = `${pageNames[page]} · Avenquellis`;
   $("#breadcrumb").textContent = pageNames[page];
   document
     .querySelectorAll("#nav a")
@@ -438,7 +451,7 @@ function render() {
   persist();
 }
 function download(name, data) {
-  if (data?.schema === "noether-backup-v1")
+  if (data?.schema === "avenquellis-backup-v1")
     data = {
       ...data,
       modelReviews: modelReviewRecords(),
@@ -471,7 +484,7 @@ function start(mock) {
       go("session");
     };
     $("#backup-active").onclick = () =>
-      download("noether-active-draft.json", session);
+      download("avenquellis-active-draft.json", session);
     $("#replace-test").onclick = () => {
       $("#modal").close();
       session = null;
@@ -483,15 +496,31 @@ function start(mock) {
   persist();
   go("session");
 }
-function complete() {
-  if (!session) return;
-  const result = finishSession(session);
-  history.unshift(result);
-  history = history.slice(0, 100);
-  activeReport = result;
-  session = null;
-  persist();
-  go("report");
+let completing = false;
+async function complete() {
+  if (!session || completing) return;
+  completing = true;
+  const original=session, submitted=structuredClone(session), finishedAt=Date.now();
+  if(page==="session"){
+    const main=$("#main");
+    main.replaceChildren(Object.assign(document.createElement("p"),{textContent:"Checking proofs and saving your attempt…"}));
+  }
+  const assessments=new Map();
+  try {
+    const proofs=submitted.questions.filter(q=>q.type==="proof" && submitted.answers[q.id]?.trim());
+    for (let offset = 0; offset < proofs.length; offset += 2) {
+      await Promise.all(proofs.slice(offset, offset + 2).map(async question => {
+        const answer = submitted.answers[question.id];
+        try { assessments.set(question.id, await assessOnServer(question, answer)); }
+        catch { assessments.set(question.id, nativeCertificate(question, answer)); }
+      }));
+    }
+    if(session!==original)return;
+    const result=finishSession(submitted,finishedAt,(q)=>assessments.get(q.id));
+    history.unshift(result);
+    history=history.slice(0,100);activeReport=result;session=null;
+    persist();go("report");
+  } finally { completing=false; }
 }
 function referenceQuestion(r) {
   return {
@@ -617,19 +646,20 @@ function bind() {
   );
   document.querySelectorAll("[data-mock]").forEach(
     (e) =>
-      (e.onclick = () => {
+      (e.onclick = async () => {
+        e.disabled=true;
         try {
           const exam = e.dataset.mock,
-            m = generateMock({
+            m = await generateOnServer("mock",{
               exam,
               count: exam === "RMO" ? 6 : 12,
               seed: Date.now(),
             });
           m.durationMinutes = 180;
-          start(m);
+          if (e.isConnected) start(m);
         } catch (err) {
           toast(err.message);
-        }
+        } finally {e.disabled=false;}
       }),
   );
   document
@@ -686,31 +716,31 @@ function bind() {
       if (rmo && ["calculus", "probability"].includes($("#gen-topic").value))
         $("#gen-topic").value = "all";
     };
-    $("#generate-form").onsubmit = (e) => {
-      e.preventDefault();
+    let requestId=0;
+    const createFromForm=async(single)=>{
+      const form=$("#generate-form"), id=++requestId, options=generateOptions();
+      const button=single?form.querySelector('[type=submit]'):$("#assemble");
+      button.disabled=true;
+      const slot=$("#forge-output");
+      slot.textContent="Generating your practice material…";
       try {
-        generated = generateQuestion(generateOptions());
-        generatedMock = null;
-        $("#forge-output").innerHTML = questionPreview(generated);
+        const mode=single?"question":options.topic==="all"?"mock":"chapter";
+        if (single) delete options.count;
+        const result=await generateOnServer(mode,options);
+        if(!form.isConnected||id!==requestId)return;
+        generated=single?result:null;generatedMock=single?null:result;
+        slot.innerHTML=single?questionPreview(result):mockPreview(result);
         bindForge();
-      } catch (err) {
-        toast(err.message);
-      }
+      } catch(error){if(id===requestId&&form.isConnected)slot.textContent=error.message;}
+      finally{button.disabled=false;}
     };
-    $("#assemble").onclick = () => {
-      try {
-        generatedMock = generateMock(generateOptions());
-        generated = null;
-        $("#forge-output").innerHTML = mockPreview(generatedMock);
-        bindForge();
-      } catch (err) {
-        toast(err.message);
-      }
-    };
+    $("#generate-form").onsubmit = (event) => {event.preventDefault();void createFromForm(true);};
+    $("#assemble").onclick = () => createFromForm(false);
     bindForge();
   }
   if (page === "proof") {
     bindModelPanel(currentProof,$("#proof-answer"));
+    mountHandwriting($("#proof-answer"));
     let checkedCertificate = null;
     bindCertificateGuide(currentProof, $("#proof-answer"), {
       onCheck: (result) => {
@@ -772,14 +802,16 @@ function bind() {
       $("#proof-save").textContent =
         `${storageOK ? "Draft saved" : "Storage unavailable"} · ${proofDraft.trim() ? proofDraft.trim().split(/\s+/).length : 0} words`;
     };
-    $("#assess").onclick = () => {
+    $("#assess").onclick = async () => {
+      const draft=proofDraft,question=currentProof,button=$("#assess");
       if (!proofDraft.trim())
         return toast("Write an argument before preparing a review.");
       try {
-        proofResult = assessProof({
-          question: currentProof,
-          answer: proofDraft,
-        });
+        button.disabled=true;
+        const result=await (navigator.onLine?assessOnServer(question,draft):nativeGrader?.assess(question,draft));
+        if(!result)throw Error("Connect to Avenquellis to check this proof.");
+        if(!button.isConnected || draft!==proofDraft || question!==currentProof)return;
+        proofResult={...result,wordCount:draft.trim().split(/\s+/u).length,feedback:result.feedback||[]};
         $("#proof-feedback").innerHTML = feedbackView(proofResult);
         bindReview();
         $("#proof-feedback").scrollIntoView({
@@ -788,12 +820,12 @@ function bind() {
         });
       } catch (err) {
         toast(err.message);
-      }
+      } finally {button.disabled=false;}
     };
     $("#export-proof").onclick = async () => {
       const question = currentProof, answer = proofDraft, assessment = proofResult;
       const modelReviews = await storedModelReviews(question, answer);
-      download("noether-proof-submission.json", {
+      download("avenquellis-proof-submission.json", {
         question, answer, review: assessment,
         modelPracticeReview: modelReviews[0] ?? null,
         modelPracticeReviews: modelReviews,
@@ -807,6 +839,7 @@ function bind() {
       session.questions[session.current],
       $("#session-answer"),
     );
+    if (["proof","reference"].includes(session.questions[session.current].type)) mountHandwriting($("#session-answer"));
     $("#session-answer").oninput = (e) => {
       session.answers[session.questions[session.current].id] = e.target.value;
       persist();
@@ -843,13 +876,13 @@ function bind() {
         }),
     );
     $("#export-active").onclick = () =>
-      download("noether-active-draft.json", session);
+      download("avenquellis-active-draft.json", session);
     $("#submit-session").onclick = () => {
       const blank = session.questions.filter(
         (q) => !session.answers[q.id]?.trim(),
       ).length;
       modal(
-        `<h2 class="modal-title">Finish this attempt?</h2><p class="subtitle">${blank ? `${blank} response${blank === 1 ? " is" : "s are"} still blank. ` : ""}Your answers will be saved, and worked solutions will become available. Fully verified structured proofs receive marks; other proofs await review.</p><div class="button-group spacer"><button class="button" id="confirm-finish">Finish & review</button><button class="button secondary" id="keep-writing">Keep writing</button></div>`,
+        `<h2 class="modal-title">Finish this attempt?</h2><p class="subtitle">${blank ? `${blank} response${blank === 1 ? " is" : "s are"} still blank. ` : ""}Your answers will be saved. Written proof answers go to Avenquellis’s C++ checker for certificate assessment. Prose awaits a separate review; no AI marking is requested by finishing a test.</p><div class="button-group spacer"><button class="button" id="confirm-finish">Finish & review</button><button class="button secondary" id="keep-writing">Keep writing</button></div>`,
       );
       $("#confirm-finish").onclick = () => {
         $("#modal").close();
@@ -865,7 +898,7 @@ function bind() {
       $("#export-report").onclick = async () => {
         const pairs = await Promise.all(a.questions.map(async q => [q.id, await storedModelReviews(q, a.answers[q.id])]));
         const reviewed = pairs.filter(([, records]) => records.length);
-        download("noether-attempt.json", {...a,
+        download("avenquellis-attempt.json", {...a,
           modelPracticeReviews: Object.fromEntries(reviewed.map(([id, records]) => [id, records[0]])),
           modelPracticeReviewsByQuestion: Object.fromEntries(reviewed),
         });
@@ -895,8 +928,8 @@ function bind() {
   }
   if (page === "progress") {
     $("#export-backup").onclick = () =>
-      download("noether-backup.json", {
-        schema: "noether-backup-v1",
+      download("avenquellis-backup.json", {
+        schema: "avenquellis-backup-v1",
         exportedAt: new Date().toISOString(),
         history,
         reviews,
@@ -930,7 +963,7 @@ function bindForge() {
       });
   if ($("#save-question"))
     $("#save-question").onclick = () =>
-      download("noether-question.json", generated);
+      download("avenquellis-question.json", generated);
   if ($("#proof-generated"))
     $("#proof-generated").onclick = () => {
       if (currentProof) proofDrafts[currentProof.id] = proofDraft;
@@ -944,7 +977,7 @@ function bindForge() {
     $("#start-generated-mock").onclick = () => start(generatedMock);
   if ($("#export-mock"))
     $("#export-mock").onclick = () =>
-      download("noether-practice-test.json", generatedMock);
+      download("avenquellis-practice-test.json", generatedMock);
 }
 function bindReview() {
   if (!$("#review-form")) return;
@@ -989,8 +1022,8 @@ async function importBackup(e) {
       `<h2 class="modal-title">Restore this ${restored.mode === "active" ? "active draft" : "backup"}?</h2><p class="subtitle">${restored.mode === "active" ? "This replaces the current active test. History and proof drafts stay in place." : "This replaces completed sessions, assessments, the active test and proof drafts. Backups that contain model reviews also replace this device’s saved practice reviews."} Export your current backup first if needed. Saved deadlines are preserved.</p><div class="button-group spacer"><button class="button" id="confirm-import">Restore backup</button><button class="button secondary" id="export-before-import">Export current backup ↓</button><button class="button ghost" id="cancel-import">Cancel</button></div>`,
     );
     $("#export-before-import").onclick = () =>
-      download("noether-before-restore.json", {
-        schema: "noether-backup-v1",
+      download("avenquellis-before-restore.json", {
+        schema: "avenquellis-backup-v1",
         history,
         reviews,
         session,
@@ -1072,7 +1105,7 @@ setInterval(() => {
   if (!session) return;
   const remaining = remainingSeconds(session);
   if ($("#timer")) $("#timer").textContent = timeText(remaining);
-  if (remaining === 0) {
+  if (remaining === 0 && !completing) {
     if ($("#modal").open) $("#modal").close();
     complete();
     toast("Time is up. Your work has been saved.");
@@ -1080,7 +1113,7 @@ setInterval(() => {
 }, 1000);
 render();
 
-window.addEventListener("noether:offline-ready", () => {
+window.addEventListener("avenquellis:offline-ready", () => {
   const status = document.querySelector("#offline-status");
   if (status) {
     status.textContent = "Ready offline · source PDFs need internet";
@@ -1088,6 +1121,6 @@ window.addEventListener("noether:offline-ready", () => {
       "The app and exact C++ engine are saved on this device. Browser storage may be cleared by your browser.";
   }
 });
-window.addEventListener("noether:offline-update-ready", (event) =>
+window.addEventListener("avenquellis:offline-update-ready", (event) =>
   toast(event.detail.message),
 );

@@ -1,6 +1,8 @@
 /** Same-origin Cloudflare Pages Function entry for a host-managed practice catalog and quota. */
 import {evaluateProof, readEvaluatorConfig, EvaluatorError} from './provider.js';
 import {readJson} from './service.js';
+import {applyNativeConsensus} from './native-consensus.js';
+export {applyNativeConsensus} from './native-consensus.js';
 
 const allowedKeys = new Set(['questionId', 'answer', 'reference']);
 const json = (data, status = 200) => Response.json(data, {
@@ -8,10 +10,11 @@ const json = (data, status = 200) => Response.json(data, {
 });
 
 /** The host resolves questions from trusted source and reserves quota before starting two model calls. */
-export function createPagesReviewHandler({resolveQuestion, admit}) {
+export function createPagesReviewHandler({resolveQuestion, admit, loadGrader, assessmentOnly = false}) {
   if (typeof resolveQuestion !== 'function' || typeof admit !== 'function') {
     throw new TypeError('Supply a canonical question resolver and a review admission policy.');
   }
+  if ((assessmentOnly || loadGrader !== undefined) && typeof loadGrader !== 'function') throw new TypeError('A native grading runtime is required.');
   let active = 0;
   return async function onRequest(context) {
     const {request, env} = context;
@@ -26,7 +29,7 @@ export function createPagesReviewHandler({resolveQuestion, admit}) {
         return json({error: 'Send only questionId, answer and optional reference.'}, 400);
       }
       if (typeof input.questionId !== 'string' || !input.questionId.trim() || input.questionId.length > 200 ||
-          typeof input.answer !== 'string' || !input.answer.trim() || input.answer.length > 20000) {
+          typeof input.answer !== 'string' || (!assessmentOnly && !input.answer.trim()) || input.answer.length > 20000) {
         return json({error: 'A valid question ID and answer of 1–20,000 characters are required.'}, 400);
       }
       if (input.reference !== undefined && (input.reference === null || typeof input.reference !== 'object' ||
@@ -40,7 +43,6 @@ export function createPagesReviewHandler({resolveQuestion, admit}) {
         EVALUATOR_TIMEOUT_MS: env.EVALUATOR_TIMEOUT_MS,
         EVALUATOR_MAX_TOKENS: env.EVALUATOR_MAX_TOKENS
       };
-      readEvaluatorConfig(configEnv);
       let question;
       try {
         question = await resolveQuestion({questionId: input.questionId, reference: input.reference, context});
@@ -48,13 +50,24 @@ export function createPagesReviewHandler({resolveQuestion, admit}) {
       if (!question || question.id !== input.questionId || question.type !== 'proof') {
         return json({error: 'This proof question could not be resolved from the practice catalog.'}, 404);
       }
+      let grader;
+      if (loadGrader) {
+        try {
+          grader = await loadGrader();
+          const assessment = grader.assess(question, input.answer);
+          if (assessmentOnly || assessment.status !== 'needs_review') return json(assessment);
+        } catch { return json({error:'The native proof grader is unavailable.',code:'native_unavailable'},503); }
+      }
+      readEvaluatorConfig(configEnv);
       let admitted;
       try { admitted = await admit({request, env, question}); }
       catch { return json({error: 'The review admission service is unavailable.'}, 503); }
       if (admitted instanceof Response) return admitted;
       if (admitted !== true) return json({error: 'This review was not admitted.'}, 429);
       const result = await evaluateProof({question, answer: input.answer}, {env: configEnv});
-      return json(result);
+      if (!grader) return json(result);
+      try { return json(applyNativeConsensus(question,input.answer,result,grader)); }
+      catch { return json({error:'The native proof review could not be validated.',code:'native_validation_failed'},503); }
     } catch (error) {
       if (error instanceof EvaluatorError) return json({error: error.message, code: error.code}, 503);
       return json({error: error instanceof SyntaxError ? 'Malformed JSON request.' : error.message}, error.status || 400);

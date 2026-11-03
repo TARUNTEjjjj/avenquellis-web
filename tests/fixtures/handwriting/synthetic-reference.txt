@@ -1,0 +1,5 @@
+Claim: n(n + 1) is even for every integer n.
+If n = 2k, then n(n + 1) = 2k(n + 1).
+If n = 2k + 1, then n + 1 = 2(k + 1).
+In either case, one factor is even.
+Therefore n(n + 1) is even.

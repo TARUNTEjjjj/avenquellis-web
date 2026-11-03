@@ -6,6 +6,6 @@
   <rect width="512" height="512" rx="112" fill="url(#background)"/>
   <circle cx="256" cy="256" r="170" fill="none" stroke="#435173" stroke-width="2"/>
   <ellipse cx="256" cy="256" rx="174" ry="74" transform="rotate(-32 256 256)" fill="none" stroke="url(#mark)" stroke-width="6"/>
-  <path d="M185 333V179h28l86 111V179h28v154h-28L213 222v111Z" fill="url(#mark)"/>
+  <path d="M170 332l70-155h32l70 155h-33l-14-34h-78l-15 34zm59-62h54l-27-63z" fill="url(#mark)"/>
   <circle cx="398" cy="166" r="12" fill="#76ebe3"/>
 </svg>

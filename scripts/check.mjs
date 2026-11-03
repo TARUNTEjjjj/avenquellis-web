@@ -12,6 +12,12 @@ for (const asset of [
   "app.js",
   "style.css",
   "orbit.js",
+  "backend.js",
+  "handwriting.js",
+  "handwriting.css",
+  "lib/handwriting-image.js",
+  "lib/native-grader.js",
+  "lib/native-grade/avenquellis-grader-runtime.wasm",
   "archive.json",
   "lib/session.js",
   "lib/questions.js",
@@ -128,6 +134,10 @@ for (const asset of runtime.assets) {
 const provenance = JSON.parse(
   await readFile(join(dist, "lib/vendor-provenance.json"), "utf8"),
 );
+for (const destination of ["dist/lib/native-grade/avenquellis-grader-runtime.wasm", "server/native-generator/avenquellis-questions.wasm"]) {
+  assert.ok(provenance.components.some(item => item.destination === destination), "Missing provenance for " + destination);
+  assert.ok(WebAssembly.validate(await readFile(join(root, destination))), "Invalid WebAssembly: " + destination);
+}
 for (const asset of provenance.components)
   assert.equal(
     hash(await readFile(join(root, asset.destination))),

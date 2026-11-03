@@ -357,7 +357,7 @@ export function validateBackup(raw) {
     }
   }
   object(raw, "root");
-  if (raw.schema !== "noether-backup-v1") {
+  if (!["avenquellis-backup-v1", "noether-backup-v1"].includes(raw.schema)) {
     if (!validSession(raw)) fail("Unsupported backup format.");
     return {
       mode: "active",

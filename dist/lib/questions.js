@@ -4,7 +4,7 @@ export const topics = ['algebra', 'number-theory', 'combinatorics', 'geometry', 
 export const topicLabels = { algebra: 'Algebra', 'number-theory': 'Number theory', combinatorics: 'Combinatorics', geometry: 'Geometry', calculus: 'Calculus', probability: 'Probability' };
 export const difficulties = ['foundation', 'advanced', 'olympiad'];
 export const exams = ['CMI', 'ISI', 'RMO'];
-const SOURCE = { kind: 'original', label: 'Noether original practice · validated template', rights: 'Original wording and solutions; standard mathematical results.' };
+const SOURCE = { kind: 'original', label: 'Avenquellis original practice · validated template', rights: 'Original wording and solutions; standard mathematical results.' };
 // Authored practice weights emphasize mathematical deductions over the final sentence.
 const rub = (...steps) => {
  const weights={1:[10],2:[6,4],3:[4,4,2],4:[3,3,2,2]}[steps.length];

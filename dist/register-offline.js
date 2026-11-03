@@ -1,5 +1,5 @@
 /** Offline is available after a successful initial installation, subject to browser storage. */
-const emit=(name,detail={})=>window.dispatchEvent(new CustomEvent(`noether:${name}`,{detail}));
+const emit=(name,detail={})=>window.dispatchEvent(new CustomEvent(`avenquellis:${name}`,{detail}));
 const localHost=location.hostname==='localhost'||location.hostname.endsWith('.localhost')||location.hostname==='[::1]'||location.hostname==='::1'||/^127(?:\.\d{1,3}){3}$/.test(location.hostname);
 
 function status(worker) {
@@ -8,7 +8,7 @@ function status(worker) {
     const channel=new MessageChannel();
     const timer=setTimeout(()=>{channel.port1.close();resolve(null);},3000);
     channel.port1.onmessage=event=>{clearTimeout(timer);channel.port1.close();resolve(event.data);};
-    worker.postMessage({type:'NOETHER_OFFLINE_STATUS'},[channel.port2]);
+    worker.postMessage({type:'AVENQUELLIS_OFFLINE_STATUS'},[channel.port2]);
   });
 }
 async function register() {
@@ -18,7 +18,7 @@ async function register() {
   try {
     const registration=await navigator.serviceWorker.register(new URL('./sw.js',import.meta.url),{scope:new URL('./',import.meta.url).pathname,updateViaCache:'none'});
     const waiting=()=>{
-      if(registration.waiting)emit('offline-update-ready',{message:'An update is saved. Close all Noether tabs and reopen the app when you finish your test.',activation:'after-all-tabs-close'});
+      if(registration.waiting)emit('offline-update-ready',{message:'An update is saved. Close all Avenquellis tabs and reopen the app when you finish your test.',activation:'after-all-tabs-close'});
     };
     waiting();
     registration.addEventListener('updatefound',()=>{

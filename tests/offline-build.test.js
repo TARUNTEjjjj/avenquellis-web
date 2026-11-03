@@ -8,7 +8,7 @@ import vm from 'node:vm';
 import {buildOffline,MAX_ASSET_BYTES} from '../scripts/build-offline.mjs';
 
 async function fixture(t){
-  const directory=await mkdtemp(join(tmpdir(),'noether-offline-'));
+  const directory=await mkdtemp(join(tmpdir(),'avenquellis-offline-'));
   t.after(()=>rm(directory,{recursive:true,force:true}));
   const files={'index.html':'<!doctype html><title>Original app</title>','app.js':'export const version=1;','style.css':'body{color:white}','register-offline.js':'// register','manifest.webmanifest':'{"name":"Noether"}','icon.svg':'<svg/>','lib/engine.wasm':new Uint8Array([0,97,115,109,1,0,0,0])};
   await mkdir(join(directory,'lib'));
@@ -64,23 +64,23 @@ test('external PDFs, POSTs and unrelated same-origin paths are never intercepted
 });
 test('failed installation removes only incomplete new cache and preserves old version',async t=>{
   const {directory,files}=await fixture(t);await buildOffline({directory});const app=await runtime(directory,files);
-  app.storage.set('noether-offline:/lab/:old',new Map());
+  app.storage.set('avenquellis-offline:/lab/:old',new Map());
   files['app.js']='truncated';
   await assert.rejects(app.lifecycle('install'),/Asset/);
-  assert.deepEqual([...app.storage.keys()],['noether-offline:/lab/:old']);
+  assert.deepEqual([...app.storage.keys()],['avenquellis-offline:/lab/:old']);
 });
 test('activation cleans only this app scope and never forces an active-page reload',async t=>{
   const {directory,files}=await fixture(t);await buildOffline({directory});const app=await runtime(directory,files);
-  await app.lifecycle('install');app.storage.set('noether-offline:/lab/:old',new Map());app.storage.set('noether-offline:/different/:old',new Map());app.storage.set('unrelated-cache',new Map());
+  await app.lifecycle('install');app.storage.set('avenquellis-offline:/lab/:old',new Map());app.storage.set('avenquellis-offline:/different/:old',new Map());app.storage.set('unrelated-cache',new Map());
   await app.lifecycle('activate');
-  assert.ok(!app.storage.has('noether-offline:/lab/:old'));assert.ok(app.storage.has('noether-offline:/different/:old'));assert.ok(app.storage.has('unrelated-cache'));
+  assert.ok(!app.storage.has('avenquellis-offline:/lab/:old'));assert.ok(app.storage.has('avenquellis-offline:/different/:old'));assert.ok(app.storage.has('unrelated-cache'));
   assert.equal(app.counters().skipCalls,0);assert.equal(app.counters().claimCalls,0);
 });
 test('offline navigation falls back after network failure and status confirms complete cache',async t=>{
   const {directory,files}=await fixture(t);const manifest=await buildOffline({directory});const app=await runtime(directory,files);await app.lifecycle('install');
   app.context.fetch=async()=>{throw new TypeError('offline');};
   assert.match(await(await app.request('https://math.example/lab/',{mode:'navigate'})).text(),/Original app/);
-  let pending,report;app.handlers.message({data:{type:'NOETHER_OFFLINE_STATUS'},ports:[{postMessage(value){report=value;}}],waitUntil(value){pending=value;}});await pending;
+  let pending,report;app.handlers.message({data:{type:'AVENQUELLIS_OFFLINE_STATUS'},ports:[{postMessage(value){report=value;}}],waitUntil(value){pending=value;}});await pending;
   assert.equal(report.ready,true);assert.equal(report.version,manifest.version);
 });
 

@@ -1,15 +1,17 @@
 {
-  "name": "noether-web",
-  "version": "0.3.0",
+  "name": "avenquellis-web",
+  "version": "0.4.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "node scripts/serve.mjs",
+    "start": "npm run dev:pages",
     "test": "node --test",
     "build": "node scripts/build-offline.mjs && node scripts/check.mjs",
     "sync:engines": "node scripts/sync-engines.mjs",
-    "deploy": "npm test && npm run build && npm run stage:pages && cd .wrangler/release && npx --yes wrangler@4.156.2 pages deploy dist --project-name noether-math-lab --branch main",
-    "stage:pages": "node scripts/pack-pages.mjs .wrangler/release"
+    "deploy": "npm test && npm run build && npm run stage:pages && cd .wrangler/release && npx --yes wrangler@4.156.2 pages deploy dist --project-name avenquellis --branch main",
+    "stage:pages": "node scripts/pack-pages.mjs .wrangler/release",
+    "start:static": "node scripts/serve.mjs",
+    "dev:pages": "npm run build && npm run stage:pages && cd .wrangler/release && npx --yes wrangler@4.156.2 pages dev dist --ip 127.0.0.1 --port 4173"
   },
   "engines": {
     "node": ">=20"

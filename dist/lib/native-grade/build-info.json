@@ -1,0 +1,50 @@
+{
+  "abi": "avenquellis-grader-wasm/1",
+  "compiler": "Emscripten 6.0.13",
+  "args": [
+    "-std=c++20",
+    "-Oz",
+    "-fexceptions",
+    "-Iinclude",
+    "-Isrc",
+    "-Ithird_party",
+    "src/grader.cpp",
+    "src/certificate.cpp",
+    "src/json_api.cpp",
+    "wasm/bridge.cpp",
+    "--no-entry",
+    "-sMODULARIZE=1",
+    "-sEXPORT_ES6=1",
+    "-sEXPORT_NAME=createAvenquellisGrader",
+    "-sENVIRONMENT=web,worker",
+    "-sEXPORTED_FUNCTIONS=_malloc,_free,_avenquellis_grader_run,_avenquellis_grader_output_length,_avenquellis_grader_clear",
+    "-sEXPORTED_RUNTIME_METHODS=HEAPU8",
+    "-sALLOW_MEMORY_GROWTH=1",
+    "-sINITIAL_MEMORY=16777216",
+    "-sMAXIMUM_MEMORY=67108864",
+    "-sSTACK_SIZE=1048576",
+    "-sFILESYSTEM=0",
+    "-sDYNAMIC_EXECUTION=0",
+    "-o",
+    "edge/avenquellis-grader-runtime.js"
+  ],
+  "sourceFiles": {
+    "src/grader.cpp": "0fd42d20b374b83cc128be4bebe49690fa0e0f4b7066bd5fa65f35da18b64e51",
+    "src/certificate.cpp": "647291775db203c49d5e2c2c07058e21fa22d7fa4300344cf3462735eceb94f0",
+    "src/json_api.cpp": "ce32fd07129fc12b853df74d62bf8ba022f11fdb92c6d609d032691fea1abad7",
+    "wasm/bridge.cpp": "9661b67a761f491e5b9717b808439359d4a692af9217d7fc4f82be6d314686e3",
+    "src/json_api.hpp": "6617b955212ee32302b951ae7fc6be7af0069de4777b33b1672bda11eec2d152",
+    "include/noether/grader/grader.hpp": "cf065cc111e17eb9fa31789a00e877d4bcdc2b31195b00d12acb1bc6d7ea957f",
+    "third_party/nlohmann/json.hpp": "aaf127c04cb31c406e5b04a63f1ae89369fccde6d8fa7cdda1ed4f32dfc5de63"
+  },
+  "artifacts": {
+    "avenquellis-grader-runtime.js": {
+      "bytes": 16405,
+      "sha256": "286587de5217e5375959b08bcf379a21958c3ee7cf9098c53e906481bcde6722"
+    },
+    "avenquellis-grader-runtime.wasm": {
+      "bytes": 298159,
+      "sha256": "a8eaafa0b2ecd620e0893e470c2ae53d44f312e81cde5bb09e34f13834c63910"
+    }
+  }
+}

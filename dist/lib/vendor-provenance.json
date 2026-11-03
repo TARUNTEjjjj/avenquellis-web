@@ -1,125 +1,223 @@
 {
-  "formatVersion": 2,
+  "formatVersion": 3,
   "description": "Byte-for-byte copies from the private sibling repositories; compiled artifacts verified against build-info.json. Run npm run sync:engines after engine changes.",
   "engineBuildCommit": "00a970492492c054776a206548db3a3a90c77de6",
+  "generatorBuildCommit": "05ed7f3d0a1063e8b0cae6cd14a1eb4adfafa722",
+  "graderBuildCommit": "ad11c887de120a313ca2fc522f8a2dcdd94693c9",
   "components": [
     {
-      "repository": "noether-question-engine",
+      "repository": "avenquellis-question-engine",
       "source": "src/advanced-templates.js",
       "destination": "dist/lib/advanced-templates.js",
-      "packageName": "@noether/question-engine",
+      "packageName": "@avenquellis/question-engine",
       "version": "0.1.0",
       "sha256": "76c37d7e60aa374a2d9e517fd2b58061f904b1e363b33c39e65c16f827bef185"
     },
     {
-      "repository": "noether-question-engine",
+      "repository": "avenquellis-question-engine",
       "source": "src/index.js",
       "destination": "dist/lib/questions.js",
-      "packageName": "@noether/question-engine",
+      "packageName": "@avenquellis/question-engine",
       "version": "0.1.0",
-      "sha256": "f84b47234b23252a6852b61c920a1f218bc9d95260675d63fde746a6c62b37fa"
+      "sha256": "b9953a736c0d08c80b7b5e9e5b20d44f167c2a139da79b04590c820f77cb7fbd"
     },
     {
-      "repository": "noether-proof-grader",
+      "repository": "avenquellis-proof-grader",
       "source": "src/index.js",
       "destination": "dist/lib/grader.js",
-      "packageName": "noether-proof-grader",
-      "version": "0.7.0",
+      "packageName": "@avenquellis/proof-grader",
+      "version": "0.8.0",
       "sha256": "d4d7b77c8b3ae07266474e7d8e8a369eeb02113448376ebaefb2af7e0e36690f"
     },
     {
-      "repository": "noether-proof-grader",
+      "repository": "avenquellis-proof-grader",
       "source": "src/certificate.js",
       "destination": "dist/lib/certificate.js",
-      "packageName": "noether-proof-grader",
-      "version": "0.7.0",
-      "sha256": "af31540ebd8048e48b0bd40bc9820fc42e2497de9337c76b0089e03bf4ac1b50"
+      "packageName": "@avenquellis/proof-grader",
+      "version": "0.8.0",
+      "sha256": "fcf2dc0e928a92f5ce37dc032c4768f97a0410d75654529935d5497df52027c9"
     },
     {
-      "repository": "noether-proof-grader",
+      "repository": "avenquellis-proof-grader",
+      "source": "src/native-consensus.js",
+      "destination": "dist/lib/native-consensus.js",
+      "packageName": "@avenquellis/proof-grader",
+      "version": "0.8.0",
+      "sha256": "6197e247863aa5e29db36198f58d1d2e0ee7aa3655bf76d11d551358017f5617"
+    },
+    {
+      "repository": "avenquellis-proof-grader",
       "source": "src/index.js",
       "destination": "server/grader/index.js",
-      "packageName": "noether-proof-grader",
-      "version": "0.7.0",
+      "packageName": "@avenquellis/proof-grader",
+      "version": "0.8.0",
       "sha256": "d4d7b77c8b3ae07266474e7d8e8a369eeb02113448376ebaefb2af7e0e36690f"
     },
     {
-      "repository": "noether-proof-grader",
+      "repository": "avenquellis-proof-grader",
       "source": "src/provider.js",
       "destination": "server/grader/provider.js",
-      "packageName": "noether-proof-grader",
-      "version": "0.7.0",
+      "packageName": "@avenquellis/proof-grader",
+      "version": "0.8.0",
       "sha256": "c9f1efbb1988c6b72dc0255260bd8460d3501b5d62f3b588c31043e980da1fb8"
     },
     {
-      "repository": "noether-proof-grader",
+      "repository": "avenquellis-proof-grader",
       "source": "src/service.js",
       "destination": "server/grader/service.js",
-      "packageName": "noether-proof-grader",
-      "version": "0.7.0",
-      "sha256": "c86ac0bc6c4b264b870223510c81410e2cedd7324d90f334e5b5f20f6c8fd4b1"
+      "packageName": "@avenquellis/proof-grader",
+      "version": "0.8.0",
+      "sha256": "067928822a46f7e87a9de604e3e0513385af718545f90267ef55756523a05f14"
     },
     {
-      "repository": "noether-proof-grader",
+      "repository": "avenquellis-proof-grader",
       "source": "src/pages.js",
       "destination": "server/grader/pages.js",
-      "packageName": "noether-proof-grader",
-      "version": "0.7.0",
-      "sha256": "f76233a71616de95f1f820d3c6bab2e62f5cbd21c0efe5101d6be1db66778f11"
+      "packageName": "@avenquellis/proof-grader",
+      "version": "0.8.0",
+      "sha256": "3da8c77549bb23100e9c3e66df42bb9d021644aa6ad7a796a8ef1a9e18886d7e"
     },
     {
-      "repository": "noether-proof-grader",
+      "repository": "avenquellis-proof-grader",
       "source": "src/span-v2.js",
       "destination": "server/grader/span-v2.js",
-      "packageName": "noether-proof-grader",
-      "version": "0.7.0",
+      "packageName": "@avenquellis/proof-grader",
+      "version": "0.8.0",
       "sha256": "b7c39c48f3d7d9156eb0cd784393e167cc12bc07515bf22fd4f15860551070ee"
     },
     {
-      "repository": "noether-question-engine",
+      "repository": "avenquellis-proof-grader",
+      "source": "src/native-consensus.js",
+      "destination": "server/grader/native-consensus.js",
+      "packageName": "@avenquellis/proof-grader",
+      "version": "0.8.0",
+      "sha256": "6197e247863aa5e29db36198f58d1d2e0ee7aa3655bf76d11d551358017f5617"
+    },
+    {
+      "repository": "avenquellis-question-engine",
+      "source": "release/edge/adapter.mjs",
+      "destination": "server/native-generator/adapter.mjs",
+      "packageName": "@avenquellis/question-engine",
+      "version": "0.1.0",
+      "sha256": "cd42c78d4cc2d9362e36871d05575c8a00a2eaa65591f9550018650b79f35a8b"
+    },
+    {
+      "repository": "avenquellis-question-engine",
+      "source": "release/edge/manifest.json",
+      "destination": "server/native-generator/manifest.json",
+      "packageName": "@avenquellis/question-engine",
+      "version": "0.1.0",
+      "sha256": "ba6b0072e6c80f4cf04472a6a5d58c6d963dc9486958e6e90c7dd7b17c9dedc7"
+    },
+    {
+      "repository": "avenquellis-question-engine",
+      "source": "release/edge/avenquellis-questions.wasm",
+      "destination": "server/native-generator/avenquellis-questions.wasm",
+      "packageName": "@avenquellis/question-engine",
+      "version": "0.1.0",
+      "sha256": "669739ff7da9364aedd12c07926f6f2797d43afdf41a9a70d562153eee5846b9"
+    },
+    {
+      "repository": "avenquellis-proof-grader",
+      "source": "edge/runtime.js",
+      "destination": "dist/lib/native-grade/runtime.js",
+      "packageName": "@avenquellis/proof-grader",
+      "version": "0.8.0",
+      "sha256": "4ef499f5ba548bf1504b6178fa5b083cd77b09530bd3e61d7a4e341234520153"
+    },
+    {
+      "repository": "avenquellis-proof-grader",
+      "source": "edge/native-grader.js",
+      "destination": "dist/lib/native-grade/native-grader.js",
+      "packageName": "@avenquellis/proof-grader",
+      "version": "0.8.0",
+      "sha256": "9ee164baa825288f559294107047f4db5bebcb51b20902436787b8a3c77bccdc"
+    },
+    {
+      "repository": "avenquellis-proof-grader",
+      "source": "edge/avenquellis-grader-runtime.js",
+      "destination": "dist/lib/native-grade/avenquellis-grader-runtime.js",
+      "packageName": "@avenquellis/proof-grader",
+      "version": "0.8.0",
+      "sha256": "286587de5217e5375959b08bcf379a21958c3ee7cf9098c53e906481bcde6722"
+    },
+    {
+      "repository": "avenquellis-proof-grader",
+      "source": "edge/avenquellis-grader-runtime.wasm",
+      "destination": "dist/lib/native-grade/avenquellis-grader-runtime.wasm",
+      "packageName": "@avenquellis/proof-grader",
+      "version": "0.8.0",
+      "sha256": "a8eaafa0b2ecd620e0893e470c2ae53d44f312e81cde5bb09e34f13834c63910"
+    },
+    {
+      "repository": "avenquellis-proof-grader",
+      "source": "edge/build-info.json",
+      "destination": "dist/lib/native-grade/build-info.json",
+      "packageName": "@avenquellis/proof-grader",
+      "version": "0.8.0",
+      "sha256": "ddf8dbe3c9ba984cb9c1aab556a5863b42ba49b382a64297f12539c2ae738aa8"
+    },
+    {
+      "repository": "avenquellis-proof-grader",
+      "source": "edge/source-commit.txt",
+      "destination": "dist/lib/native-grade/source-commit.txt",
+      "packageName": "@avenquellis/proof-grader",
+      "version": "0.8.0",
+      "sha256": "cab2e22b13cba189b60e3d7f028abdf45a2e865dfcbcba3f1088718a55f3c118"
+    },
+    {
+      "repository": "avenquellis-proof-grader",
+      "source": "edge/THIRD-PARTY-NOTICES.txt",
+      "destination": "dist/lib/native-grade/THIRD-PARTY-NOTICES.txt",
+      "packageName": "@avenquellis/proof-grader",
+      "version": "0.8.0",
+      "sha256": "c9d3bd1f2c9e693e5a08e3b241ea0255759473ef6bd1adcbcefeac337d7d69bd"
+    },
+    {
+      "repository": "avenquellis-question-engine",
       "source": "browser/exact-math.js",
       "destination": "dist/math/exact-math.js",
-      "packageName": "@noether/question-engine",
+      "packageName": "@avenquellis/question-engine",
       "version": "0.1.0",
       "sha256": "aca510769378e3867ddb161c9ab6df4eb72de455c838473847b6e209c3c319fe"
     },
     {
-      "repository": "noether-question-engine",
+      "repository": "avenquellis-question-engine",
       "source": "browser/axiom-math-runtime.js",
       "destination": "dist/math/axiom-math-runtime.js",
-      "packageName": "@noether/question-engine",
+      "packageName": "@avenquellis/question-engine",
       "version": "0.1.0",
       "sha256": "b1666eb486d938084b14d424be4facf0c4c2b943162a66ff306eb04320927e2b"
     },
     {
-      "repository": "noether-question-engine",
+      "repository": "avenquellis-question-engine",
       "source": "browser/axiom-math-runtime.wasm",
       "destination": "dist/math/axiom-math-runtime.wasm",
-      "packageName": "@noether/question-engine",
+      "packageName": "@avenquellis/question-engine",
       "version": "0.1.0",
       "sha256": "00429e69e3cdcdda5a9b6cf86acc912fdb2b6f7c4b0347a1168641f1a758f3e5"
     },
     {
-      "repository": "noether-question-engine",
+      "repository": "avenquellis-question-engine",
       "source": "browser/build-info.json",
       "destination": "dist/math/build-info.json",
-      "packageName": "@noether/question-engine",
+      "packageName": "@avenquellis/question-engine",
       "version": "0.1.0",
       "sha256": "a89f1d56e5baad99f345df19bd90e43e60079e3a0fe85ebe889796b03f1e16ac"
     },
     {
-      "repository": "noether-question-engine",
+      "repository": "avenquellis-question-engine",
       "source": "browser/source-commit.txt",
       "destination": "dist/math/source-commit.txt",
-      "packageName": "@noether/question-engine",
+      "packageName": "@avenquellis/question-engine",
       "version": "0.1.0",
       "sha256": "f3db74bf9d5f3501edffb80c1c815cee67437f38a78712729906dae02338dcd8"
     },
     {
-      "repository": "noether-question-engine",
+      "repository": "avenquellis-question-engine",
       "source": "browser/AXIOM-MATH-LICENSE.txt",
       "destination": "dist/math/AXIOM-MATH-LICENSE.txt",
-      "packageName": "@noether/question-engine",
+      "packageName": "@avenquellis/question-engine",
       "version": "0.1.0",
       "sha256": "56aa8679442ed207fc8585d6600da04e2c5ede2995206104a09a8af477c97491"
     }

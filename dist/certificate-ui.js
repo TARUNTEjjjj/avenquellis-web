@@ -1,4 +1,6 @@
-import { certificateHelp, verifyCertificate } from "./lib/certificate.js";
+import { assessOnServer } from "./backend.js";
+import { assessNative } from "./lib/native-grader.js";
+import { certificateHelp } from "./lib/certificate.js";
 
 const escape = (value) =>
   String(value ?? "").replace(
@@ -102,16 +104,19 @@ export function bindCertificateGuide(question, textarea, { onCheck } = {}) {
     check.className = "button small violet";
     check.textContent = "Check certificate";
     guide.querySelector("[data-certificate-check-slot]").append(check);
-    check.onclick = () => {
+    check.onclick = async () => {
+      const answer=textarea.value;check.disabled=true;
       try {
-        const result = verifyCertificate(question, textarea.value);
+        const assessment=await (navigator.onLine?assessOnServer(question,answer):assessNative(question,answer));
+        if(!guide.isConnected || textarea.value!==answer)return;
+        const result=assessment?.lowerBoundPoints!=null?assessment:null;
         output.innerHTML = certificateResult(result);
         onCheck(result);
       } catch {
         output.textContent =
           "The certificate checker could not finish. Your answer remains available for human review.";
         onCheck(null);
-      }
+      } finally {check.disabled=false;}
     };
   }
 

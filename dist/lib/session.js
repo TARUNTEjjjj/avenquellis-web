@@ -1,5 +1,7 @@
 import { verifyCertificate } from "./certificate.js";
 import { compareExactLiterals } from "./exact-rational.js";
+let checkCertificate=verifyCertificate;
+export function configureProofChecker(checker){checkCertificate=checker;}
 let compiledChecker = null;
 export function configureExactChecker(checker) {
   if (checker !== null && typeof checker !== "function")
@@ -78,7 +80,7 @@ export function makeSession(mock, now = Date.now()) {
     status: "active",
   };
 }
-export function finishSession(session, now = Date.now()) {
+export function finishSession(session, now = Date.now(), grader=checkCertificate) {
   const { results: previousResults, ...submission } = session;
   return {
     ...structuredClone(submission),
@@ -90,10 +92,8 @@ export function finishSession(session, now = Date.now()) {
           ? checkNumericResponse(session.answers[q.id], q.answer)
           : null;
       // Only an exact, complete certificate on its own matching authored problem is gradable here.
-      const certificate =
-        q.type === "proof"
-          ? verifyCertificate(q, session.answers[q.id] || "")
-          : null;
+      const assessment=q.type==="proof"?grader(q,session.answers[q.id]||""):null;
+      const certificate=assessment && (assessment.complete===true || assessment.lowerBoundPoints!=null)?assessment:null;
       return {
         id: q.id,
         type: q.type,

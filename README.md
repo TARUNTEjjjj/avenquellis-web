@@ -1,18 +1,18 @@
-# Noether mathematics lab
+# Avenquellis
 
-A 3D mathematics workspace for CMI, ISI and Class XII olympiad preparation, hosted on **[Cloudflare Pages](https://noether-math-lab.pages.dev/)**. The GitHub source repository is private; the learning website is public.
+A 3D mathematics workspace for CMI, ISI and Class XII olympiad preparation, hosted on **[Cloudflare Pages](https://avenquellis.pages.dev/)**. The GitHub source repository is private; the learning website is public.
 
 ## Run and verify
 
-Node.js 20+ is required. No dependency installation is needed for the app.
+Use Node.js 20+ and Wrangler. The live generator and grader require Pages Functions.
 
 ```sh
-npm start        # http://127.0.0.1:4173
+npm start        # local Pages Functions and browser UI on port 4173
 npm test
 npm run build
 ```
 
-The build creates a content-hashed offline snapshot, validates the official catalog, checks JavaScript syntax, verifies vendored module hashes, and validates the compiled WebAssembly artifact. Serve `dist/` over HTTP; file URLs do not support the module/fetch workflow. `PORT=4180 npm start` chooses a different loopback port.
+The build creates a content-hashed offline snapshot, validates the official catalog, checks JavaScript syntax, verifies vendored module hashes, and validates the compiled WebAssembly artifact. `npm run start:static` only previews the static shell. Use `npm start` for generation and proof assessment. Cloud transcription and model readings require the authenticated Workers AI binding.
 
 ## What is implemented
 
@@ -29,11 +29,11 @@ The build creates a content-hashed offline snapshot, validates the official cata
 
 | Repository | Responsibility |
 | --- | --- |
-| [noether-web](https://github.com/TARUNTEjjjj/noether-web) | Static UI, 3D canvas, timed sessions, progress, archives, PWA |
-| [noether-question-engine](https://github.com/TARUNTEjjjj/noether-question-engine) | C++20 library and `noether-questions` CLI for questions, chapter sets, and mocks. Also supplies the browser question catalog and AxiomMath WebAssembly build. |
-| [noether-proof-grader](https://github.com/TARUNTEjjjj/noether-proof-grader) | C++20 library and `noether-grader` CLI for proof certificates, partial credit, human assessments, and review proposals. Also supplies the hosted model adapter and benchmark tools. |
+| [avenquellis-web](https://github.com/TARUNTEjjjj/avenquellis-web) | Static UI, 3D canvas, timed sessions, progress, archives, PWA |
+| [avenquellis-question-engine](https://github.com/TARUNTEjjjj/avenquellis-question-engine) | C++20 library and `avenquellis-questions` CLI for questions, chapter sets, and mocks. Also supplies the browser question catalog and AxiomMath WebAssembly build. |
+| [avenquellis-proof-grader](https://github.com/TARUNTEjjjj/avenquellis-proof-grader) | C++20 library and `avenquellis-grader` CLI for proof certificates, partial credit, human assessments, and review proposals. Also supplies the hosted model adapter and benchmark tools. |
 
-For backend use, build and install the tools from their respective repositories with CMake. The generator emits JSON that the grader accepts in the `question` field of an assessment request alongside an `answer`. These commands run without opening the website. The Cloudflare application uses the browser and Pages adapters described below.
+For backend use, build and install the tools from their respective repositories with CMake. The generator emits JSON that the grader accepts in the `question` field of an assessment request alongside an `answer`. These commands run without opening the website. The live question endpoints and proof checker run the same C++ sources compiled to WebAssembly in Cloudflare Pages Functions. Optional handwritten proof uploads are transcribed on explicit request. Students check and apply the text before asking for marks.
 
 The website uses vendored browser modules; it needs no model key or paid API for the shipped experience. To update these assets, place the repositories side by side, obtain the verified `browser/` artifact from the engine's verified Wasm build workflow (or build it with the documented pinned Emscripten toolchain), then run:
 
@@ -47,7 +47,7 @@ The sync validates compiled artifact hashes before replacing any files, preserve
 
 ## Cloudflare Pages deployment
 
-This is a direct-upload Pages project, `noether-math-lab`, with production branch `main`. No paid Workers service is required for static hosting. Use the existing authenticated Cloudflare account:
+This is a direct-upload Pages project, `avenquellis`, with production branch `main`. No paid Workers service is required for static hosting. Use the existing authenticated Cloudflare account:
 
 ```sh
 npm run deploy
@@ -59,12 +59,12 @@ The command runs tests, rebuilds the offline snapshot, and stages the Pages bund
 
 Published [IMO regulations](https://www.imo-official.org/regulations/) and [UKMT marking guidance](https://ukmt.org.uk/wp-content/uploads/2023/12/BMO1-2023-Markers-Report-.pdf) inform criterion-based partial credit and complete-argument review. This adaptation does not establish examiner-level software accuracy or institutional endorsement.
 
-The [Proof Studio](https://noether-math-lab.pages.dev/#proof) and completed test reports support marking free-form answers to authored bank and generated proof questions. Official PDF companion questions without a transcribed statement and an authored rubric remain human-reviewed. “Mark my proof” sends that answer to the same-origin Pages Function. The server reconstructs the problem and rubric, then calls Llama 3.3 70B twice through the Cloudflare Workers AI binding. Each positive award needs a verbatim quote. The UI shows one provisional mark only if both readings agree on each criterion; otherwise it shows their separate proposals, a range or an abstention. Practice suggestions do not enter verified test totals. No model call happens just by writing or submitting a test.
+The [Proof Studio](https://avenquellis.pages.dev/#proof) and completed test reports support marking free-form answers to authored bank and generated proof questions. Official PDF companion questions without a transcribed statement and an authored rubric remain human-reviewed. “Mark my proof” sends that answer to the same-origin Pages Function. The server reconstructs the problem and rubric, then calls Llama 3.3 70B twice through the Cloudflare Workers AI binding. Each positive award needs a verbatim quote. The UI shows one provisional mark only if both readings agree on each criterion; otherwise it shows their separate proposals, a range or an abstention. Practice suggestions do not enter verified test totals. No model call happens just by writing or submitting a test.
 
-Production explicitly selects `verbatim-v1`. The experimental `span-v2` protocol is retained for reproducible research, but it is not enabled for student marks. On three untouched USAMO research responses, its two readings awarded full credit to all three while human scores were 1, 2 and 1 out of 7. The production protocol abstained on all six of its research cases. It agreed with the published 7/7 on one complete Gemini IMO proof. The datasets and samples differ; no combined accuracy percentage is justified.
+Production explicitly selects `verbatim-v1`. The experimental `span-v2` protocol is retained for reproducible research, but it is not enabled for student marks. On three untouched USAMO research responses, its two readings awarded full credit to all three while human scores were 1, 2 and 1 out of 7. The production protocol abstained on all six USAMO research cases and on five separate human-scored IMO-GradingBench proofs, including three partial proofs. It agreed with the published 7/7 on one complete Gemini IMO proof. The datasets and samples differ; no combined accuracy percentage is justified.
 
 The site uses the existing Workers Free plan, with [10,000 free neurons per day](https://developers.cloudflare.com/workers-ai/platform/pricing/). Two reviews per submission draw from this shared allowance. When it is exhausted, hosted marking must wait for the reset. The optional browser model, Qwen3 1.7B, downloads roughly 1 GB on explicit request and requires a compatible WebGPU device. It keeps proof content local. It matched only 3 of its 12 suggested marks on a 24-proof pilot, so the interface presents it as experimental feedback.
 
-See [Sources & methods](https://noether-math-lab.pages.dev/#sources) for the blind score comparisons and their limits. [Private per-case evidence and reproduction instructions](https://github.com/TARUNTEjjjj/noether-proof-grader/tree/main/benchmark/evidence) distinguish expert research labels from official competition marks. The same model can make the same mistake twice. No agreement rate here establishes examiner-level accuracy on CMI, ISI or RMO scripts.
+See [Sources & methods](https://avenquellis.pages.dev/#sources) for the blind score comparisons and their limits. [Private per-case evidence and reproduction instructions](https://github.com/TARUNTEjjjj/avenquellis-proof-grader/tree/main/benchmark/evidence) distinguish expert research labels from official competition marks. The same model can make the same mistake twice. No agreement rate here establishes examiner-level accuracy on CMI, ISI or RMO scripts.
 
 Answers, drafts, bookmarks and reviews live in this browser's local storage, without cross-device sync or server backup. For the latest 20 exact answers the browser can retain one hosted and one local review, keyed to the problem, rubric and answer. Both can be exported in the proof, its attempt or a global backup. Restored reviews are labeled unverified. Export backups from Your progress. Reviewer names are user-entered and unverified. Worked solutions are included in the public app code: this is a learning workspace, not a secure exam system or a source of certified grades.

@@ -1,8 +1,8 @@
 {
   "id": "./",
-  "name": "Noether Math Lab",
-  "short_name": "Noether",
-  "description": "CMI, ISI and olympiad mathematics practice, proof writing and exact arithmetic tools.",
+  "name": "Avenquellis",
+  "short_name": "Avenquellis",
+  "description": "CMI, ISI and olympiad practice with generated tests, handwritten proofs and exact mathematics.",
   "lang": "en",
   "start_url": "./#overview",
   "scope": "./",
@@ -10,6 +10,11 @@
   "background_color": "#080b14",
   "theme_color": "#8e79ff",
   "icons": [
-    {"src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable"}
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
   ]
 }

@@ -60,8 +60,8 @@ test('evicts providers as a pair after twenty distinct answers and preserves old
   const values = storage();
   await rememberModelReview(question, 'first', review('workers-ai'));
   await rememberModelReview(question, 'first', review('browser-webllm'));
-  const original = JSON.parse(values.get('noether.prose-reviews.v1'));delete original[0].review.imported;
-  values.set('noether.prose-reviews.v1', JSON.stringify([original[0]]));
+  const original = JSON.parse(values.get('avenquellis.prose-reviews.v1'));delete original[0].review.imported;
+  values.set('avenquellis.prose-reviews.v1', JSON.stringify([original[0]]));
   assert.equal((await storedModelReviews(question, 'first')).length, 1);
   await rememberModelReview(question, 'first', review('workers-ai'));
   for (let i = 1; i <= 20; i++) await rememberModelReview(question, `other ${i}`, review('workers-ai'));

@@ -1,0 +1,13 @@
+{
+  "private": true,
+  "type": "module",
+  "imports": {
+    "#generator-module": {
+      "workerd": "./module.worker.js",
+      "worker": "./module.worker.js",
+      "browser": "./module.worker.js",
+      "node": "./module.node.js",
+      "default": "./module.worker.js"
+    }
+  }
+}

@@ -39,7 +39,7 @@ export function createRequestHandler({env={},publicDeployment=true,fetchImpl=glo
     const path=new URL(request.url).pathname;
     if (request.method === 'GET' && path === '/health') {
       let configured=false;try {readEvaluatorConfig(env);configured=true;} catch {}
-      return reply({service:'noether-proof-grader',mode:configured?'model-assisted-review':'human-review-workflow',evaluatorConfigured:configured,finalGradesRequireHumanReview:true,sources:gradingSources});
+      return reply({service:'avenquellis-proof-grader',mode:configured?'model-assisted-review':'human-review-workflow',evaluatorConfigured:configured,finalGradesRequireHumanReview:true,sources:gradingSources});
     }
     if (request.method !== 'POST' || !['/assess','/review','/evaluate'].includes(path)) return reply({error:'Not found.'},404);
     const token=env.EVALUATOR_ACCESS_TOKEN;

@@ -3,7 +3,7 @@
 const recent = new Map();
 export function admitReview({request,env}) {
   const deny=(message,status,seconds)=>Response.json({error:message},{status,headers:{'Cache-Control':'no-store',...(seconds?{'Retry-After':String(seconds)}:{})}});
-  if(env.NOETHER_HOSTED_GRADING !== 'enabled')return deny('Hosted marking is unavailable. Try on-device marking.',503);
+  if(env.AVENQUELLIS_HOSTED_GRADING !== 'enabled')return deny('Hosted marking is unavailable. Try on-device marking.',503);
   const origin=request.headers.get('origin');
   if(origin!==new URL(request.url).origin)return deny('Open the proof studio to request marking.',403);
   const ip=request.headers.get('CF-Connecting-IP');

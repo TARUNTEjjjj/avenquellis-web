@@ -1931,3 +1931,6 @@ nav .nav-label {
 .grade-gaps {padding:.75rem .95rem;border:1px solid #4b3c2c;border-radius:.6rem;background:#211d19;margin:.75rem 0;}
 .grade-gaps strong {color:#ffd38b;font-size:.88rem;}
 .grade-gaps ul {margin:.3rem 0 0;padding-left:1.1rem;font-size:.85rem;line-height:1.55;color:#e1d5c4;}
+
+.brand {letter-spacing:-.035em;}
+.brand-mark {flex-shrink:0;}

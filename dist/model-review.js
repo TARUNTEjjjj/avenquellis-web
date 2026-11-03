@@ -1,6 +1,9 @@
+import {certificateResult} from './certificate-ui.js';
+import {preloadNativeGrader} from './lib/native-grader.js';
+import {applyNativeConsensus} from './lib/native-consensus.js';
 import {validateModelReviews} from './lib/backup.js';
 import {resolveQuestionRef} from './lib/questions.js';
-const storageKey='noether.prose-reviews.v1';
+const storageKey='avenquellis.prose-reviews.v1';
 const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const refFor=q=>({templateId:q.templateId,seed:q.generator?.seed,exam:q.exam,difficulty:q.requestedDifficulty});
 function canonical(q){const known=resolveQuestionRef({id:q.id,...refFor(q)});return known?.type==='proof' && known.statement===q.statement && JSON.stringify(known.rubric)===JSON.stringify(q.rubric)?known:null;}
@@ -8,7 +11,7 @@ async function keyFor(q,answer){const bytes=new TextEncoder().encode(JSON.string
 let cachedText, cachedRecords = [];
 export function modelReviewRecords() {
   try {
-    const text = localStorage.getItem(storageKey);
+    const text = localStorage.getItem(storageKey) ?? localStorage.getItem('noether.prose-reviews.v1');
     if (text !== cachedText) {
       cachedRecords = validateModelReviews(JSON.parse(text) ?? [], false);
       cachedText = text;
@@ -55,7 +58,7 @@ export function modelResult(r){
   const gaps=[...new Set(valid.flatMap(v=>v.gaps||[]))].slice(0,3);
   return `<section class="model-result" aria-label="Model marking proposal"><h3>${local?'Experimental local feedback':escape(title)}</h3>${local?'<p>The local model matched 3 of its 12 proposed marks in our 24-proof pilot. Use its comments to revisit your proof; ask a human to decide the mark.</p>':''}<p class="tiny">Practice feedback · ${escape(r.model)}${local?'':r.promptVersion?.endsWith('-v2')?' · reviewer v2':' · reviewer v1'} · ${escape(new Date(r.date).toLocaleDateString())}</p>${r.imported?'<p class="tiny">Imported practice review · provider identity and result unverified.</p>':''}${reason?`<p>${escape(reason)}</p>`:''}${gaps.length?`<div class="grade-gaps"><strong>What to revisit</strong><ul>${gaps.map(g=>`<li>${escape(g)}</li>`).join('')}</ul></div>`:''}${r.criteria.map(criterionView).join('')}${valid.map(v=>`<details class="details"><summary>Reading ${escape(v.number)} · ${escape(v.score)} / ${escape(r.max)}</summary><p>${escape(v.rationale)}</p>${(v.gaps||[]).map(g=>`<p class="tiny">${escape(g)}</p>`).join('')}</details>`).join('')}<p class="tiny spacer">Two readings use the same model. A human reviewer can assess an alternative argument or resolve a disputed mark.</p></section>`;
 }
-export function modelPanel(){return `<section class="card spacer" id="prose-model"><span class="eyebrow">FREE-FORM PROOF MARKING</span><h3>Get marks for your own argument</h3><p>Write your proof above. Two readings check it against the problem rubric and show which lines earned credit. The marks are practice suggestions. A disagreement leaves a range for review. <a href="#sources">See the comparison with human graders.</a></p><div data-host-choice hidden><button class="button violet" data-host-grade type="button">Mark my proof</button><p class="tiny">This sends your proof and the problem to Cloudflare Workers AI for practice marking.</p></div><div data-device-choice><details class="details"><summary>Experimental feedback on this device</summary><p class="tiny">Runs locally on a WebGPU-capable device. The first use downloads roughly 1 GB of Qwen3 model files and needs about 2 GB of GPU memory. Your proof stays in this browser. In a 24-proof pilot this model agreed on a mark 12 times and matched the human score only 3 times.</p><button class="button secondary" data-device-grade type="button">Load model for local feedback</button></details></div><p data-model-status class="tiny" role="status"></p><div data-model-result aria-live="polite"></div></section>`;}
+export function modelPanel(){return `<section class="card spacer" id="prose-model"><span class="eyebrow">FREE-FORM PROOF MARKING</span><h3>Request a review of your argument</h3><p>Write your proof above. Two readings compare your reasoning with the rubric and cite passages for each proposed award. If the readings disagree or lack evidence, your proof stays open for review. <a href="#sources">See the comparison with human graders.</a></p><div data-host-choice hidden><button class="button violet" data-host-grade type="button">Mark my proof</button><p class="tiny">This sends your proof and the problem to Cloudflare Workers AI for practice marking.</p></div><div data-device-choice><details class="details"><summary>Experimental feedback on this device</summary><p class="tiny">Runs locally on a WebGPU-capable device. The first use downloads roughly 1 GB of Qwen3 model files and needs about 2 GB of GPU memory. Your proof stays in this browser. In a 24-proof pilot this model agreed on a mark 12 times and matched the human score only 3 times.</p><button class="button secondary" data-device-grade type="button">Load model for local feedback</button></details></div><p data-model-status class="tiny" role="status"></p><div data-model-result aria-live="polite"></div></section>`;}
 async function hostedAvailable(){try{const response=await fetch('./api/grade-status',{cache:'no-store',signal:AbortSignal.timeout(10000)});return response.ok && (await response.json()).available===true;}catch{return false;}}
 export function bindModelPanel(q,field){
  const panel=document.getElementById('prose-model');if(!panel||!field)return;
@@ -76,7 +79,7 @@ export function bindModelPanel(q,field){
    if(busy)return;const answer=field.value;if(!answer.trim()||answer.length>20000){status.textContent='Enter a proof of 1–20,000 characters first.';return;}
    const rev=++revision;busy=true;host.disabled=true;device.disabled=true;output.replaceChildren();status.textContent=location==='cloud'?'Reading your proof twice…':'Preparing the on-device model…';
    try{let result;
-     if(location==='cloud'){const response=await fetch('./api/grade',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({questionId:q.id,reference:refFor(q),answer}),signal:AbortSignal.timeout(100000)});if(!response.headers.get('content-type')?.includes('application/json'))throw new Error('Hosted marking is unavailable. Try the on-device option.');const data=await response.json();if(!response.ok)throw new Error(data.error||'Hosted marking is unavailable.');result=data;}
+     if(location==='cloud'){const response=await fetch('./api/grade',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({questionId:q.id,reference:refFor(q),answer}),signal:AbortSignal.timeout(100000)});if(!response.headers.get('content-type')?.includes('application/json'))throw new Error('Hosted marking is unavailable. Try the on-device option.');const data=await response.json();if(!response.ok)throw new Error(data.error?.message||data.error||'Hosted marking is unavailable.');result=data;}
      else {
        const {gradeOnDevice, releaseDeviceModel} = await import('./device-runtime/device.js');
        try {
@@ -88,6 +91,14 @@ export function bindModelPanel(q,field){
          await releaseDeviceModel().catch(() => {});
        }
      }
+     if (result?.lowerBoundPoints != null) {
+       if (current(rev)) {
+         output.innerHTML=certificateResult(result);
+         status.textContent='Certificate checked by Avenquellis.';
+       }
+       return;
+     }
+     if(location==='device') result=applyNativeConsensus(question,answer,result,await preloadNativeGrader());
      const review = compact(result, q);
      const hasMarks = review.reviews.some(v => v.status === 'proposal');
      const persisted = hasMarks && await rememberModelReview(q, answer, review);
