@@ -1,0 +1,22 @@
+{
+  "formatVersion": 1,
+  "description": "Vendored browser modules copied byte-for-byte from sibling repositories. Run npm run sync:engines after changing the engines.",
+  "components": [
+    {
+      "repository": "noether-question-engine",
+      "source": "src/index.js",
+      "destination": "dist/lib/questions.js",
+      "packageName": "@noether/question-engine",
+      "version": "0.1.0",
+      "sha256": "92434849cb6263959fb5342cd9be83ce309e90d13fbc9fa417e7f1f294994ef2"
+    },
+    {
+      "repository": "noether-proof-grader",
+      "source": "src/index.js",
+      "destination": "dist/lib/grader.js",
+      "packageName": "noether-proof-grader",
+      "version": "0.1.0",
+      "sha256": "d4d7b77c8b3ae07266474e7d8e8a369eeb02113448376ebaefb2af7e0e36690f"
+    }
+  ]
+}
