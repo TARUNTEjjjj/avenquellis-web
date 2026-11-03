@@ -30,8 +30,10 @@ The build creates a content-hashed offline snapshot, validates the official cata
 | Repository | Responsibility |
 | --- | --- |
 | [noether-web](https://github.com/TARUNTEjjjj/noether-web) | Static UI, 3D canvas, timed sessions, progress, archives, PWA |
-| [noether-question-engine](https://github.com/TARUNTEjjjj/noether-question-engine) | Questions, worked solutions, rubrics, mock assembly, pinned native C++ and verified Wasm build |
-| [noether-proof-grader](https://github.com/TARUNTEjjjj/noether-proof-grader) | Review workflow, evidence validation, authenticated model adapter, benchmark runner |
+| [noether-question-engine](https://github.com/TARUNTEjjjj/noether-question-engine) | C++20 library and `noether-questions` CLI for questions, chapter sets, and mocks. Also supplies the browser question catalog and AxiomMath WebAssembly build. |
+| [noether-proof-grader](https://github.com/TARUNTEjjjj/noether-proof-grader) | C++20 library and `noether-grader` CLI for proof certificates, partial credit, human assessments, and review proposals. Also supplies the hosted model adapter and benchmark tools. |
+
+For backend use, build and install the tools from their respective repositories with CMake. The generator emits JSON that the grader accepts in the `question` field of an assessment request alongside an `answer`. These commands run without opening the website. The Cloudflare application uses the browser and Pages adapters described below.
 
 The website uses vendored browser modules; it needs no model key or paid API for the shipped experience. To update these assets, place the repositories side by side, obtain the verified `browser/` artifact from the engine's verified Wasm build workflow (or build it with the documented pinned Emscripten toolchain), then run:
 
