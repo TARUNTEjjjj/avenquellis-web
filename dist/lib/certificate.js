@@ -31,6 +31,32 @@ const families = new Map([
   }]
 ]);
 
+// Replay the original generator's FNV-1a seed and first Mulberry32 draw. These two
+// template versions both use their first draw for k; no arbitrary theorem is inferred.
+function matchesInstance(question, family) {
+  const seed = question.generator.seed;
+  if (typeof seed !== 'string' || seed.length === 0 || seed.length > 256) return false;
+  let hash = 2166136261;
+  for (const character of seed) hash = Math.imul(hash ^ character.charCodeAt(0), 16777619) >>> 0;
+  if (question.id !== `${question.templateId}-${hash.toString(36)}`) return false;
+  const consecutive = question.templateId === 'number-consecutive';
+  const bankId = consecutive ? 'number-consecutive-1821pae' : 'number-gcd-17s23lf';
+  if (question.id === bankId) {
+    if (seed !== (consecutive ? 'bank:5' : 'bank:6') ||
+        question.exam !== 'CMI' || question.requestedDifficulty !== family.difficulty) return false;
+  } else {
+    if (!['CMI','ISI','RMO'].includes(question.exam) ||
+        !['foundation','advanced','olympiad'].includes(question.requestedDifficulty)) return false;
+    const mock = /:mock:(0|[1-9][0-9]{0,3})$/.exec(seed);
+    if (!seed.endsWith(':variant') && (!mock || Number(mock[1]) >= 4096)) return false;
+  }
+  const state = (hash + 0x6d2b79f5) >>> 0;
+  let mixed = Math.imul(state ^ (state >>> 15), 1 | state);
+  mixed ^= mixed + Math.imul(mixed ^ (mixed >>> 7), 61 | mixed);
+  const draw = (mixed ^ (mixed >>> 14)) >>> 0;
+  return question.parameters.k === family.minimum + Math.floor(draw * (family.maximum - family.minimum + 1) / 2**32);
+}
+
 /** Bind the verifier to the theorem and rubric semantics, not merely a caller-provided family tag. */
 function matchQuestion(question) {
   const family = families.get(question?.templateId);
@@ -44,7 +70,7 @@ function matchQuestion(question) {
   const params = question.parameters;
   if (!params || Object.keys(params).length !== 1 || !Object.hasOwn(params, 'k') ||
       !Number.isSafeInteger(params.k) || params.k < family.minimum || params.k > family.maximum) return null;
-  if (question.statement !== family.statement(params.k) || !Array.isArray(question.rubric) ||
+  if (!matchesInstance(question, family) || question.statement !== family.statement(params.k) || !Array.isArray(question.rubric) ||
       question.rubric.length !== family.rubric.length) return null;
   const weights = [4, 4, 2];
   for (const [index, description] of family.rubric.entries()) {

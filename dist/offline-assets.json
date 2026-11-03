@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "version": "661a605faf962024c39dcbc5",
-  "totalBytes": 364222,
+  "version": "0d0746613366476abd0a4549",
+  "totalBytes": 365805,
   "assetCount": 27,
   "assets": [
     {
@@ -51,8 +51,8 @@
     },
     {
       "url": "lib/certificate.js",
-      "bytes": 9819,
-      "sha256": "62dda840b526813d0e120548d1d82777c53f15be3b6c8246e1f0b5e3b91f9e5b"
+      "bytes": 11402,
+      "sha256": "af31540ebd8048e48b0bd40bc9820fc42e2497de9337c76b0089e03bf4ac1b50"
     },
     {
       "url": "lib/exact-rational.js",
@@ -82,7 +82,7 @@
     {
       "url": "lib/vendor-provenance.json",
       "bytes": 4863,
-      "sha256": "3d9511926f12670cb6aac25aebbd9f496fc1fdcfd32c258414c040d68aee2de1"
+      "sha256": "1dd555049117ffd15d13b6754ebc175f263283c25b979d5fe37267298be4986b"
     },
     {
       "url": "manifest.webmanifest",
