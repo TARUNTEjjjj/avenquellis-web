@@ -1,5 +1,7 @@
 # Avenquellis production verification
 
+To repeat native parity checks, run `node scripts/check-native-pages.mjs https://avenquellis.pages.dev /path/to/avenquellis-questions` from this repository. It compares complete results for single questions, chapter sets and full mocks and tests rejected combinations. It uses no model inference.
+
 The following checks used a fresh Chrome profile against [the public Cloudflare Pages site](https://avenquellis.pages.dev/). The production deployment tested was [9e86c0c0](https://9e86c0c0.avenquellis.pages.dev/).
 
 | Path through the student interface | Observed result |
@@ -10,6 +12,7 @@ The following checks used a fresh Chrome profile against [the public Cloudflare 
 | Submit a complete divisibility certificate in the same timed test | The native checker awarded 10/10. In a separate preview run an incomplete gcd certificate earned a verified lower bound of 4/10. |
 | Request hosted readings of the corrected gcd proof | Both proposed 10/10. C++ validated their proposals and the final score stayed unset. |
 | Submit only the forward gcd inclusion in ordinary prose | Both readers awarded 4/10, matching the authored criterion. The other two criteria received no points and the final score stayed unset. This is a controlled example, not a human-examiner benchmark. |
+| Install the production service worker, open a new controlled tab and disconnect the network | At a 390-pixel viewport the cached C++ checker still verified a 4/10 lower bound for the partial gcd certificate. The image chooser fit the viewport. Hosted OCR and prose review need a connection. |
 
 A separate transcription check on a genuine Leibniz manuscript crop returned the published arithmetic line `1 + 3 + 5 + 7 + 9 = 25 - 0 = 25` exactly. This single line does not establish recognition accuracy for full pages, diagrams or unfamiliar handwriting. The historical crop and research annotation are not distributed with the application. [Hannover library record](https://digitale-sammlungen.gwlb.de/resolve?id=00068086) · [HME-Leibniz reference dataset](https://doi.org/10.5281/zenodo.18804566)
 

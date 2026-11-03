@@ -1,0 +1,45 @@
+/** Optional live-browser QA on two isolated local origins. Pass the old site's complete hash-verified dist directory. */
+import assert from 'node:assert/strict';
+import {createHash} from 'node:crypto';
+import {createServer} from 'node:http';
+import {createRequire} from 'node:module';
+import {readFile} from 'node:fs/promises';
+import {dirname,extname,join,resolve} from 'node:path';
+import {fileURLToPath} from 'node:url';
+import {validateBackup} from '../dist/lib/backup.js';
+// Browser QA dev dependency can be supplied by the sibling grader or an explicit workspace path.
+const require=createRequire(import.meta.url),{chromium}=require(process.env.PLAYWRIGHT_CORE_PATH||'playwright-core');
+const root=resolve(dirname(fileURLToPath(import.meta.url)),'..'),old=process.argv[2]&&resolve(process.argv[2]);if(!old)throw Error('Pass a hash-verified copy of the previous deployed app.');
+const oldSW=await readFile(join(old,'sw.js'),'utf8'),snap=JSON.parse(/const SNAPSHOT=(\{[^\n]+\});/.exec(oldSW)[1]);
+for(const item of snap.assets)assert.equal(createHash('sha256').update(await readFile(join(old,item.url))).digest('hex'),item.sha256);
+const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.wasm':'application/wasm','.svg':'image/svg+xml','.webmanifest':'application/manifest+json'};
+async function server(path){const srv=createServer(async(req,res)=>{try{const url=new URL(req.url,'http://local');let name=decodeURIComponent(url.pathname).replace(/^\/+/, '')||'index.html';if(name.split('/').includes('..'))throw Error();let data;try{data=await readFile(join(path(),name));}catch{if(extname(name))throw Error();name='index.html';data=await readFile(join(path(),name));}res.writeHead(200,{'Content-Type':mime[extname(name)]||'application/octet-stream','Cache-Control':'no-store'});res.end(req.method==='HEAD'?undefined:data);}catch{res.writeHead(404);res.end();}});await new Promise(ok=>srv.listen(0,'127.0.0.1',ok));return [srv,`http://127.0.0.1:${srv.address().port}`];}
+let mode='old';const [oldServer,oldUrl]=await server(()=>mode==='old'?old:join(root,'legacy-domain')),[newServer,newUrl]=await server(()=>join(root,'dist'));
+const b=await chromium.launch({headless:true,executablePath:process.env.CHROME_PATH||'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'});const ctx=await b.newContext({serviceWorkers:'allow'});const errors=[];const checkPage=p=>p.on('pageerror',e=>errors.push(e.message));const checks=[];const delay=ms=>new Promise(r=>setTimeout(r,ms));
+try{
+ let page=await ctx.newPage();checkPage(page);await ctx.route('https://fonts.googleapis.com/**',r=>r.fulfill({contentType:'text/css',body:''}));
+ await page.goto(oldUrl+'/#overview',{waitUntil:'domcontentloaded'});await page.evaluate(async()=>{await navigator.serviceWorker.register('/sw.js',{scope:'/',updateViaCache:'none'});await navigator.serviceWorker.ready;});
+ const original=await page.evaluate(async()=>{const {questionBank}=await import('/lib/questions.js'),{makeSession}=await import('/lib/session.js');const q=questionBank.find(q=>q.templateId==='number-gcd'), numeric=questionBank.find(q=>q.type==='numeric');const s=makeSession({id:'migration-demo',title:'Migration timed test',questions:[q,numeric],durationMinutes:20});s.answers[q.id]='Before the release.';s.flags[q.id]=true;
+ const answer='Before and after the worker update.';
+ const bytes=new TextEncoder().encode(JSON.stringify([q.id,q.statement,q.rubric,answer]));const hash=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(x=>x.toString(16).padStart(2,'0')).join('');
+ const model={model:'test-reader',provider:'workers-ai',promptVersion:'test',date:new Date().toISOString(),max:q.maxMarks,suggested:q.maxMarks,criteria:q.rubric.map(c=>({id:c.id,description:c.description,maxPoints:c.points,reviewers:[1,2].map(reviewer=>({reviewer,points:c.points,quotes:[answer]}))})),reviews:[1,2].map(number=>({number,status:'proposal',score:q.maxMarks,rationale:'Manual migration fixture.',gaps:[]}))};
+ localStorage.setItem('noether.v1',JSON.stringify({history:[],reviews:[],proofDraft:answer,proofId:q.id,proofDrafts:{[q.id]:answer},session:s,bookmarks:[q.id]}));localStorage.setItem('noether.prose-reviews.v1',JSON.stringify([{key:hash,review:model}]));return {id:q.id,deadline:s.deadline,startedAt:s.startedAt,attemptId:s.attemptId,answer,hash};});
+ await page.goto(oldUrl+'/?load-saved-test=1#session',{waitUntil:'domcontentloaded'});await page.locator('#session-answer').waitFor();assert.equal(await page.locator('#session-answer').inputValue(),'Before the release.');
+ assert.ok(await page.evaluate(()=>navigator.serviceWorker.controller!==null));const cachesBefore=await page.evaluate(()=>caches.keys());assert.ok(cachesBefore.some(k=>k.startsWith('noether-offline:')));checks.push('exact old release installed, resume rendered existing timed answer');
+ mode='legacy';await page.evaluate(async()=>{const r=await navigator.serviceWorker.getRegistration();await r.update();});await page.waitForFunction(async()=>Boolean((await navigator.serviceWorker.getRegistration())?.waiting));
+ await page.locator('#session-answer').fill(original.answer);const stillActive=await page.evaluate(()=>JSON.parse(localStorage.getItem('noether.v1')).session);assert.equal(stillActive.deadline,original.deadline);assert.equal(stillActive.answers[original.id],original.answer);checks.push('updated migration worker waited while the open old exam continued to save');
+ const valuesBefore=await page.evaluate(()=>Object.fromEntries(Object.keys(localStorage).map(k=>[k,localStorage.getItem(k)])));await page.close();await delay(550);
+ page=await ctx.newPage();checkPage(page);await page.goto(oldUrl+'/#session',{waitUntil:'domcontentloaded'});await page.locator('#download').waitFor();assert.equal(await page.locator('#destination').getAttribute('href'),'https://avenquellis.pages.dev/#session');assert.equal(await page.locator('#restore').getAttribute('href'),'https://avenquellis.pages.dev/#progress');
+ const downloading=page.waitForEvent('download');await page.locator('#download').click();const data=await readFile(await(await downloading).path());const backup=JSON.parse(data);const parsed=validateBackup(backup);
+ assert.equal(parsed.session.deadline,original.deadline);assert.equal(parsed.session.startedAt,original.startedAt);assert.equal(parsed.session.attemptId,original.attemptId);assert.equal(parsed.session.answers[original.id],original.answer);assert.ok(parsed.session.flags[original.id]);assert.equal(parsed.modelReviews[0].key,original.hash);
+ assert.deepEqual(await page.evaluate(()=>Object.fromEntries(Object.keys(localStorage).map(k=>[k,localStorage.getItem(k)]))),valuesBefore);assert.deepEqual(await page.evaluate(()=>caches.keys()),cachesBefore);checks.push('old migration export preserved deadline, answer, flags, review, originals and caches');
+ const next=await ctx.newPage();checkPage(next);await next.goto(newUrl+'/#progress',{waitUntil:'domcontentloaded'});await next.locator('#import-backup').setInputFiles({name:'workspace.json',mimeType:'application/json',buffer:data});await next.locator('#confirm-import').click();
+ const restored=await next.evaluate(()=>JSON.parse(localStorage.getItem('avenquellis.workspace.v1')));assert.equal(restored.session.deadline,original.deadline);assert.equal(restored.session.answers[original.id],original.answer);assert.deepEqual(restored.bookmarks,[original.id]);
+ const marked=await next.evaluate(()=>JSON.parse(localStorage.getItem('avenquellis.prose-reviews.v1')));assert.equal(marked[0].key,original.hash);assert.ok(marked[0].review.imported);
+ await next.evaluate(()=>location.hash='session');await next.locator('#session-answer').waitFor();assert.equal(await next.locator('#session-answer').inputValue(),original.answer);checks.push('new origin actual import and resume UI preserved original timed session and unverified imported model record');
+ const expired=structuredClone(backup);expired.session.startedAt=Date.now()-21*60_000;expired.session.deadline=expired.session.startedAt+20*60_000;
+ await next.evaluate(()=>location.hash='progress');await next.locator('#import-backup').setInputFiles({name:'expired.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(expired))});await next.locator('#confirm-import').click();
+ await next.waitForFunction(()=>{const s=JSON.parse(localStorage.getItem('avenquellis.workspace.v1'));return !s.session && s.history.some(r=>r.attemptId===s.proofAttemptId||r.id==='migration-demo');},{},{timeout:12000});
+ const ended=await next.evaluate(()=>JSON.parse(localStorage.getItem('avenquellis.workspace.v1')).history.find(r=>r.id==='migration-demo'));assert.equal(ended.deadline,expired.session.deadline);assert.equal(ended.answers[original.id],original.answer);checks.push('expired restored test finished without extending its original deadline');
+ assert.deepEqual(errors,[]);console.log(JSON.stringify({oldSnapshot:snap.version,checks,errors}));
+}finally{await b.close();oldServer.close();newServer.close();}

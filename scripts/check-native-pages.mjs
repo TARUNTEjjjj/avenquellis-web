@@ -1,10 +1,11 @@
-/** Run against a local Wrangler Pages/workerd instance. No deploy or inference calls. */
+/** Compare a local Pages instance or the production generator against the native CLI. */
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
 const [address,cli]=process.argv.slice(2);
-if(!address||!cli)throw Error('Usage: node scripts/check-native-pages.mjs http://127.0.0.1:PORT /path/to/avenquellis-questions');
+if(!address||!cli)throw Error('Usage: node scripts/check-native-pages.mjs PAGES_ORIGIN /path/to/avenquellis-questions');
 const origin=new URL(address);
-if(!['127.0.0.1','localhost','[::1]'].includes(origin.hostname)||origin.protocol!=='http:')throw Error('Use a local HTTP workerd instance.');
+const local=origin.protocol==='http:' && ['127.0.0.1','localhost','[::1]'].includes(origin.hostname);
+if(!local && origin.origin!=='https://avenquellis.pages.dev') throw Error('Use local workerd or the Avenquellis production origin.');
 const endpoint=new URL('/api/generate',origin);
 const cases=[
   [{mode:'question',exam:'ISI',topic:'geometry',seed:'工作😀'},['question','--exam','ISI','--topic','geometry','--seed','工作😀']],
