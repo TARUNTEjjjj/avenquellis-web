@@ -25,6 +25,8 @@ The build creates a content-hashed offline snapshot, validates the official cata
 - Chapter progress counts first answered numeric attempts per distinct problem, excludes blanks and pending checks, and does not present self-assessed proof marks as automatically verified performance.
 - Offline app assets, question templates and the C++ engine after a successful first installation. External PDFs still require internet. Updates wait for all old app tabs to close so a running test is not interrupted. Browser storage availability/eviction can affect offline access.
 
+[Production checks](docs/RELEASE-CHECK.md) cover individual questions, mixed and chapter mocks, handwritten submissions, complete certificates and partial prose.
+
 ## Three private repositories
 
 | Repository | Responsibility |
