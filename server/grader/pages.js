@@ -36,6 +36,7 @@ export function createPagesReviewHandler({resolveQuestion, admit}) {
       const configEnv = {
         EVALUATOR_PROVIDER: 'workers-ai', AI: env.AI,
         EVALUATOR_MODEL: env.EVALUATOR_MODEL,
+        EVALUATOR_PROTOCOL: env.EVALUATOR_PROTOCOL,
         EVALUATOR_TIMEOUT_MS: env.EVALUATOR_TIMEOUT_MS,
         EVALUATOR_MAX_TOKENS: env.EVALUATOR_MAX_TOKENS
       };

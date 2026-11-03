@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "version": "34b08eab1d8f09c786e1a23e",
-  "totalBytes": 361033,
+  "version": "661a605faf962024c39dcbc5",
+  "totalBytes": 364222,
   "assetCount": 27,
   "assets": [
     {
@@ -16,8 +16,8 @@
     },
     {
       "url": "benchmark-report.js",
-      "bytes": 2955,
-      "sha256": "5c0249237dd82f77ca3c5cab52e2d66adebb1410594a28a23ee5f7aa9bffba21"
+      "bytes": 3820,
+      "sha256": "af665ec5c1accb6d6627799081f402ec7122b4bc9fca2225a2082852b66b1fc0"
     },
     {
       "url": "certificate-ui.js",
@@ -81,8 +81,8 @@
     },
     {
       "url": "lib/vendor-provenance.json",
-      "bytes": 4569,
-      "sha256": "6f43398f942f4b648d97d657854c0dcbbd90935aa1b6be85e1ec76a93a23f0b6"
+      "bytes": 4863,
+      "sha256": "3d9511926f12670cb6aac25aebbd9f496fc1fdcfd32c258414c040d68aee2de1"
     },
     {
       "url": "manifest.webmanifest",
@@ -116,8 +116,8 @@
     },
     {
       "url": "model-review.js",
-      "bytes": 10081,
-      "sha256": "9cfa7a477ec7d3dc0779927576cc150297216463abea8144c301a564c3267064"
+      "bytes": 11024,
+      "sha256": "603b21d2ba672e6e7ffdcb536044841fec3dc711c27bed682a8e9210f8eae65e"
     },
     {
       "url": "orbit.js",
@@ -136,8 +136,8 @@
     },
     {
       "url": "style.css",
-      "bytes": 32289,
-      "sha256": "9c33fd66d2d2ca85eb7808cbae340ffec41da3abd3e1f02d8393dbfd811c0118"
+      "bytes": 33376,
+      "sha256": "85d09a845adb90ee2af1409a046214d46d0f7cb885990472620b0a5bd784d91c"
     }
   ],
   "skipped": [

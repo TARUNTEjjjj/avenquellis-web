@@ -24,7 +24,7 @@
       "source": "src/index.js",
       "destination": "dist/lib/grader.js",
       "packageName": "noether-proof-grader",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "sha256": "d4d7b77c8b3ae07266474e7d8e8a369eeb02113448376ebaefb2af7e0e36690f"
     },
     {
@@ -32,7 +32,7 @@
       "source": "src/certificate.js",
       "destination": "dist/lib/certificate.js",
       "packageName": "noether-proof-grader",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "sha256": "62dda840b526813d0e120548d1d82777c53f15be3b6c8246e1f0b5e3b91f9e5b"
     },
     {
@@ -40,7 +40,7 @@
       "source": "src/index.js",
       "destination": "server/grader/index.js",
       "packageName": "noether-proof-grader",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "sha256": "d4d7b77c8b3ae07266474e7d8e8a369eeb02113448376ebaefb2af7e0e36690f"
     },
     {
@@ -48,15 +48,15 @@
       "source": "src/provider.js",
       "destination": "server/grader/provider.js",
       "packageName": "noether-proof-grader",
-      "version": "0.5.0",
-      "sha256": "11785730955a51f4de3ecc007e4351f5ddabafc1d8dd806d7bafe334bb3c9aab"
+      "version": "0.6.0",
+      "sha256": "c9f1efbb1988c6b72dc0255260bd8460d3501b5d62f3b588c31043e980da1fb8"
     },
     {
       "repository": "noether-proof-grader",
       "source": "src/service.js",
       "destination": "server/grader/service.js",
       "packageName": "noether-proof-grader",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "sha256": "c86ac0bc6c4b264b870223510c81410e2cedd7324d90f334e5b5f20f6c8fd4b1"
     },
     {
@@ -64,8 +64,16 @@
       "source": "src/pages.js",
       "destination": "server/grader/pages.js",
       "packageName": "noether-proof-grader",
-      "version": "0.5.0",
-      "sha256": "9e8e53838be7646c755a9f546b8398cdf20b0e1ce9f4a9e668131b09a92a829a"
+      "version": "0.6.0",
+      "sha256": "f76233a71616de95f1f820d3c6bab2e62f5cbd21c0efe5101d6be1db66778f11"
+    },
+    {
+      "repository": "noether-proof-grader",
+      "source": "src/span-v2.js",
+      "destination": "server/grader/span-v2.js",
+      "packageName": "noether-proof-grader",
+      "version": "0.6.0",
+      "sha256": "b7c39c48f3d7d9156eb0cd784393e167cc12bc07515bf22fd4f15860551070ee"
     },
     {
       "repository": "noether-question-engine",

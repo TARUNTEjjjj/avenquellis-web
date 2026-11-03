@@ -1918,3 +1918,16 @@ nav .nav-label {
 .model-result{padding:1rem 0;border-top:1px solid var(--border, #283044);}
 .model-result p{overflow-wrap:anywhere;}
 .model-result .rubric-row>div{width:100%;}
+
+.model-result h3 {font-size:clamp(1.15rem,2vw,1.55rem);margin-bottom:.35rem;}
+.grade-criterion {padding:1rem 0;border-top:1px solid var(--border);}
+.grade-criterion-head {display:flex;align-items:baseline;justify-content:space-between;gap:.8rem;}
+.grade-criterion-head strong {font-size:.93rem;color:var(--text);}
+.grade-tally {flex:none;white-space:nowrap;padding:.18rem .52rem;border-radius:.4rem;color:var(--violet);background:#211d35;font-size:.8rem;font-weight:700;}
+.grade-tally.full {color:var(--mint);background:#132b29;}
+.grade-tally.partial {color:#ffd38b;background:#332b20;}
+.grade-criterion .tiny {margin:.35rem 0;}
+.grade-criterion blockquote {border-left:2px solid #536883;margin:.5rem 0 0;padding:.15rem 0 .15rem .75rem;color:#c3ccdb;font-size:.88rem;white-space:pre-wrap;overflow-wrap:anywhere;}
+.grade-gaps {padding:.75rem .95rem;border:1px solid #4b3c2c;border-radius:.6rem;background:#211d19;margin:.75rem 0;}
+.grade-gaps strong {color:#ffd38b;font-size:.88rem;}
+.grade-gaps ul {margin:.3rem 0 0;padding-left:1.1rem;font-size:.85rem;line-height:1.55;color:#e1d5c4;}

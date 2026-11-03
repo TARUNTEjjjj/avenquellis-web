@@ -1,5 +1,6 @@
 /** Server-side rubric evaluation through HTTP Chat Completions or a native Workers AI binding. */
 import {assessProof, runIndependentReview, validateCritique} from './index.js';
+import {makeSpanReviewRequest, resolveSpanReview, SPAN_REVIEW_VERSION} from './span-v2.js';
 
 export const PROMPT_VERSION = 'noether-proof-review-2026-11-03-v1';
 export const DEFAULT_WORKERS_AI_MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
@@ -22,8 +23,10 @@ export function readEvaluatorConfig(env = {}) {
     if (typeof env.AI?.run !== 'function') throw new EvaluatorError('not_configured', 'Configure a Cloudflare Workers AI binding named AI.');
     const model = env.EVALUATOR_MODEL || DEFAULT_WORKERS_AI_MODEL;
     if (!supportedWorkersModels.has(model)) throw new EvaluatorError('configuration', 'Choose a supported Workers AI JSON Mode model.');
+    const protocol = env.EVALUATOR_PROTOCOL || 'verbatim-v1';
+    if (!['verbatim-v1', 'span-v2'].includes(protocol)) throw new EvaluatorError('configuration', 'EVALUATOR_PROTOCOL must be verbatim-v1 or span-v2.');
     return Object.freeze({
-      provider, model, binding: env.AI,
+      provider, protocol, model, binding: env.AI,
       timeoutMs: integer(env.EVALUATOR_TIMEOUT_MS, 25000, 50, 60000, 'EVALUATOR_TIMEOUT_MS'),
       maxTokens: integer(env.EVALUATOR_MAX_TOKENS, 1536, 256, 4000, 'EVALUATOR_MAX_TOKENS')
     });
@@ -110,6 +113,26 @@ function parseBindingOutput(output, question, answer) {
   }
 }
 
+function parseSpanBindingOutput(output, question, answer) {
+  const response = output?.response;
+  if (output?.finish_reason === 'length' || response === null || response === undefined || !['object','string'].includes(typeof response)) {
+    throw new EvaluatorError('incomplete_output', 'Workers AI did not return a complete span review.');
+  }
+  const content = typeof response === 'string' ? response : JSON.stringify(response);
+  if (encoder.encode(content).length > MAX_RESPONSE_BYTES) throw new EvaluatorError('response_too_large','The span review exceeded the response size limit.');
+  let parsed;
+  try {parsed = JSON.parse(content);} catch {throw new EvaluatorError('invalid_json','The span review was not valid JSON.');}
+  let critique;
+  try {critique = resolveSpanReview(question, answer, parsed);}
+  catch (cause) {
+    const known = ['invalid_schema','invalid_marks','invalid_span','missing_support'];
+    if (known.includes(cause.code)) throw new EvaluatorError(cause.code, cause.message);
+    throw new EvaluatorError('invalid_output','The span review could not be validated.');
+  }
+  try {return validateProviderCritique({question, answer, critique});}
+  catch {throw new EvaluatorError('invalid_evidence','The final rubric or exact-evidence check failed.');}
+}
+
 function bindingFailure(error) {
   if (error instanceof EvaluatorError) return error;
   // The platform can put the internal code on the exception or inside its message.
@@ -129,7 +152,8 @@ export function createWorkersAiEvaluator({config, reviewerIndex}) {
   if (![0, 1].includes(reviewerIndex)) throw new TypeError('reviewerIndex must be 0 or 1.');
   return async ({question, submission}) => {
     if (activeBindingCalls >= 4) throw new EvaluatorError('provider_busy', 'The evaluator is busy.');
-    const input = {
+    const useSpans = config.protocol === 'span-v2';
+    const input = useSpans ? makeSpanReviewRequest(question, submission, reviewerIndex, config.maxTokens) : {
       messages: reviewerMessages(question, submission, reviewerIndex),
       stream: false,
       max_tokens: config.maxTokens,
@@ -145,7 +169,7 @@ export function createWorkersAiEvaluator({config, reviewerIndex}) {
     });
     try {
       const output = await Promise.race([inference, deadline]);
-      return parseBindingOutput(output, question, submission);
+      return useSpans ? parseSpanBindingOutput(output, question, submission) : parseBindingOutput(output, question, submission);
     } catch (error) {
       throw bindingFailure(error);
     } finally {
@@ -189,12 +213,15 @@ export function boundedInput({question,answer}) {
 export async function evaluateProof(input,{env={},fetchImpl=globalThis.fetch}={}) {
   const prepared=boundedInput(input);
   const config=readEvaluatorConfig(env);
-  return evaluatePreparedReview(prepared, {
+  const result = await evaluatePreparedReview(prepared, {
     provider: config.provider, model: config.model,
+    promptVersion: config.protocol === 'span-v2' ? SPAN_REVIEW_VERSION : PROMPT_VERSION,
     makeReviewer: index => config.provider === 'workers-ai'
       ? createWorkersAiEvaluator({config, reviewerIndex: index})
       : createHttpEvaluator({config, reviewerIndex: index, fetchImpl})
   });
+  result.provenance.protocol = config.protocol || 'chat-completions';
+  return result;
 }
 
 export async function evaluatePreparedReview(prepared, {provider, model, makeReviewer, promptVersion = PROMPT_VERSION}) {
