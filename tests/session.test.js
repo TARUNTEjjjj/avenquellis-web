@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {parseNumber, gradeNumeric, makeSession, remainingSeconds, finishSession, validSession} from '../dist/lib/session.js';
+import {configureExactChecker, parseNumber, gradeNumeric, checkNumericResponse, makeSession, remainingSeconds, finishSession, validSession} from '../dist/lib/session.js';
 
 const mock = {id:'test',title:'Test session',durationMinutes:2,questions:[{id:'n1',statement:'Find one half.',topic:'probability',type:'numeric',answer:'1/2',maxMarks:4},{id:'p1',statement:'Prove the claim.',topic:'algebra',type:'proof',maxMarks:10}]};
 
@@ -56,4 +56,19 @@ test('resume rejects incomplete and corrupted session shapes', () => {
   const good = makeSession(mock,100000);
   for (const value of [null,{}, {...good,status:'completed'}, {...good,questions:[]}, {...good,questions:[null]}, {...good,questions:[{id:'a'}]}, {...good,deadline:Infinity}, {...good,current:-1}, {...good,current:2}, {...good,current:0.5}, {...good,answers:null}, {...good,flags:null}]) assert.ok(!validSession(value));
   assert.ok(validSession(good));
+});
+
+test('unavailable compiled checker keeps unsupported arithmetic pending instead of wrong',()=>{
+ for(const value of ['1-1','1/2/3','(1+1)/2']){assert.equal(checkNumericResponse(value,'0').unavailable,true,value);const s=makeSession(mock,0);s.answers.n1=value;const r=finishSession(s,1).results[0];assert.equal(r.score,null);assert.equal(r.status,'checker_unavailable');}
+ assert.equal(checkNumericResponse('1/0','0').unavailable,undefined);assert.equal(checkNumericResponse('1/0','0').ok,false);
+});
+
+test('checker failures and invalid answer keys never turn into zero marks',()=>{
+ try {
+  const s=makeSession(mock,0);s.answers.n1='1/2';
+  for(const result of [{ok:false,code:'engine_unavailable',error:'Runtime failed'},{ok:false,side:'right',error:'Invalid trusted answer'},null,{ok:false,error:'Unclassified failure'}]){
+   configureExactChecker(()=>result);const checked=finishSession(s,1).results[0];assert.equal(checked.score,null);assert.equal(checked.status,'checker_unavailable');
+  }
+  configureExactChecker(()=>({ok:false,side:'left',error:'Division by zero'}));assert.equal(finishSession(s,1).results[0].score,0);
+ }finally{configureExactChecker(null);}
 });

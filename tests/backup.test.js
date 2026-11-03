@@ -52,3 +52,7 @@ test('rejects unsafe draft maps and strips nested unknown metadata',()=>{
  const b=backup();b.proofDrafts=JSON.parse('{"__proto__":"bad"}');assert.throws(()=>validateBackup(b));
  const s=active();s.questions[0].unsafe={script:'evil'};const v=validateBackup(s);assert.equal(v.session.questions[0].unsafe,undefined);
 });
+
+test('rejects inherited object-property identifiers in imported questions',()=>{
+ for(const key of Object.getOwnPropertyNames(Object.prototype)){const s=active();s.questions[0].id=key;assert.throws(()=>validateBackup(s),key);}
+});

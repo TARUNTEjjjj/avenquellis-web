@@ -1,10 +1,16 @@
+import {advancedTemplates} from './advanced-templates.js';
 /** Browser-safe, dependency-free original practice question engine. */
 export const topics = ['algebra', 'number-theory', 'combinatorics', 'geometry', 'calculus', 'probability'];
 export const topicLabels = { algebra: 'Algebra', 'number-theory': 'Number theory', combinatorics: 'Combinatorics', geometry: 'Geometry', calculus: 'Calculus', probability: 'Probability' };
 export const difficulties = ['foundation', 'advanced', 'olympiad'];
 export const exams = ['CMI', 'ISI', 'RMO'];
 const SOURCE = { kind: 'original', label: 'Noether original practice · validated template', rights: 'Original wording and solutions; standard mathematical results.' };
-const rub = (...steps) => steps.map((description, i) => ({ id: `step-${i + 1}`, description, points: i === steps.length - 1 ? 10 - 2 * (steps.length - 1) : 2 }));
+// Authored practice weights emphasize mathematical deductions over the final sentence.
+const rub = (...steps) => {
+ const weights={1:[10],2:[6,4],3:[4,4,2],4:[3,3,2,2]}[steps.length];
+ if(!weights)throw new RangeError('A practice rubric needs one to four criteria.');
+ return steps.map((description,i)=>({id:`step-${i+1}`,description,points:weights[i]}));
+};
 const gcd = (a,b) => b ? gcd(b,a%b) : Math.abs(a);
 export const choose = (n,k) => { let r=1; for(let i=1;i<=Math.min(k,n-k);i++) r = r*(n-i+1)/i; return Math.round(r); };
 const divisors = n => Array.from({length:n},(_,i)=>i+1).filter(d=>n%d===0);
@@ -37,6 +43,7 @@ const templates = [
  {key:'probability-indicators',topic:'probability',level:'advanced',make:r=>{const n=int(r,5,15);return {title:'Expected fixed points',statement:`A permutation of {1,…,${n}} is chosen uniformly at random. Prove that the expected number of fixed points is 1.`,solution:`For each i let I_i be 1 if i is fixed and 0 otherwise. Exactly (${n}−1)! of ${n}! permutations fix i, so E[I_i]=1/${n}. The number of fixed points is X=ΣI_i. By linearity of expectation, E[X]=ΣE[I_i]=${n}·(1/${n})=1. Independence is not required.`,rubric:rub('Define an indicator for each fixed point.','Compute its expectation by counting permutations.','Apply linearity of expectation correctly.','Conclude the value 1 without assuming independence.'),parameters:{n}}}},
  {key:'probability-bayes',topic:'probability',level:'advanced',make:r=>{const n=int(r,3,9);return {title:'Conditioning on at least one head',type:'numeric',statement:`A fair coin is tossed ${n} times. Given that at least one head occurred, what is the probability that exactly one head occurred?`,answer:fract(n,2**n-1),solution:`There are 2^${n} equally likely sequences. Conditioning on at least one head removes only the all-tails sequence, leaving ${2**n-1} equally likely sequences. Exactly ${n} have a single head, so the probability is ${fract(n,2**n-1)}.`,rubric:rub('Describe the conditioned sample space.','Count sequences with exactly one head.','Divide the favourable count by the conditioned total.'),parameters:{n}}}},
  {key:'probability-union',topic:'probability',level:'olympiad',make:r=>{const n=int(r,3,8);return {title:'A bound without independence',statement:`Events A₁,…,A_${n} each have probability at most 1/${2*n}. Prove that the probability that none occurs is at least 1/2. Do not assume independence.`,solution:`The union bound gives P(A₁∪⋯∪A_${n}) ≤ ΣP(A_i) ≤ ${n}/(${2*n})=1/2. Taking complements yields P(no event occurs) ≥ 1−1/2=1/2. The union bound follows because the indicator of a union is at most the sum of the individual indicators, so no independence is needed.`,rubric:rub('Apply or prove the union bound without independence.','Substitute the upper bounds on individual probabilities.','Take complements with the correct inequality direction.'),parameters:{n}}}}
+, ...advancedTemplates
 ];
 function normalize(opts={}) {
  const topic = opts.topic && opts.topic!=='all' && opts.topic!=='mixed' ? opts.topic : null;
@@ -47,13 +54,20 @@ function normalize(opts={}) {
  const exam=String(opts.exam||'CMI').toUpperCase();
  if(!exams.includes(exam)) throw new RangeError(`Unknown exam: ${exam}`);
  if(exam==='RMO' && ['calculus','probability'].includes(topic)) throw new RangeError('RMO practice excludes calculus and probability. Choose algebra, number theory, geometry, or combinatorics.');
- return {topic,difficulty,exam,seed:opts.seed??1};
+ const type=opts.type||(exam==='RMO'?'proof':'all');
+ if(!['all','proof','numeric'].includes(type)) throw new RangeError(`Unknown question type: ${type}`);
+ if(exam==='RMO' && type==='numeric') throw new RangeError('RMO mock practice uses proof questions. Choose proof format.');
+ return {topic,difficulty,exam,type:exam==='RMO'?'proof':type,seed:opts.seed??1};
 }
 function materialize(template,options,variantSeed) {
  const q=template.make(rng(variantSeed));
  return { id:`${template.key}-${hash(variantSeed).toString(36)}`,title:q.title,statement:q.statement,topic:template.topic,difficulty:template.level,requestedDifficulty:options.difficulty,exam:options.exam,type:q.type||'proof',maxMarks:10,solution:q.solution,rubric:q.rubric,...(q.answer!==undefined?{answer:q.answer}:{}),source:{...SOURCE},templateId:template.key,parameters:q.parameters||{},generator:{kind:'deterministic-template',version:'0.1.0',seed:String(variantSeed)} };
 }
-function poolFor(o) { return templates.filter(t=>(!o.topic||t.topic===o.topic) && (o.exam!=='RMO'||!['calculus','probability'].includes(t.topic))); }
+function poolFor(o) {
+ const pool=templates.filter(t=>(!o.topic||t.topic===o.topic) && (o.exam!=='RMO'||!['calculus','probability'].includes(t.topic)) && (o.type==='all'||(t.make(rng('type-check')).type||'proof')===o.type));
+ if(!pool.length) throw new RangeError('No questions match this chapter, track, and format. Choose another format or chapter.');
+ return pool;
+}
 /** Deterministic generation; difficulty is best-fit with actual level disclosed. */
 export function generateQuestion(opts={}) {
  const o=normalize(opts),all=poolFor(o),preferred=all.filter(t=>t.level===o.difficulty),pool=preferred.length?preferred:all,r=rng(o.seed);
@@ -66,9 +80,6 @@ export function generateMock(opts={}) {
  const all=poolFor(o),r=rng(o.seed),preferred=all.filter(t=>t.level===o.difficulty),rest=all.filter(t=>t.level!==o.difficulty);
  const shuffle=arr=>arr.map(t=>({t,key:r()})).sort((a,b)=>a.key-b.key).map(x=>x.t);
  const pool=[...shuffle(preferred),...shuffle(rest)];
- // Finite template domains: calculus has exactly 1 + 5 + 6 + 14 statements.
- // Reject an impossible request before any retries; every other topic exceeds 30.
- if(o.topic==='calculus' && count>26) throw new RangeError('Calculus currently supports at most 26 distinct question statements per mock; request 26 or fewer.');
  const questions=[], seenStatements=new Set();
  const normalizeStatement=value=>value.normalize('NFKC').replace(/\s+/gu,' ').trim().toLowerCase();
  // Rotate through all templates so a fixed-statement theorem does not prevent
@@ -82,7 +93,7 @@ export function generateMock(opts={}) {
   questions.push(question);
  }
  if(questions.length!==count) throw new RangeError(`Only ${questions.length} distinct statements could be assembled for these settings within the deterministic retry limit. Reduce count or select mixed topics.`);
- return {id:`mock-${hash(JSON.stringify({...o,count})).toString(36)}`,title:`${o.exam} ${o.topic?topicLabels[o.topic]:'Mixed'} Practice`,exam:o.exam,difficulty:o.difficulty,durationMinutes:Math.max(15,count*15),maxMarks:questions.reduce((sum,q)=>sum+q.maxMarks,0),questions,source:{...SOURCE},notice:'Original practice set. Topic mix, duration, and marks are configurable practice settings, not an official paper pattern. Difficulty is a preference; actual question levels are disclosed. Duplicate statements are excluded.'};
+ return {id:`mock-${hash(JSON.stringify({...o,count})).toString(36)}`,title:`${o.exam} ${o.topic?topicLabels[o.topic]:'Mixed'} Practice`,exam:o.exam,difficulty:o.difficulty,type:o.type,durationMinutes:Math.max(15,count*15),maxMarks:questions.reduce((sum,q)=>sum+q.maxMarks,0),questions,source:{...SOURCE},notice:'Original practice set. Topic mix, duration, and marks are configurable practice settings, not an official paper pattern. Difficulty is a preference; actual question levels are disclosed. Duplicate statements are excluded.'};
 }
 export const questionBank=templates.map((t,i)=>materialize(t,{exam:'CMI',difficulty:t.level},`bank:${i+1}`));
 export function getQuestion(id) { return questionBank.find(q=>q.id===id)||null; }

@@ -1,1 +1,16 @@
-{"name":"noether-web","version":"0.1.0","private":true,"type":"module","scripts":{"start":"node scripts/serve.mjs","test":"node --test","build":"node scripts/check.mjs","sync:engines":"node scripts/sync-engines.mjs"},"engines":{"node":">=20"}}
+{
+  "name": "noether-web",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node scripts/serve.mjs",
+    "test": "node --test",
+    "build": "node scripts/build-offline.mjs && node scripts/check.mjs",
+    "sync:engines": "node scripts/sync-engines.mjs",
+    "deploy": "npm test && npm run build && npx --yes wrangler@4.156.2 pages deploy dist --project-name noether-math-lab --branch main"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

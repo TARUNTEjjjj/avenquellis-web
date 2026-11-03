@@ -1,22 +1,87 @@
 {
-  "formatVersion": 1,
-  "description": "Vendored browser modules copied byte-for-byte from sibling repositories. Run npm run sync:engines after changing the engines.",
+  "formatVersion": 2,
+  "description": "Byte-for-byte copies from the private sibling repositories; compiled artifacts verified against build-info.json. Run npm run sync:engines after engine changes.",
+  "engineBuildCommit": "00a970492492c054776a206548db3a3a90c77de6",
   "components": [
+    {
+      "repository": "noether-question-engine",
+      "source": "src/advanced-templates.js",
+      "destination": "dist/lib/advanced-templates.js",
+      "packageName": "@noether/question-engine",
+      "version": "0.1.0",
+      "sha256": "76c37d7e60aa374a2d9e517fd2b58061f904b1e363b33c39e65c16f827bef185"
+    },
     {
       "repository": "noether-question-engine",
       "source": "src/index.js",
       "destination": "dist/lib/questions.js",
       "packageName": "@noether/question-engine",
       "version": "0.1.0",
-      "sha256": "92434849cb6263959fb5342cd9be83ce309e90d13fbc9fa417e7f1f294994ef2"
+      "sha256": "188ccceac981517d40df609117288441f5e9d1ee405b9631b8ee32016c1db510"
     },
     {
       "repository": "noether-proof-grader",
       "source": "src/index.js",
       "destination": "dist/lib/grader.js",
       "packageName": "noether-proof-grader",
-      "version": "0.1.0",
+      "version": "0.3.0",
       "sha256": "d4d7b77c8b3ae07266474e7d8e8a369eeb02113448376ebaefb2af7e0e36690f"
+    },
+    {
+      "repository": "noether-proof-grader",
+      "source": "src/certificate.js",
+      "destination": "dist/lib/certificate.js",
+      "packageName": "noether-proof-grader",
+      "version": "0.3.0",
+      "sha256": "62dda840b526813d0e120548d1d82777c53f15be3b6c8246e1f0b5e3b91f9e5b"
+    },
+    {
+      "repository": "noether-question-engine",
+      "source": "browser/exact-math.js",
+      "destination": "dist/math/exact-math.js",
+      "packageName": "@noether/question-engine",
+      "version": "0.1.0",
+      "sha256": "aca510769378e3867ddb161c9ab6df4eb72de455c838473847b6e209c3c319fe"
+    },
+    {
+      "repository": "noether-question-engine",
+      "source": "browser/axiom-math-runtime.js",
+      "destination": "dist/math/axiom-math-runtime.js",
+      "packageName": "@noether/question-engine",
+      "version": "0.1.0",
+      "sha256": "b1666eb486d938084b14d424be4facf0c4c2b943162a66ff306eb04320927e2b"
+    },
+    {
+      "repository": "noether-question-engine",
+      "source": "browser/axiom-math-runtime.wasm",
+      "destination": "dist/math/axiom-math-runtime.wasm",
+      "packageName": "@noether/question-engine",
+      "version": "0.1.0",
+      "sha256": "00429e69e3cdcdda5a9b6cf86acc912fdb2b6f7c4b0347a1168641f1a758f3e5"
+    },
+    {
+      "repository": "noether-question-engine",
+      "source": "browser/build-info.json",
+      "destination": "dist/math/build-info.json",
+      "packageName": "@noether/question-engine",
+      "version": "0.1.0",
+      "sha256": "a89f1d56e5baad99f345df19bd90e43e60079e3a0fe85ebe889796b03f1e16ac"
+    },
+    {
+      "repository": "noether-question-engine",
+      "source": "browser/source-commit.txt",
+      "destination": "dist/math/source-commit.txt",
+      "packageName": "@noether/question-engine",
+      "version": "0.1.0",
+      "sha256": "f3db74bf9d5f3501edffb80c1c815cee67437f38a78712729906dae02338dcd8"
+    },
+    {
+      "repository": "noether-question-engine",
+      "source": "browser/AXIOM-MATH-LICENSE.txt",
+      "destination": "dist/math/AXIOM-MATH-LICENSE.txt",
+      "packageName": "@noether/question-engine",
+      "version": "0.1.0",
+      "sha256": "56aa8679442ed207fc8585d6600da04e2c5ede2995206104a09a8af477c97491"
     }
   ]
 }

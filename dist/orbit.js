@@ -1,13 +1,301 @@
-let stopCurrent=()=>{};
-export function mountOrbit(canvas,paused=false){stopCurrent();if(!canvas)return;const ctx=canvas.getContext('2d');if(!ctx)return;let frame=0,angle=0,tilt=.55,drag=false,lastX=0,lastY=0,dead=false;const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;let w=0,h=0;
-const resize=()=>{const r=canvas.getBoundingClientRect();w=r.width;h=r.height;const d=Math.min(devicePixelRatio||1,2);canvas.width=w*d;canvas.height=h*d;ctx.setTransform(d,0,0,d,0,0);draw(false)};
-function project(x,y,z){const ca=Math.cos(angle),sa=Math.sin(angle),ct=Math.cos(tilt),st=Math.sin(tilt),xx=x*ca-z*sa,zz=x*sa+z*ca,yy=y*ct-zz*st,depth=y*st+zz*ct,scale=3.8/(3.8+depth);return [w*.49+xx*scale*w*.27,h*.51+yy*scale*w*.27,depth]}
-function path(points,color,width){ctx.beginPath();for(let j=0;j<points.length;j++){const p=project(...points[j]);j?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1])}ctx.strokeStyle=color;ctx.lineWidth=width;ctx.stroke()}
-function draw(advance=true){if(dead)return;ctx.clearRect(0,0,w,h);if(advance)angle+=.0025;const glow=ctx.createRadialGradient(w*.5,h*.5,5,w*.5,h*.5,w*.4);glow.addColorStop(0,'#83f2d013');glow.addColorStop(1,'#83f2d000');ctx.fillStyle=glow;ctx.fillRect(0,0,w,h);
-for(let i=0;i<24;i++){const u=i/24*Math.PI*2,pts=[];for(let j=0;j<=80;j++){const v=j/80*Math.PI*2,r=1+.36*Math.cos(v);pts.push([r*Math.cos(u),.36*Math.sin(v),r*Math.sin(u)])}path(pts,`rgba(122,239,208,${i%3===0?.55:.21})`,i%3===0?.8:.5)}
-for(let i=0;i<18;i++){const v=i/18*Math.PI*2,pts=[];for(let j=0;j<=120;j++){const u=j/120*Math.PI*2,r=1+.36*Math.cos(v);pts.push([r*Math.cos(u),.36*Math.sin(v),r*Math.sin(u)])}path(pts,i%3===0?'#81e8d08c':'#5fabc647',.65)}
-const rings=[];for(let i=0;i<=150;i++){let a=i/150*Math.PI*2;rings.push([1.7*Math.cos(a),.06,1.7*Math.sin(a)])}path(rings,'#8d9fca35',.6);for(let i=0;i<12;i++){const a=i/12*Math.PI*2;const p=project(1.7*Math.cos(a),.06,1.7*Math.sin(a));ctx.fillStyle=i%3?'#718caa':'#b6fbe3';ctx.beginPath();ctx.arc(p[0],p[1],i%3?1:2,0,7);ctx.fill()}
-if(advance&&!paused&&!reduced)frame=requestAnimationFrame(()=>draw())}
-const down=e=>{drag=true;lastX=e.clientX;lastY=e.clientY;canvas.setPointerCapture(e.pointerId)},move=e=>{if(!drag)return;angle+=(e.clientX-lastX)*.009;tilt+=(e.clientY-lastY)*.008;lastX=e.clientX;lastY=e.clientY;if(paused||reduced)draw(false)},up=()=>drag=false;
-canvas.addEventListener('pointerdown',down);canvas.addEventListener('pointermove',move);canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',up);const ro=new ResizeObserver(resize);ro.observe(canvas);resize();draw(!paused&&!reduced);stopCurrent=()=>{dead=true;cancelAnimationFrame(frame);ro.disconnect();canvas.removeEventListener('pointerdown',down);canvas.removeEventListener('pointermove',move);canvas.removeEventListener('pointerup',up);canvas.removeEventListener('pointercancel',up)};return stopCurrent;}
-export function stopOrbit(){stopCurrent()}
+const TURN = Math.PI * 2;
+const view = { surface: "torus", yaw: 0.32, pitch: 0.62 };
+let unmount = null;
+
+// The wire coordinates never change during rotation. Store each polyline once.
+function curve(segments, pointAt) {
+  const points = new Float32Array((segments + 1) * 3);
+  for (let index = 0; index <= segments; index++) {
+    points.set(pointAt(index / segments), index * 3);
+  }
+  return points;
+}
+
+function wireGrid(pointAt, uLines, vLines, closeU = false, closeV = false) {
+  const lines = [];
+  for (let index = 0; index < uLines + (closeU ? 0 : 1); index++) {
+    lines.push({
+      points: curve(48, (v) => pointAt(index / uLines, v)),
+      accent: index % 3 === 0,
+    });
+  }
+  for (let index = 0; index < vLines + (closeV ? 0 : 1); index++) {
+    lines.push({
+      points: curve(80, (u) => pointAt(u, index / vLines)),
+      accent: index % 3 === 0,
+    });
+  }
+  return lines;
+}
+
+// Coordinates are stored as [x, z, y] so the mathematical z-axis points up.
+const surfaces = {
+  torus: {
+    name: "Torus",
+    equation: "(√(x² + y²) − 1)² + z² = 0.36²",
+    description: "A tube of radius 0.36 around a circle of radius 1.",
+    color: "128,238,209",
+    lines: wireGrid(
+      (s, t) => {
+        const u = s * TURN,
+          v = t * TURN,
+          radius = 1 + 0.36 * Math.cos(v);
+        return [radius * Math.cos(u), 0.36 * Math.sin(v), radius * Math.sin(u)];
+      },
+      24,
+      18,
+      true,
+      true,
+    ),
+  },
+  mobius: {
+    name: "Möbius strip",
+    equation: "r = 1 + v cos(u/2)\nx = r cos u, y = r sin u, z = v sin(u/2)",
+    description: "A half-twisted band with 0 ≤ u ≤ 2π and −0.36 ≤ v ≤ 0.36.",
+    color: "188,166,255",
+    lines: wireGrid(
+      (s, t) => {
+        const u = s * TURN,
+          v = 0.36 * (2 * t - 1),
+          radius = 1 + v * Math.cos(u / 2);
+        return [
+          radius * Math.cos(u),
+          v * Math.sin(u / 2),
+          radius * Math.sin(u),
+        ];
+      },
+      40,
+      12,
+      true,
+    ),
+  },
+  saddle: {
+    name: "Saddle",
+    equation: "z = x² − y²,   −1 ≤ x, y ≤ 1",
+    description:
+      "A hyperbolic paraboloid that rises along x and falls along y.",
+    color: "126,194,251",
+    lines: wireGrid(
+      (s, t) => {
+        const x = s * 2 - 1,
+          y = t * 2 - 1;
+        return [x, x * x - y * y, y];
+      },
+      22,
+      22,
+    ),
+  },
+};
+const orbitRing = curve(120, (t) => [
+  1.68 * Math.cos(t * TURN),
+  0,
+  1.68 * Math.sin(t * TURN),
+]);
+const clampPitch = (pitch) => Math.min(1.45, Math.max(-1.45, pitch));
+
+export function stopOrbit() {
+  if (unmount) unmount();
+  unmount = null;
+}
+
+export function mountOrbit(canvas, paused = false) {
+  stopOrbit();
+  if (!canvas) return;
+  const context = canvas.getContext("2d");
+  const figure = canvas.closest("[data-surface-lab]");
+  if (!context || !figure) return;
+  const buttons = [...figure.querySelectorAll("[data-surface]")];
+  const label = figure.querySelector("[data-surface-name]");
+  const equation = figure.querySelector("[data-surface-equation]");
+  const motionPreference = matchMedia("(prefers-reduced-motion: reduce)");
+  const listeners = new AbortController();
+  const options = { signal: listeners.signal };
+  let width = 0,
+    height = 0,
+    frame = 0,
+    lastTime = null;
+  let visible = true,
+    disposed = false,
+    drag = null;
+
+  function draw() {
+    if (disposed || width < 1 || height < 1) return;
+    const model = surfaces[view.surface];
+    context.clearRect(0, 0, width, height);
+    const glow = context.createRadialGradient(
+      width / 2,
+      height / 2,
+      0,
+      width / 2,
+      height / 2,
+      width * 0.52,
+    );
+    glow.addColorStop(0, `rgba(${model.color},0.09)`);
+    glow.addColorStop(1, `rgba(${model.color},0)`);
+    context.fillStyle = glow;
+    context.fillRect(0, 0, width, height);
+    const yawCos = Math.cos(view.yaw),
+      yawSin = Math.sin(view.yaw);
+    const pitchCos = Math.cos(view.pitch),
+      pitchSin = Math.sin(view.pitch);
+    const scale = Math.min(width * 0.265, height * 0.43);
+    function stroke(points, color, weight) {
+      context.beginPath();
+      for (let i = 0; i < points.length; i += 3) {
+        const x = points[i] * yawCos - points[i + 2] * yawSin;
+        const back = points[i] * yawSin + points[i + 2] * yawCos;
+        const up = points[i + 1] * pitchCos - back * pitchSin;
+        const depth = points[i + 1] * pitchSin + back * pitchCos;
+        const perspective = (scale * 5.5) / (5.5 - depth);
+        const px = width / 2 + x * perspective,
+          py = height / 2 - up * perspective;
+        if (i === 0) context.moveTo(px, py);
+        else context.lineTo(px, py);
+      }
+      context.strokeStyle = color;
+      context.lineWidth = weight;
+      context.stroke();
+    }
+    if (view.surface === "torus") stroke(orbitRing, "#8495b344", 0.65);
+    for (const line of model.lines) {
+      stroke(
+        line.points,
+        `rgba(${model.color},${line.accent ? "0.78" : "0.32"})`,
+        line.accent ? 1 : 0.65,
+      );
+    }
+  }
+
+  function shouldRotate() {
+    return (
+      !disposed &&
+      visible &&
+      !drag &&
+      !paused &&
+      !motionPreference.matches &&
+      !document.hidden
+    );
+  }
+  function animate(now) {
+    frame = 0;
+    if (!shouldRotate()) return;
+    if (lastTime !== null)
+      view.yaw = (view.yaw + Math.min(now - lastTime, 48) * 0.0002) % TURN;
+    lastTime = now;
+    draw();
+    frame = requestAnimationFrame(animate);
+  }
+  function refresh() {
+    if (frame) cancelAnimationFrame(frame);
+    frame = 0;
+    lastTime = null;
+    draw();
+    if (shouldRotate()) frame = requestAnimationFrame(animate);
+  }
+  function resize() {
+    const bounds = canvas.getBoundingClientRect();
+    width = bounds.width;
+    height = bounds.height;
+    const density = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.round(width * density);
+    canvas.height = Math.round(height * density);
+    context.setTransform(density, 0, 0, density, 0, 0);
+    draw();
+  }
+  function selectSurface(key) {
+    if (!Object.hasOwn(surfaces, key)) return;
+    view.surface = key;
+    const model = surfaces[key];
+    label.textContent = model.name;
+    equation.textContent = model.equation;
+    canvas.setAttribute(
+      "aria-label",
+      `${model.name}. ${model.description} Drag or use arrow keys to rotate.`,
+    );
+    for (const button of buttons)
+      button.setAttribute(
+        "aria-pressed",
+        String(button.dataset.surface === key),
+      );
+    refresh();
+  }
+  for (const button of buttons)
+    button.addEventListener(
+      "click",
+      () => selectSurface(button.dataset.surface),
+      options,
+    );
+  canvas.addEventListener(
+    "keydown",
+    (event) => {
+      if (
+        !["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home"].includes(
+          event.key,
+        )
+      )
+        return;
+      event.preventDefault();
+      if (event.key === "Home") {
+        view.yaw = 0.32;
+        view.pitch = 0.62;
+      } else if (event.key === "ArrowLeft") view.yaw -= 0.14;
+      else if (event.key === "ArrowRight") view.yaw += 0.14;
+      else
+        view.pitch = clampPitch(
+          view.pitch + (event.key === "ArrowUp" ? 0.12 : -0.12),
+        );
+      refresh();
+    },
+    options,
+  );
+  canvas.addEventListener(
+    "pointerdown",
+    (event) => {
+      if (drag || !event.isPrimary || event.button !== 0) return;
+      drag = { id: event.pointerId, x: event.clientX, y: event.clientY };
+      canvas.setPointerCapture(event.pointerId);
+      refresh();
+    },
+    options,
+  );
+  canvas.addEventListener(
+    "pointermove",
+    (event) => {
+      if (!drag || event.pointerId !== drag.id) return;
+      view.yaw += (event.clientX - drag.x) * 0.009;
+      view.pitch = clampPitch(view.pitch + (event.clientY - drag.y) * 0.008);
+      drag.x = event.clientX;
+      drag.y = event.clientY;
+      draw();
+    },
+    options,
+  );
+  function endDrag(event) {
+    if (!drag || event.pointerId !== drag.id) return;
+    drag = null;
+    refresh();
+  }
+  for (const name of ["pointerup", "pointercancel", "lostpointercapture"])
+    canvas.addEventListener(name, endDrag, options);
+  document.addEventListener("visibilitychange", refresh, options);
+  motionPreference.addEventListener("change", refresh, options);
+  const sizeObserver = new ResizeObserver(resize);
+  sizeObserver.observe(canvas);
+  const visibilityObserver = new IntersectionObserver((entries) => {
+    visible = entries[0]?.isIntersecting ?? true;
+    refresh();
+  });
+  visibilityObserver.observe(canvas);
+  resize();
+  selectSurface(view.surface);
+  unmount = () => {
+    disposed = true;
+    if (frame) cancelAnimationFrame(frame);
+    if (drag && canvas.hasPointerCapture(drag.id))
+      canvas.releasePointerCapture(drag.id);
+    listeners.abort();
+    sizeObserver.disconnect();
+    visibilityObserver.disconnect();
+  };
+  return unmount;
+}
