@@ -12,7 +12,7 @@ npm test
 npm run build
 ```
 
-The build creates a content-hashed offline snapshot, validates the official catalog, checks JavaScript syntax, verifies vendored module hashes, and validates the compiled WebAssembly artifact. `npm run start:static` only previews the static shell. Use `npm start` for generation and proof assessment. Cloud transcription and model readings require the authenticated Workers AI binding.
+The build creates a content-hashed offline snapshot, validates the official catalog, checks JavaScript syntax, verifies vendored module hashes, and validates the compiled WebAssembly artifact. `npm run start:static` only previews the static shell. Use `npm start` for hosted generation and assessment fallback; the static preview also supports the loaded local certificate checker. Cloud transcription and model readings require the authenticated Workers AI binding.
 
 ## What is implemented
 
@@ -23,6 +23,8 @@ The build creates a content-hashed offline snapshot, validates the official cata
 - An exact mathematics lab with calculation traces, plus explicit arithmetic-equality checks within proof drafts. The C++ grammar supports integers, finite decimals, `+ - * /`, signs and parentheses. It does not support variables, powers, roots, functions, symbolic identities, or general proof verification. Fractions use checked signed 64-bit values with 128-bit intermediates; overflow is reported.
 - Proof writing with a symbol toolbar, problem-specific partial-credit rubrics and preserved submissions. Free-form proofs can receive two model readings with quoted evidence and provisional criterion marks. A human can finalize a recorded assessment. Two number-theory families can also be marked automatically from structured proofs: consecutive-factor divisibility checks all residue classes and a Bézout witness; gcd invariance checks both common-divisor inclusions by exact linear identities. Only a complete certificate earns a final practice score. Partial certificates display verified credit as a lower bound, never a judgement of alternative prose. Editing a submitted proof creates a detached draft and cannot change the grade of the original attempt.
 - Chapter progress counts first answered numeric attempts per distinct problem, excludes blanks and pending checks, and does not present self-assessed proof marks as automatically verified performance.
+- Preparing a proof review and submitting a test use the loaded C++ checker on device, avoiding per-answer network waits. If that engine is unavailable, the hosted checker remains a fallback. Ordinary prose stays pending human review; model marking is a separate explicit action.
+- Startup loads the arithmetic engine, proof checker and paper catalog concurrently with an eight-second fallback deadline, so stalled optional downloads do not hide saved work.
 - Offline app assets, question templates and the C++ engine after a successful first installation. External PDFs still require internet. Updates wait for all old app tabs to close so a running test is not interrupted. Browser storage availability/eviction can affect offline access.
 
 [Production checks](docs/RELEASE-CHECK.md) cover individual questions, mixed and chapter mocks, handwritten submissions, complete certificates and partial prose.

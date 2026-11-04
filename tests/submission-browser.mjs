@@ -16,6 +16,8 @@ async function exercisePendingSubmission(restoreAnotherDraft) {
   const page = await context.newPage();
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
+  // Exercise the hosted fallback deliberately; a healthy local checker finishes immediately.
+  await page.route('**/lib/native-grade/*.wasm', route => route.abort());
   await page.route('**/api/generate', route => route.fulfill({json:{
     engine:'cpp-wasm', result:generateMock({exam:'RMO', count:6, seed:'submission-regression'})
   }}));

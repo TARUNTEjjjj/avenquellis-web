@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "version": "d9f6c310c4f4a86d178bb9ca",
-  "totalBytes": 718190,
-  "assetCount": 38,
+  "version": "4cd2d5848d6980782dafa13e",
+  "totalBytes": 720074,
+  "assetCount": 39,
   "assets": [
     {
       "url": "app.js",
-      "bytes": 66692,
-      "sha256": "2ae756e44f853fb27620691f41d9e28954142c7ac774a5f9e4594e6adcc391ae"
+      "bytes": 66750,
+      "sha256": "32adeaae6700fa48f42aab91c716975d5e92132d3a744a661a0a07e9669aca36"
     },
     {
       "url": "archive.json",
@@ -16,8 +16,8 @@
     },
     {
       "url": "backend.js",
-      "bytes": 1472,
-      "sha256": "5e821a60e3a54c49c3f03d5144fc7de43c58c0a6729565a60847a7af7de85e74"
+      "bytes": 2158,
+      "sha256": "6724e34a1b93ec9eead0824e12f125cf6f2d82b75f3f05e950f37de00b39aad4"
     },
     {
       "url": "benchmark-report.js",
@@ -46,8 +46,8 @@
     },
     {
       "url": "index.html",
-      "bytes": 4090,
-      "sha256": "5216cb8fe4d6a7b174c180fa500d5a01f361fd899d5f79af587ab1dac626da43"
+      "bytes": 4212,
+      "sha256": "3497a12e38f8436b2f7a09b3a3f37f7763086ddfdcf6112181ac50e530cddf55"
     },
     {
       "url": "lib/advanced-templates.js",
@@ -133,6 +133,11 @@
       "url": "lib/session.js",
       "bytes": 4954,
       "sha256": "29d87f199e869cdffb08735c591783fbf803ced748eed2f128f747bd3f730cc7"
+    },
+    {
+      "url": "lib/startup.js",
+      "bytes": 1018,
+      "sha256": "1d85dd906e1009e898cb2614259b57d4bc3bc3bbe60064eb7535712a0bb5d468"
     },
     {
       "url": "lib/vendor-provenance.json",

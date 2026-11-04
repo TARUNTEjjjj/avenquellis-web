@@ -1,4 +1,4 @@
-import {generateOnServer, assessOnServer} from "./backend.js";
+import {generateOnServer, assessForPractice} from "./backend.js";
 import {preloadNativeGrader} from "./lib/native-grader.js";
 import {mountHandwriting} from "./handwriting.js";
 import {benchmarkReport} from "./benchmark-report.js";
@@ -25,22 +25,25 @@ import { libraryView, bindLibrary } from "./question-library.js";
 import { auditArithmetic } from "./lib/arithmetic-audit.js";
 import { compareExactLiterals } from "./lib/exact-rational.js";
 import { summarizeProgress } from "./lib/progress.js";
+import { loadWorkspaceResources } from "./lib/startup.js";
 import {
   certificateGuide,
   bindCertificateGuide,
   certificateExamples,
   certificateResult,
 } from "./certificate-ui.js";
-let mathApi = null,
-  mathReady = false;
-try {
-  mathApi = await import("./math/exact-math.js");
-  await mathApi.initExactMath();
-  configureExactChecker(mathApi.checkExact);
-  mathReady = true;
-} catch {
-  /* Literal-only exact fallback remains available. */
-}
+// Load independent optional resources together. Slow requests must not hide the
+// workspace indefinitely; existing literal, hosted-checker and catalog fallbacks remain usable.
+const [mathApi, nativeGrader, loadedArchive] = await loadWorkspaceResources({
+  loadMath: async () => {
+    const api = await import("./math/exact-math.js");
+    await api.initExactMath();
+    return api;
+  },
+  loadGrader: preloadNativeGrader,
+});
+const mathReady = !!mathApi;
+if (mathReady) configureExactChecker(mathApi.checkExact);
 
 const $ = (s) => document.querySelector(s),
   esc = (s) =>
@@ -56,8 +59,6 @@ const $ = (s) => document.querySelector(s),
         })[c],
     );
 // Restore historical work with the same compiled proof checker used by the live service.
-let nativeGrader;
-try { nativeGrader=await preloadNativeGrader(); } catch { /* Online assessments remain available. */ }
 const nativeCertificate=(question,answer)=>{
   let result;
   try {result=nativeGrader?.assess(question,answer);} catch {return null;}
@@ -97,15 +98,8 @@ let history = Array.isArray(saved.history) ? saved.history : [],
   proofDraft = typeof saved.proofDraft === "string" ? saved.proofDraft : "",
   proofId = saved.proofId || questionBank.find((q) => q.type === "proof").id,
   paused = !!saved.paused;
-let archive = { papers: [], questionReferences: [], sources: [] },
-  archiveError = false;
-try {
-  const r = await fetch("./archive.json");
-  if (!r.ok) throw Error();
-  archive = await r.json();
-} catch {
-  archiveError = true;
-}
+const archive = loadedArchive || { papers: [], questionReferences: [], sources: [] },
+  archiveError = !loadedArchive;
 const archiveBadge = document.querySelector("#nav .nav-tag");
 if (archiveBadge) archiveBadge.textContent = String(archive.papers.length);
 let page = "",
@@ -538,7 +532,7 @@ async function complete() {
     for (let offset = 0; offset < proofs.length; offset += 2) {
       await Promise.all(proofs.slice(offset, offset + 2).map(async question => {
         const answer = submitted.answers[question.id];
-        try { assessments.set(question.id, await assessOnServer(question, answer)); }
+        try { assessments.set(question.id, await assessForPractice(question, answer, nativeGrader)); }
         catch { assessments.set(question.id, nativeCertificate(question, answer)); }
       }));
     }
@@ -838,7 +832,7 @@ function bind() {
         return toast("Write an argument before preparing a review.");
       try {
         button.disabled=true;
-        const result=await (navigator.onLine?assessOnServer(question,draft):nativeGrader?.assess(question,draft));
+        const result=await assessForPractice(question,draft,nativeGrader);
         if(!result)throw Error("Connect to Avenquellis to check this proof.");
         if(!button.isConnected || draft!==proofDraft || question!==currentProof)return;
         proofResult={...result,wordCount:draft.trim().split(/\s+/u).length,feedback:result.feedback||[]};

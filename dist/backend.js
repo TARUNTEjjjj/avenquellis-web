@@ -18,6 +18,20 @@ export function proofRequest(question, answer) {
   return {questionId:question.id,reference:{templateId:question.templateId,seed:question.generator?.seed,exam:question.exam,difficulty:question.requestedDifficulty},answer};
 }
 
+// Certificate preparation uses the same C++ checker on device and on the server.
+// Prefer the loaded checker: a connected network does not mean the API is reachable.
+// This never requests model marks; ordinary prose still needs a separate review.
+export async function assessForPractice(question, answer, localGrader) {
+  try {
+    const result = localGrader?.assess(question, answer);
+    if (result?.questionId === question.id &&
+        ['verified_certificate', 'incomplete_certificate', 'needs_review'].includes(result.status)) {
+      return result;
+    }
+  } catch { /* A failed local engine can still use the hosted checker. */ }
+  return assessOnServer(question, answer);
+}
+
 export async function assessOnServer(question, answer) {
   const response = await fetch('./api/assess', {
     method:'POST', headers:{'Content-Type':'application/json'},
