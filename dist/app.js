@@ -377,7 +377,11 @@ function progress() {
   );
 }
 function sessionView() {
-  if (completing || session?.submittedAt != null) return heading("Checking your attempt…", "Your submitted work is saved. Checking will resume if you reopen this page.");
+  if (completing || session?.submittedAt != null) {
+    return heading("Checking your attempt…", storageOK
+      ? "Your submitted work is saved. Checking will resume if you reopen this page."
+      : "Keep this tab open while we check your submitted work. Browser storage is unavailable.");
+  }
   if (!session)
     return (
       heading("No active test.", "Choose a challenge to get started.") +
