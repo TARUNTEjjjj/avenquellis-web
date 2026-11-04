@@ -377,7 +377,11 @@ function progress() {
   );
 }
 function sessionView() {
-  if(completing)return heading("Checking your attempt…","Your submitted work is being assessed and saved.");
+  if (session && (completingSession === session || session.submittedAt != null)) {
+    return heading("Checking your attempt…", storageOK
+      ? "Your submitted work is saved. Checking will resume if you reopen this page."
+      : "Keep this tab open while we check your submitted work. Browser storage is unavailable.");
+  }
   if (!session)
     return (
       heading("No active test.", "Choose a challenge to get started.") +
@@ -490,6 +494,10 @@ function modal(content) {
   $("#modal").showModal();
 }
 function start(mock) {
+  if (session?.submittedAt != null) {
+    go("session");
+    return;
+  }
   if (session) {
     modal(
       `<h2 class="modal-title">Keep or replace your active test?</h2><p class="subtitle">${esc(session.title)} has saved work. Export it before starting a new test if you want to keep the draft.</p><div class="button-group spacer"><button class="button" id="keep-test">Resume existing</button><button class="button secondary" id="replace-test">Replace with new test</button><button class="button ghost" id="backup-active">Export draft ↓</button></div>`,
@@ -511,11 +519,15 @@ function start(mock) {
   persist();
   go("session");
 }
-let completing = false;
+let completingSession = null;
 async function complete() {
-  if (!session || completing) return;
-  completing = true;
-  const original=session, submitted=structuredClone(session), finishedAt=Date.now();
+  if (!session || completingSession === session) return;
+  const original = session;
+  completingSession = original;
+  session.submittedAt ??= Date.now();
+  persist();
+  const submitted = structuredClone(session);
+  const finishedAt = submitted.submittedAt;
   if(page==="session"){
     const main=$("#main");
     main.replaceChildren(Object.assign(document.createElement("p"),{textContent:"Checking proofs and saving your attempt…"}));
@@ -535,7 +547,9 @@ async function complete() {
     history.unshift(result);
     history=history.slice(0,100);activeReport=result;session=null;
     persist();go("report");
-  } finally { completing=false; }
+  } finally {
+    if (completingSession === original) completingSession = null;
+  }
 }
 function referenceQuestion(r) {
   return {
@@ -850,7 +864,7 @@ function bind() {
     };
     bindReview();
   }
-  if (page === "session" && session) {
+  if (page === "session" && session && completingSession !== session && session.submittedAt == null) {
     bindCertificateGuide(
       session.questions[session.current],
       $("#session-answer"),
@@ -1127,10 +1141,11 @@ setInterval(() => {
   if (!session) return;
   const remaining = remainingSeconds(session);
   if ($("#timer")) $("#timer").textContent = timeText(remaining);
-  if (remaining === 0 && !completing) {
+  if ((remaining === 0 || session.submittedAt != null) && completingSession !== session) {
+    const expired = session.submittedAt == null;
     if ($("#modal").open) $("#modal").close();
-    complete();
-    toast("Time is up. Your work has been saved.");
+    void complete();
+    if (expired) toast("Time is up. Your work has been saved.");
   }
 }, 1000);
 render();

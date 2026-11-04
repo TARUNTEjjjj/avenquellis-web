@@ -45,6 +45,15 @@ const templates = [
  {key:'probability-union',topic:'probability',level:'olympiad',make:r=>{const n=int(r,3,8);return {title:'A bound without independence',statement:`Events A₁,…,A_${n} each have probability at most 1/${2*n}. Prove that the probability that none occurs is at least 1/2. Do not assume independence.`,solution:`The union bound gives P(A₁∪⋯∪A_${n}) ≤ ΣP(A_i) ≤ ${n}/(${2*n})=1/2. Taking complements yields P(no event occurs) ≥ 1−1/2=1/2. The union bound follows because the indicator of a union is at most the sum of the individual indicators, so no independence is needed.`,rubric:rub('Apply or prove the union bound without independence.','Substitute the upper bounds on individual probabilities.','Take complements with the correct inequality direction.'),parameters:{n}}}}
 , ...advancedTemplates
 ];
+// Match the native UTF-8 API without silently replacing lone UTF-16 surrogates.
+function wellFormed(text) {
+ for(let i=0;i<text.length;i++) {
+  const unit=text.charCodeAt(i);
+  if(unit>=0xd800&&unit<=0xdbff) {const next=text.charCodeAt(++i);if(!(next>=0xdc00&&next<=0xdfff))return false;}
+  else if(unit>=0xdc00&&unit<=0xdfff)return false;
+ }
+ return true;
+}
 function normalize(opts={}) {
  const topic = opts.topic && opts.topic!=='all' && opts.topic!=='mixed' ? opts.topic : null;
  if(topic && !topics.includes(topic)) throw new RangeError(`Unknown topic: ${topic}`);
@@ -58,8 +67,9 @@ function normalize(opts={}) {
  if(!['all','proof','numeric'].includes(type)) throw new RangeError(`Unknown question type: ${type}`);
  if(exam==='RMO' && type==='numeric') throw new RangeError('RMO mock practice uses proof questions. Choose proof format.');
  // Match the native limits: a generator seed adds at least seven units (":mock:0") and must fit in 256.
- const seed=opts.seed??1;
+ const seed=opts.seed===undefined?1:opts.seed;
  if(typeof seed==='string'&&seed.length>249) throw new RangeError('Seed is too long for a 256-unit question reference.');
+ if(typeof seed==='string'?!wellFormed(seed):!Number.isSafeInteger(seed)) throw new TypeError('Use a valid text seed or a safe integer.');
  return {topic,difficulty,exam,type:exam==='RMO'?'proof':type,seed};
 }
 function materialize(template,options,variantSeed) {
@@ -122,7 +132,7 @@ export function resolveQuestionRef(reference) {
   const { id, templateId, seed, exam, difficulty } = reference;
   if (typeof id !== 'string' || id.length > 160 || !/^[a-z0-9-]+$/.test(id)) return null;
   if (templateId !== undefined && (typeof templateId !== 'string' || templateId.length > 100)) return null;
-  if (seed !== undefined && (typeof seed !== 'string' || seed.length === 0 || seed.length > 256)) return null;
+  if (seed !== undefined && (typeof seed !== 'string' || seed.length === 0 || seed.length > 256 || !wellFormed(seed))) return null;
   if (exam !== undefined && !exams.includes(exam)) return null;
   if (difficulty !== undefined && !difficulties.includes(difficulty)) return null;
 

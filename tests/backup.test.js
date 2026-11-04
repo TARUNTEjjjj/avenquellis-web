@@ -57,3 +57,17 @@ test('rejects unsafe draft maps and strips nested unknown metadata',()=>{
 test('rejects inherited object-property identifiers in imported questions',()=>{
  for(const key of Object.getOwnPropertyNames(Object.prototype)){const s=active();s.questions[0].id=key;assert.throws(()=>validateBackup(s),key);}
 });
+
+
+test('a submitted attempt remains frozen after backup restore', () => {
+  const original = active();
+  original.submittedAt = original.startedAt + 10000;
+  original.answers[original.questions[0].id] = 'A preserved submitted answer';
+  const restored = validateBackup(clone(original)).session;
+  assert.equal(restored.submittedAt, original.submittedAt);
+  assert.deepEqual(restored.answers, original.answers);
+  assert.equal(restored.deadline, original.deadline);
+  for (const submittedAt of ['1000000', -1, original.startedAt - 1]) {
+    assert.throws(() => validateBackup({...original, submittedAt}));
+  }
+});
