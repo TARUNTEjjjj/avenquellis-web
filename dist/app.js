@@ -125,6 +125,8 @@ let page = "",
       : {},
   activeReport = null,
   proofAttemptId = saved.proofAttemptId || null,
+  // The attempt whose submitted proof is open. Unlike proofAttemptId, editing keeps it.
+  reviewAttemptId = reviewQuestion ? (saved.reviewAttemptId ?? proofAttemptId) : null,
   search = "",
   toastTimer;
 const symbols = {
@@ -148,6 +150,16 @@ const pageNames = {
   session: "Test in progress",
   report: "Session review",
 };
+// The open problem, taken from saved state rather than the last proof-studio render.
+const proofQuestion = () =>
+  reviewQuestion ||
+  questionBank.find((q) => q.id === proofId) ||
+  questionBank.find((q) => q.type === "proof");
+// Text opened from a submitted attempt has its own slot, so it never replaces the separate draft for that problem.
+const draftSlot = () =>
+  reviewQuestion && reviewAttemptId
+    ? `${reviewAttemptId}:${reviewQuestion.id}`
+    : proofQuestion().id;
 function persist() {
   try {
     localStorage.setItem(
@@ -162,6 +174,7 @@ function persist() {
         reviewQuestion,
         proofDrafts,
         proofAttemptId,
+        reviewAttemptId,
         bookmarks,
       }),
     );
@@ -314,10 +327,7 @@ function rubric(q, inputs = false) {
     .join("");
 }
 function proof() {
-  currentProof =
-    reviewQuestion ||
-    questionBank.find((q) => q.id === proofId) ||
-    questionBank.find((q) => q.type === "proof");
+  currentProof = proofQuestion();
   return (
     heading(
       "The proof studio.",
@@ -782,9 +792,10 @@ function bind() {
     };
     $("#proof-question").onchange = (e) => {
       if (e.target.value === "custom") return;
-      proofDrafts[currentProof.id] = proofDraft;
+      proofDrafts[draftSlot()] = proofDraft;
       proofId = e.target.value;
       reviewQuestion = null;
+      reviewAttemptId = null;
       proofAttemptId = null;
       proofDraft = proofDrafts[proofId] || "";
       proofResult = null;
@@ -794,7 +805,7 @@ function bind() {
     $("#proof-answer").oninput = (e) => {
       proofDraft = e.target.value;
       proofAttemptId = null;
-      proofDrafts[currentProof.id] = proofDraft;
+      proofDrafts[draftSlot()] = proofDraft;
       proofResult = null;
       $("#proof-feedback").innerHTML = "";
       $("#arithmetic-feedback").innerHTML = "";
@@ -916,9 +927,10 @@ function bind() {
         (e) =>
           (e.onclick = () => {
             const i = Number(e.dataset.reviewQ);
-            if (currentProof) proofDrafts[currentProof.id] = proofDraft;
+            if (currentProof) proofDrafts[draftSlot()] = proofDraft;
             reviewQuestion = a.questions[i];
             proofAttemptId = a.attemptId;
+            reviewAttemptId = a.attemptId;
             proofDraft = a.answers[reviewQuestion.id] || "";
             proofResult = null;
             go("proof");
@@ -939,6 +951,7 @@ function bind() {
         reviewQuestion,
         proofDrafts,
         proofAttemptId,
+        reviewAttemptId,
         bookmarks,
       });
     document.querySelectorAll("[data-report]").forEach(
@@ -966,8 +979,9 @@ function bindForge() {
       download("avenquellis-question.json", generated);
   if ($("#proof-generated"))
     $("#proof-generated").onclick = () => {
-      if (currentProof) proofDrafts[currentProof.id] = proofDraft;
+      if (currentProof) proofDrafts[draftSlot()] = proofDraft;
       proofAttemptId = null;
+      reviewAttemptId = null;
       reviewQuestion = generated;
       proofDraft = proofDrafts[generated.id] || "";
       proofResult = null;
@@ -1032,6 +1046,7 @@ async function importBackup(e) {
         reviewQuestion,
         proofDrafts,
         proofAttemptId,
+        reviewAttemptId,
         bookmarks,
       });
     $("#confirm-import").onclick = () => {
@@ -1052,6 +1067,7 @@ async function importBackup(e) {
         reviewQuestion = restored.reviewQuestion || null;
         proofDrafts = restored.proofDrafts || {};
         proofAttemptId = restored.proofAttemptId || null;
+        reviewAttemptId = restored.reviewAttemptId || null;
         proofResult = null;
         activeReport = null;
         bookmarks = restored.bookmarks || [];
