@@ -48,15 +48,16 @@ export function createTranscriptionHandler({timeoutMs=45000,now=Date.now}={}) {
     if(active>=2)return deny('Two photos are being processed. Try again shortly.',429,15);
     if((recent.get(ip)||0)>stamp)return deny('Wait a minute before transcribing another page.',429,60);
     if(recent.size>=2048){for(const [key,end] of recent)if(end<=stamp)recent.delete(key);if(recent.size>=2048)return deny('The transcription service is busy. Try again shortly.',429,60);}
-    active++;let launched=false;
+    // Release once, when the handler finishes: the runtime may cancel a timed-out model call without settling it.
+    active++;let released=false;const release=()=>{if(!released){released=true;active--;}};
     try {
       let photo;try{photo=await readPhoto(request);}catch(e){return deny(e instanceof RangeError?'The image exceeds the allowed size or dimensions.':'The image could not be read. Choose a complete JPEG page.',e instanceof RangeError?413:400);}
       if((recent.get(ip)||0)>now())return deny('Wait a minute before transcribing another page.',429,60);
       recent.set(ip,now()+60000);
       const url='data:image/jpeg;base64,'+toBase64(photo);
       const requestData={messages:[{role:'system',content:instruction},{role:'user',content:[{type:'text',text:'Transcribe the handwriting on this page.'},{type:'image_url',image_url:{url}}]}],stream:false,temperature:0,max_tokens:1400};
-      launched=true;let timer;
-      const inference=Promise.resolve().then(()=>env.AI.run(transcriptionModel,requestData)).finally(()=>{active--;});
+      let timer;
+      const inference=Promise.resolve().then(()=>env.AI.run(transcriptionModel,requestData)).finally(release);
       try {
         const output=await Promise.race([inference,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('deadline')),timeoutMs);})]);
         let text;try{text=extractText(output);}catch{return deny('The model did not return a complete transcription. Try a smaller crop.',502);}
@@ -66,6 +67,6 @@ export function createTranscriptionHandler({timeoutMs=45000,now=Date.now}={}) {
         if(error?.status===429 || /\b3036\b|\b3040\b/.test(String(error?.code)+' '+String(error?.message)))return deny('The transcription allowance or capacity has been reached. Try again later.',429,60);
         return deny('Handwriting transcription is unavailable. Try again later.',503);
       } finally{clearTimeout(timer);}
-    } finally{if(!launched)active--;}
+    } finally{release();}
   };
 }

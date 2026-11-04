@@ -1,6 +1,6 @@
 WebLLM 0.2.87, released under Apache License 2.0. See LICENSE-WebLLM.txt.
 
-The local ES module is a minified bundle of the published package and its loglevel dependency.
+The local ES module is a minified bundle of the published package, which embeds WebAssembly builds of xgrammar and tokenizers-cpp (Hugging Face tokenizers, SentencePiece, Oniguruma), and its loglevel dependency.
 
 The following notices are reproduced from the upstream published JavaScript bundle.
 
@@ -138,3 +138,307 @@ The MLC WebGPU model library is the upstream binary at https://raw.githubusercon
 Model weights and tokenizer are downloaded separately from https://huggingface.co/mlc-ai/Qwen3-1.7B-q4f16_1-MLC/tree/80b3abcec6c3b3f5355dc0cc99cc4fb578f192bc.
 
 Qwen3 model publisher: Qwen. Model quantization and compilation: MLC AI. See https://huggingface.co/Qwen/Qwen3-1.7B and https://github.com/mlc-ai/mlc-llm.
+
+==============================================================================
+Components compiled into the WebAssembly modules embedded in webllm-0.2.87.js
+==============================================================================
+
+This section was added by Avenquellis. It is not part of the upstream bundle,
+which carries no notices for these components.
+
+webllm-0.2.87.js contains two base64-encoded WebAssembly modules, of 727,906 and
+3,479,304 bytes. The package.json of @mlc-ai/web-llm 0.2.87 names their
+packages: @mlc-ai/web-xgrammar 0.1.27 and @mlc-ai/web-tokenizers ^0.1.6.
+Versions below come from that package.json and from the source paths compiled
+into the modules. Apache-2.0 components are covered by the Apache License 2.0
+text in LICENSE-WebLLM.txt.
+
+Module of 727,906 bytes: XGrammar
+  XGrammar v0.1.27 (Apache-2.0)
+  https://github.com/mlc-ai/xgrammar/tree/v0.1.27
+  picojson, vendored in XGrammar as 3rdparty/picojson/picojson.h (BSD-2-Clause)
+
+Module of 3,479,304 bytes: tokenizers-cpp
+  tokenizers-cpp (Apache-2.0), https://github.com/mlc-ai/tokenizers-cpp
+  Hugging Face Tokenizers 0.21.1, the Rust crate tokenizers (Apache-2.0)
+  SentencePiece (Apache-2.0), a tokenizers-cpp submodule, with Abseil code
+    (Apache-2.0) and its vendored Protocol Buffers lite runtime (BSD-3-Clause)
+    and darts-clone (BSD-3-Clause)
+  Oniguruma (BSD-2-Clause), built by the onig_sys crate
+  The Rust crates listed below
+
+------------------------------------------------------------------------------
+XGrammar v0.1.27 NOTICE
+https://github.com/mlc-ai/xgrammar/blob/v0.1.27/NOTICE
+
+XGrammar
+
+Copyright (c) 2024 by XGrammar Contributors
+
+------------------------------------------------------------------------------
+picojson (BSD-2-Clause), as vendored in XGrammar v0.1.27
+https://github.com/mlc-ai/xgrammar/blob/v0.1.27/3rdparty/picojson/picojson.h
+
+/*
+ * Copyright 2009-2010 Cybozu Labs, Inc.
+ * Copyright 2011-2014 Kazuho Oku
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
+------------------------------------------------------------------------------
+Protocol Buffers lite runtime (BSD-3-Clause), as vendored in SentencePiece
+https://github.com/google/sentencepiece/blob/v0.2.0/third_party/protobuf-lite/LICENSE
+
+The module does not record its SentencePiece commit. This file and the
+darts-clone licence below are byte-identical at SentencePiece v0.1.99, v0.2.0
+and e0f0f966959108415183d6cbe7a9051ca8bc2da1 (0.2.2, the commit tokenizers-cpp
+pins now).
+
+Copyright 2008 Google Inc.  All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+    * Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+    * Redistributions in binary form must reproduce the above
+copyright notice, this list of conditions and the following disclaimer
+in the documentation and/or other materials provided with the
+distribution.
+    * Neither the name of Google Inc. nor the names of its
+contributors may be used to endorse or promote products derived from
+this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+Code generated by the Protocol Buffer compiler is owned by the owner
+of the input file used when generating it.  This code is not
+standalone and requires a support library to be linked with it.  This
+support library is itself covered by the above license.
+
+------------------------------------------------------------------------------
+darts-clone (BSD-3-Clause), as vendored in SentencePiece
+https://github.com/google/sentencepiece/blob/v0.2.0/third_party/darts_clone/LICENSE
+
+Copyright (c) 2008-2011, Susumu Yata
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+- Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer. 
+- Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution. 
+- Neither the name of the <ORGANIZATION> nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+------------------------------------------------------------------------------
+Oniguruma (BSD-2-Clause), as bundled by the onig_sys crate
+https://github.com/kkos/oniguruma/blob/v6.9.8/COPYING
+
+onig 6.4.0 requires onig_sys ^69.8.1; the module does not record the resolved
+onig_sys release. COPYING is byte-identical at Oniguruma v6.9.8, v6.9.9 and
+v6.9.10.
+
+Oniguruma LICENSE
+-----------------
+
+Copyright (c) 2002-2021  K.Kosako  <kkosako0@gmail.com>
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+1. Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+SUCH DAMAGE.
+
+------------------------------------------------------------------------------
+onig 6.4.0 and onig_sys (MIT)
+https://github.com/rust-onig/rust-onig/blob/v6.4.0/LICENSE.md
+onig_sys/LICENSE.md in the same repository carries the same MIT notice.
+
+# Rust-Onig is Open Source!
+
+All source code in this repository is distributed under the terms of
+the *MIT License* unless otherwise stated. The Oniguruma source code
+remains the property of the original authors and is re-distributed
+under the original license.
+
+> The MIT License (MIT)
+> 
+> Copyright (c) 2015 Will Speak <will@willspeak.me>, Ivan Ivashchenko
+> <defuz@me.com>, and contributors.
+> 
+> Permission is hereby granted, free of charge, to any person obtaining a copy
+> of this software and associated documentation files (the "Software"), to deal
+> in the Software without restriction, including without limitation the rights
+> to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+> copies of the Software, and to permit persons to whom the Software is
+> furnished to do so, subject to the following conditions:
+> 
+> The above copyright notice and this permission notice shall be included in all
+> copies or substantial portions of the Software.
+> 
+> THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+> IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+> FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+> AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+> LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+> OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+> SOFTWARE.
+
+------------------------------------------------------------------------------
+Unicode data tables compiled into regex-syntax 0.8.4, unicode-segmentation
+1.11.0 and unicode-normalization-alignments 0.1.12 (Unicode-DFS-2016)
+https://github.com/rust-lang/regex/blob/regex-syntax-0.8.4/regex-syntax/src/unicode_tables/LICENSE-UNICODE
+
+UNICODE, INC. LICENSE AGREEMENT - DATA FILES AND SOFTWARE
+
+Unicode Data Files include all data files under the directories
+http://www.unicode.org/Public/, http://www.unicode.org/reports/,
+http://www.unicode.org/cldr/data/, http://source.icu-project.org/repos/icu/, and
+http://www.unicode.org/utility/trac/browser/.
+
+Unicode Data Files do not include PDF online code charts under the
+directory http://www.unicode.org/Public/.
+
+Software includes any source code published in the Unicode Standard
+or under the directories
+http://www.unicode.org/Public/, http://www.unicode.org/reports/,
+http://www.unicode.org/cldr/data/, http://source.icu-project.org/repos/icu/, and
+http://www.unicode.org/utility/trac/browser/.
+
+NOTICE TO USER: Carefully read the following legal agreement.
+BY DOWNLOADING, INSTALLING, COPYING OR OTHERWISE USING UNICODE INC.'S
+DATA FILES ("DATA FILES"), AND/OR SOFTWARE ("SOFTWARE"),
+YOU UNEQUIVOCALLY ACCEPT, AND AGREE TO BE BOUND BY, ALL OF THE
+TERMS AND CONDITIONS OF THIS AGREEMENT.
+IF YOU DO NOT AGREE, DO NOT DOWNLOAD, INSTALL, COPY, DISTRIBUTE OR USE
+THE DATA FILES OR SOFTWARE.
+
+COPYRIGHT AND PERMISSION NOTICE
+
+Copyright © 1991-2018 Unicode, Inc. All rights reserved.
+Distributed under the Terms of Use in http://www.unicode.org/copyright.html.
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of the Unicode data files and any associated documentation
+(the "Data Files") or Unicode software and any associated documentation
+(the "Software") to deal in the Data Files or Software
+without restriction, including without limitation the rights to use,
+copy, modify, merge, publish, distribute, and/or sell copies of
+the Data Files or Software, and to permit persons to whom the Data Files
+or Software are furnished to do so, provided that either
+(a) this copyright and permission notice appear with all copies
+of the Data Files or Software, or
+(b) this copyright and permission notice appear in associated
+Documentation.
+
+THE DATA FILES AND SOFTWARE ARE PROVIDED "AS IS", WITHOUT WARRANTY OF
+ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT OF THIRD PARTY RIGHTS.
+IN NO EVENT SHALL THE COPYRIGHT HOLDER OR HOLDERS INCLUDED IN THIS
+NOTICE BE LIABLE FOR ANY CLAIM, OR ANY SPECIAL INDIRECT OR CONSEQUENTIAL
+DAMAGES, OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,
+DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THE DATA FILES OR SOFTWARE.
+
+Except as contained in this notice, the name of a copyright holder
+shall not be used in advertising or otherwise to promote the sale,
+use or other dealings in these Data Files or Software without prior
+written authorization of the copyright holder.
+
+------------------------------------------------------------------------------
+Rust crates
+------------------------------------------------------------------------------
+
+Except for onig_sys, these crates appear by source path in the 3,479,304-byte
+module. Licences are the SPDX expressions published for each version on
+crates.io.
+
+  aho-corasick 1.1.3                       Unlicense OR MIT
+  base64 0.13.1                            MIT OR Apache-2.0 *
+  crossbeam-deque 0.8.5                    MIT OR Apache-2.0
+  crossbeam-epoch 0.9.18                   MIT OR Apache-2.0
+  lazy_static 1.5.0                        MIT OR Apache-2.0
+  log 0.4.22                               MIT OR Apache-2.0
+  memchr 2.7.4                             Unlicense OR MIT
+  once_cell 1.19.0                         MIT OR Apache-2.0
+  onig 6.4.0                               MIT
+  onig_sys ^69.8.1 **                      MIT
+  rand 0.8.5                               MIT OR Apache-2.0
+  rand_chacha 0.3.1                        MIT OR Apache-2.0
+  rayon 1.10.0                             MIT OR Apache-2.0
+  rayon-core 1.12.1                        MIT OR Apache-2.0
+  regex 1.10.5                             MIT OR Apache-2.0
+  regex-automata 0.4.7                     MIT OR Apache-2.0
+  regex-syntax 0.8.4                       MIT OR Apache-2.0
+  serde 1.0.204                            MIT OR Apache-2.0
+  serde_json 1.0.121                       MIT OR Apache-2.0
+  smallvec 1.13.2                          MIT OR Apache-2.0
+  spm_precompiled 0.1.4                    Apache-2.0
+  tokenizers 0.21.1                        Apache-2.0
+  unicode-normalization-alignments 0.1.12  MIT OR Apache-2.0 *
+  unicode-segmentation 1.11.0              MIT OR Apache-2.0 *
+
+  * crates.io records this licence in the older form "MIT/Apache-2.0".
+  ** onig_sys leaves no source path, but the Oniguruma library it builds is in
+     the module. ^69.8.1 is the range onig 6.4.0 requires; the module does not
+     record the resolved release.
+
+The module also contains the Rust standard library (core, alloc, std and
+panic_unwind, rustc commit 05f9846f893b09a1be1fc8560e33fc3c815cfecb) and the
+hashbrown 0.15.2 crate it uses. Both are MIT OR Apache-2.0.
+
+Where a crate offers a choice of licence, Avenquellis uses it under Apache-2.0,
+or under the Unlicense for aho-corasick and memchr. Other dependencies of these
+crates leave no source path in the module and are not listed here.

@@ -16,6 +16,7 @@ test('full backup round-trips sessions, per-question drafts, review linkage and 
  b.reviews=[{...r,questionTitle:q.title,attemptId:s.attemptId}];
  const v=validateBackup(JSON.stringify(b));
  assert.equal(v.mode,'full');assert.equal(v.session.deadline,b.session.deadline);assert.equal(v.proofDraft,'Keep this draft');assert.deepEqual(v.proofDrafts,b.proofDrafts);assert.equal(v.reviewQuestion.id,q.id);assert.equal(v.reviews[0].attemptId,s.attemptId);assert.equal(v.proofAttemptId,s.attemptId);assert.equal(v.reviews[0].reviewerIdentityVerified,false);
+ assert.equal(v.reviewAttemptId,s.attemptId);assert.equal(validateBackup({...b,proofAttemptId:null,reviewAttemptId:s.attemptId}).reviewAttemptId,s.attemptId);assert.equal(validateBackup({...b,reviewQuestion:null}).reviewAttemptId,null);
 });
 test('raw active exports restore the original deadline and do not contain arbitrary fields',()=>{
  const s=active();s.untrusted='<script>alert(1)</script>';const v=validateBackup(s);

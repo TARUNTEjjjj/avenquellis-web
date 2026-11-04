@@ -3,7 +3,7 @@
  * Every proof is supplied in full; alternative valid arguments deserve credit.
  */
 const integer = (r, a, b) => a + Math.floor(r() * (b - a + 1));
-const rubric = steps => steps.map(([points, description], i) => ({id:`step-${i+1}`,points,description}));
+const rubric = steps => steps.map(([points, description], i) => ({id:`step-${i+1}`,description,points}));
 const exercise = (key, topic, level, make) => ({key,topic,level,make});
 
 export const advancedTemplates = [
@@ -160,13 +160,13 @@ export const advancedTemplates = [
     return {title:'Both the destination and duration of a random walk',
       statement:`A token starts at integer ${i} on {0,1,…,${n}}. At each move, a fair independent coin moves it one step left or right. It stops on reaching 0 or ${n}. Find, with proof, the probability it stops at ${n} and its expected number of moves. Justify that the stopping time has finite expectation.`,
       solution:`From any interior state, ${n} consecutive left moves force absorption within ${n} moves. Thus each block of ${n} future moves has conditional absorption probability at least 2^(−${n}). Consequently P(T>k·${n})≤(1−2^(−${n}))ᵏ, which proves almost-sure absorption and, by summing the geometric tail, finite expectation. For a start at j, let p_j be the chance of finishing at ${n} and e_j the mean duration. First-step conditioning gives p_j=(p_(j−1)+p_(j+1))/2, p_0=0,p_${n}=1. Its unique solution is p_j=j/${n}, because a sequence with zero second differences is affine. Likewise e_j=1+(e_(j−1)+e_(j+1))/2 with e_0=e_${n}=0. The sequence j(${n}−j) satisfies this recurrence. Any difference of two solutions has zero second differences and zero endpoints, so it is zero. Hence the answers are ${i}/${n} and ${i*(n-i)} moves.`,
-      rubric:rubric([[3,'Prove a geometric tail bound and finite expectation.'],[2,'Set up and solve the absorption-probability recurrence.'],[3,'Derive and solve the duration recurrence with correct boundary values.'],[2,'Establish uniqueness and evaluate both expressions at the given start.']]),parameters:{n,i}};
+      rubric:rubric([[3,'Prove a geometric tail bound and finite expectation.'],[2,'Set up and solve the absorption-probability recurrence.'],[3,'Derive and solve the duration recurrence with correct boundary values.'],[2,'Establish uniqueness and evaluate both expressions at the given start.']]),parameters:{i,n}};
   }),
   exercise('advanced-probability-parity-conditioning','probability','olympiad',r => {
     const n=integer(r,4,9),d=integer(r,3,5);
     return {title:'Conditioning an independent selection on even size',
       statement:`Each element of {1,…,${n}} is selected independently with probability p=1/${d}. Let S be the selected set. Find P(|S| is even) and P(1∈S given that |S| is even). Prove your formulas without listing all subsets.`,
       solution:`For m independent selections, let E_m and O_m be the probabilities of even and odd counts. The binomial theorem gives E_m+O_m=1 and E_m−O_m=Σ(j=0 to m)(−1)ʲC(m,j)pʲ(1−p)^(m−j)=(1−2p)ᵐ. Thus E_m=[1+(1−2p)ᵐ]/2 and O_m=[1−(1−2p)ᵐ]/2. Now 1∈S together with even total size means that element 1 is selected and the other ${n-1} elements have odd selected count. These events are independent, so their joint probability is p·O_${n-1}. Dividing by E_${n}>0 gives P(1∈S||S| even)=p[1−(1−2p)^${n-1}]/[1+(1−2p)^${n}]. Substitute p=1/${d} to obtain the requested two probabilities. The positivity of the conditioning event also follows from the positive probability of selecting nothing.`,
-      rubric:rubric([[3,'Use the binomial theorem to compute the difference of parity probabilities.'],[2,'Solve for both even and odd probabilities.'],[3,'Identify the correct independent event for the conditional numerator.'],[2,'Divide by the nonzero conditioning probability and substitute the parameters.']]),parameters:{n,d}}
+      rubric:rubric([[3,'Use the binomial theorem to compute the difference of parity probabilities.'],[2,'Solve for both even and odd probabilities.'],[3,'Identify the correct independent event for the conditional numerator.'],[2,'Divide by the nonzero conditioning probability and substitute the parameters.']]),parameters:{d,n}}
   })
 ];

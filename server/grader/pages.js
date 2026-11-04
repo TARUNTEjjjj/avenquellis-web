@@ -1,5 +1,7 @@
 /** Same-origin Cloudflare Pages Function entry for a host-managed practice catalog and quota. */
-import {evaluateProof, readEvaluatorConfig, EvaluatorError} from './provider.js';
+import {boundedInput, evaluateProof, readEvaluatorConfig, EvaluatorError} from './provider.js';
+import {makeSpanReviewRequest} from './span-v2.js';
+import {isWellFormedText} from './index.js';
 import {readJson} from './service.js';
 import {applyNativeConsensus} from './native-consensus.js';
 export {applyNativeConsensus} from './native-consensus.js';
@@ -15,22 +17,25 @@ export function createPagesReviewHandler({resolveQuestion, admit, loadGrader, as
     throw new TypeError('Supply a canonical question resolver and a review admission policy.');
   }
   if ((assessmentOnly || loadGrader !== undefined) && typeof loadGrader !== 'function') throw new TypeError('A native grading runtime is required.');
+  // Counts only model reviews, from admission until the native recheck finishes.
   let active = 0;
   return async function onRequest(context) {
     const {request, env} = context;
     if (request.method !== 'POST') return json({error: 'Use POST.'}, 405);
     const origin = request.headers.get('origin');
     if (origin && origin !== new URL(request.url).origin) return json({error: 'Origin not allowed.'}, 403);
-    if (active >= 2) return json({error: 'Two reviews are already running in this instance.'}, 429);
-    active++;
     try {
       const input = await readJson(request);
       if (Object.keys(input).some(key => !allowedKeys.has(key))) {
         return json({error: 'Send only questionId, answer and optional reference.'}, 400);
       }
+      // Assessment never calls the model, so it allows assessProof's 50,000 characters; model review keeps the provider's 20,000.
       if (typeof input.questionId !== 'string' || !input.questionId.trim() || input.questionId.length > 200 ||
-          typeof input.answer !== 'string' || (!assessmentOnly && !input.answer.trim()) || input.answer.length > 20000) {
-        return json({error: 'A valid question ID and answer of 1–20,000 characters are required.'}, 400);
+          typeof input.answer !== 'string' || (!assessmentOnly && !input.answer.trim()) ||
+          input.answer.length > (assessmentOnly ? 50000 : 20000) || !isWellFormedText(input.answer)) {
+        return json({error: assessmentOnly
+          ? 'A valid question ID and a well-formed answer of up to 50,000 characters are required.'
+          : 'A valid question ID and a well-formed answer of 1–20,000 characters are required.'}, 400);
       }
       if (input.reference !== undefined && (input.reference === null || typeof input.reference !== 'object' ||
           Array.isArray(input.reference) || JSON.stringify(input.reference).length > 2048)) {
@@ -58,21 +63,28 @@ export function createPagesReviewHandler({resolveQuestion, admit, loadGrader, as
           if (assessmentOnly || assessment.status !== 'needs_review') return json(assessment);
         } catch { return json({error:'The native proof grader is unavailable.',code:'native_unavailable'},503); }
       }
-      readEvaluatorConfig(configEnv);
-      let admitted;
-      try { admitted = await admit({request, env, question}); }
-      catch { return json({error: 'The review admission service is unavailable.'}, 503); }
-      if (admitted instanceof Response) return admitted;
-      if (admitted !== true) return json({error: 'This review was not admitted.'}, 429);
-      const result = await evaluateProof({question, answer: input.answer}, {env: configEnv});
-      if (!grader) return json(result);
-      try { return json(applyNativeConsensus(question,input.answer,result,grader)); }
-      catch { return json({error:'The native proof review could not be validated.',code:'native_validation_failed'},503); }
+      const config = readEvaluatorConfig(configEnv);
+      // Input the evaluator would refuse fails here, before admission spends the caller's allowance.
+      const prepared = boundedInput({question, answer: input.answer});
+      if (config.protocol === 'span-v2') makeSpanReviewRequest(prepared.question, prepared.answer, 0, config.maxTokens);
+      if (active >= 2) return json({error: 'Two reviews are already running in this instance.'}, 429);
+      active++;
+      try {
+        let admitted;
+        try { admitted = await admit({request, env, question}); }
+        catch { return json({error: 'The review admission service is unavailable.'}, 503); }
+        if (admitted instanceof Response) return admitted;
+        if (admitted !== true) return json({error: 'This review was not admitted.'}, 429);
+        const result = await evaluateProof({question, answer: input.answer}, {env: configEnv});
+        if (!grader) return json(result);
+        try { return json(applyNativeConsensus(question,input.answer,result,grader)); }
+        catch { return json({error:'The native proof review could not be validated.',code:'native_validation_failed'},503); }
+      } finally {
+        active--;
+      }
     } catch (error) {
       if (error instanceof EvaluatorError) return json({error: error.message, code: error.code}, 503);
       return json({error: error instanceof SyntaxError ? 'Malformed JSON request.' : error.message}, error.status || 400);
-    } finally {
-      active--;
     }
   };
 }
