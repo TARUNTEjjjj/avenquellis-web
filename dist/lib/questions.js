@@ -57,9 +57,13 @@ function normalize(opts={}) {
  const type=opts.type||(exam==='RMO'?'proof':'all');
  if(!['all','proof','numeric'].includes(type)) throw new RangeError(`Unknown question type: ${type}`);
  if(exam==='RMO' && type==='numeric') throw new RangeError('RMO mock practice uses proof questions. Choose proof format.');
- return {topic,difficulty,exam,type:exam==='RMO'?'proof':type,seed:opts.seed??1};
+ // Match the native limits: a generator seed adds at least seven units (":mock:0") and must fit in 256.
+ const seed=opts.seed??1;
+ if(typeof seed==='string'&&seed.length>249) throw new RangeError('Seed is too long for a 256-unit question reference.');
+ return {topic,difficulty,exam,type:exam==='RMO'?'proof':type,seed};
 }
 function materialize(template,options,variantSeed) {
+ if(String(variantSeed).length>256) throw new RangeError('A complete variant seed may use at most 256 UTF-16 code units.');
  const q=template.make(rng(variantSeed));
  return { id:`${template.key}-${hash(variantSeed).toString(36)}`,title:q.title,statement:q.statement,topic:template.topic,difficulty:template.level,requestedDifficulty:options.difficulty,exam:options.exam,type:q.type||'proof',maxMarks:10,solution:q.solution,rubric:q.rubric,...(q.answer!==undefined?{answer:q.answer}:{}),source:{...SOURCE},templateId:template.key,parameters:q.parameters||{},generator:{kind:'deterministic-template',version:'0.1.0',seed:String(variantSeed)} };
 }
