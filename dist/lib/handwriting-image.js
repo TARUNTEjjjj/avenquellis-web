@@ -31,7 +31,7 @@ export function inspectJpeg(data, removeMetadata = false) {
     if (pos >= data.length) invalid();
     const marker = data[pos++];
     if (marker === 0xd9) {
-      if (!width || !height || !sawScan || pos !== data.length) invalid();
+      if (!width || !height || !sawScan || (removeMetadata && pos !== data.length)) invalid();
       if (!removeMetadata) return {width, height, type:'image/jpeg'};
       parts.push(data.subarray(kept, pos));
       const bytes = new Uint8Array(parts.reduce((size, part) => size + part.length, 0));

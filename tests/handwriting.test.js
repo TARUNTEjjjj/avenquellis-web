@@ -26,6 +26,9 @@ test('bounded image detection and metadata removal reject malformed or trailing 
   assert.throws(()=>inspectPhoto(new TextEncoder().encode('<svg onload=alert(1)>')));
   assert.throws(()=>inspectJpeg(photo.slice(0,-2),true));
   assert.throws(()=>inspectJpeg(new Uint8Array([...photo,3]),true));
+  // Gain maps and motion-photo video follow the primary image; the local preview re-encodes it, the server stays strict.
+  assert.deepEqual(inspectPhoto(new Uint8Array([...photo,...photo])),{type:'image/jpeg',width:3,height:4});
+  assert.throws(()=>inspectJpeg(new Uint8Array([...photo,...photo]),true));
   const png=new Uint8Array(33);png.set([137,80,78,71,13,10,26,10,0,0,0,13,73,72,68,82]);
   const view=new DataView(png.buffer);view.setUint32(16,1000);view.setUint32(20,1200);
   assert.equal(inspectPhoto(png).height,1200);view.setUint32(16,100000);assert.throws(()=>inspectPhoto(png),/large/);
@@ -66,4 +69,10 @@ test('at most two simultaneous native inferences are admitted in an isolate',asy
   await new Promise(resolve=>setTimeout(resolve,1));assert.equal(calls,2);
   assert.equal((await handler({request:post(photo,{'cf-connecting-ip':'c'}),env})).status,429);
   finish({response:'n is even'});assert.equal((await a).status,200);assert.equal((await b).status,200);
+});
+test('a timed-out transcription frees its slot even when the model call never settles',async()=>{
+  let calls=0;const env=enabled(()=>++calls<=2?new Promise(()=>{}):{response:'n is even'});const handler=createTranscriptionHandler({timeoutMs:5});
+  for(const address of ['a','b'])assert.equal((await handler({request:post(photo,{'cf-connecting-ip':address}),env})).status,504);
+  const later=await handler({request:post(photo,{'cf-connecting-ip':'c'}),env});
+  assert.equal(later.status,200);assert.deepEqual(await later.json(),{text:'n is even',model:transcriptionModel});assert.equal(calls,3);
 });

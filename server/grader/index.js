@@ -18,9 +18,16 @@ export function validateQuestion(question) {
   return question;
 }
 
+/** True when text has no unpaired UTF-16 surrogate. Browsers before Safari 16.4 lack String.prototype.isWellFormed. */
+export function isWellFormedText(text) {
+  if (typeof text.isWellFormed === 'function') return text.isWellFormed();
+  try { encodeURIComponent(text); return true; } catch { return false; }
+}
+
 function validateAnswer(answer) {
   if (typeof answer !== 'string') throw new TypeError('answer must be plain text.');
   if (answer.length > 50000) throw new RangeError('answer exceeds the 50,000 character limit.');
+  if (!isWellFormedText(answer)) throw new TypeError('answer must be well-formed Unicode text.');
 }
 
 /** Extract exact text with offsets; the spans are navigation aids, not evidence of correctness. */
@@ -85,12 +92,12 @@ export function validateCritique({question, answer, critique}) {
   validateAnswer(answer);
   if (!critique || typeof critique !== 'object') throw new TypeError('A structured critique is required.');
   validateScores(question, critique.criterionScores);
-  if (typeof critique.rationale !== 'string' || !critique.rationale.trim()) throw new TypeError('A critique rationale is required.');
+  if (typeof critique.rationale !== 'string' || !critique.rationale.trim() || !isWellFormedText(critique.rationale)) throw new TypeError('A well-formed critique rationale is required.');
   if (!Array.isArray(critique.evidence) || !Array.isArray(critique.gaps)) throw new TypeError('Critique evidence and gaps must be arrays.');
   for (const entry of critique.evidence) {
-    if (!entry || !question.rubric.some(c => c.id === entry.criterionId) || typeof entry.quote !== 'string' || !entry.quote.trim() || !answer.includes(entry.quote)) throw new TypeError('Evidence must quote the submitted answer exactly and name an existing criterion.');
+    if (!entry || !question.rubric.some(c => c.id === entry.criterionId) || typeof entry.quote !== 'string' || !entry.quote.trim() || !isWellFormedText(entry.quote) || !answer.includes(entry.quote)) throw new TypeError('Evidence must quote the submitted answer exactly and name an existing criterion.');
   }
-  if (critique.gaps.some(g => typeof g !== 'string')) throw new TypeError('Every gap must be plain text.');
+  if (critique.gaps.some(g => typeof g !== 'string' || !isWellFormedText(g))) throw new TypeError('Every gap must be plain text.');
   return {criterionScores:{...critique.criterionScores}, rationale:critique.rationale, evidence:critique.evidence.map(e => ({criterionId:e.criterionId, quote:e.quote})), gaps:[...critique.gaps], score:question.rubric.reduce((sum,c) => sum + critique.criterionScores[c.id],0)};
 }
 

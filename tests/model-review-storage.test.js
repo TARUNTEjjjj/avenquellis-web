@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {createHash} from 'node:crypto';
 import {validateBackup} from '../dist/lib/backup.js';
+import {questionBank} from '../dist/lib/questions.js';
 import {rememberModelReview, modelReviewRecords, storedModelReviews, modelResult, replaceModelReviews} from '../dist/model-review.js';
 
 const question = {id: 'sample', type: 'proof', statement: 'Prove the identity.', rubric: [{id: 'c1', description: 'Justify the identity.', points: 4}]};
@@ -67,4 +69,21 @@ test('evicts providers as a pair after twenty distinct answers and preserves old
   for (let i = 1; i <= 20; i++) await rememberModelReview(question, `other ${i}`, review('workers-ai'));
   assert.deepEqual(await storedModelReviews(question, 'first'), []);
   assert.equal(modelReviewRecords().length, 20);
+});
+
+test('reviews saved under the earlier advanced rubric key survive the engine row order and a backup restore', async () => {
+  const values = storage();
+  const bank = questionBank.find(q => q.templateId === 'advanced-number-least-prime');
+  assert.deepEqual(Object.keys(bank.rubric[0]), ['id', 'description', 'points']);
+  // Earlier releases built this family's rows as {id, points, description} and hashed them in that order.
+  const legacyKey = createHash('sha256').update(JSON.stringify([bank.id, bank.statement,
+    bank.rubric.map(({id, points, description}) => ({id, points, description})), 'answer'])).digest('hex');
+  values.set('avenquellis.prose-reviews.v1', JSON.stringify([{key: legacyKey, review: review('workers-ai')}, {key: legacyKey, review: review('browser-webllm', [4, 1])}]));
+  assert.deepEqual((await storedModelReviews(bank, 'answer')).map(r => r.provider), ['workers-ai', 'browser-webllm']);
+  const restored = validateBackup({...backup(JSON.parse(JSON.stringify(modelReviewRecords()))), reviewQuestion: bank});
+  assert.ok(replaceModelReviews(restored.modelReviews));
+  assert.deepEqual((await storedModelReviews(restored.reviewQuestion, 'answer')).map(r => r.provider), ['workers-ai', 'browser-webllm']);
+  assert.equal(await rememberModelReview(restored.reviewQuestion, 'answer', review('workers-ai', [4, 4])), true);
+  assert.deepEqual(modelReviewRecords().map(row => [row.key === legacyKey, row.review.provider]), [[false, 'workers-ai'], [true, 'browser-webllm']]);
+  assert.deepEqual((await storedModelReviews(bank, 'answer')).map(r => r.suggested), [4, null]);
 });

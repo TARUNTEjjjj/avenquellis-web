@@ -125,6 +125,8 @@ let page = "",
       : {},
   activeReport = null,
   proofAttemptId = saved.proofAttemptId || null,
+  // The attempt whose submitted proof is open. Unlike proofAttemptId, editing keeps it.
+  reviewAttemptId = reviewQuestion ? (saved.reviewAttemptId ?? proofAttemptId) : null,
   search = "",
   toastTimer;
 const symbols = {
@@ -148,6 +150,16 @@ const pageNames = {
   session: "Test in progress",
   report: "Session review",
 };
+// The open problem, taken from saved state rather than the last proof-studio render.
+const proofQuestion = () =>
+  reviewQuestion ||
+  questionBank.find((q) => q.id === proofId) ||
+  questionBank.find((q) => q.type === "proof");
+// Text opened from a submitted attempt has its own slot, so it never replaces the separate draft for that problem.
+const draftSlot = () =>
+  reviewQuestion && reviewAttemptId
+    ? `${reviewAttemptId}:${reviewQuestion.id}`
+    : proofQuestion().id;
 function persist() {
   try {
     localStorage.setItem(
@@ -162,6 +174,7 @@ function persist() {
         reviewQuestion,
         proofDrafts,
         proofAttemptId,
+        reviewAttemptId,
         bookmarks,
       }),
     );
@@ -189,6 +202,9 @@ function heading(title, sub, extra = "") {
 function topicOptions(all = true) {
   return `${all ? '<option value="all">All chapters</option>' : ""}${topics.map((t) => `<option value="${t}">${topicLabels[t]}</option>`).join("")}`;
 }
+const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+const draftWords = () =>
+  plural(proofDraft.trim() ? proofDraft.trim().split(/\s+/).length : 0, "word", "words");
 function badge(s, c = "") {
   return `<span class="badge ${c}">${esc(s)}</span>`;
 }
@@ -272,7 +288,7 @@ function tests() {
       )
       .join(
         "",
-      )}</div><div class="notice">Practice sets use our own question mix and marks. For the exact paper structure, choose an official paper below. When you finish or time runs out, written proofs go to the C++ checker. You can request model feedback on your own wording after submission. Structured proofs in supported families can earn verified marks.</div><div class="section-heading"><h2>From the official archives</h2><span class="tiny">Verified 3 November 2026</span></div><div class="filters">${["all", "CMI", "ISI", "RMO"].map((e) => `<button class="filter ${examFilter === e ? "active" : ""}" data-filter="${e}">${e === "all" ? "All tracks" : e}</button>`).join("")}<input class="search-input" id="paper-search" aria-label="Search papers by year or title" placeholder="Search year or paper…" value="${esc(search)}"></div>${archiveError ? '<div class="notice warning">The archive could not load. Reload to try again.</div>' : ""}<div class="paper-grid">${papers.map((p) => `<article class="card paper-card">${badge(p.label)}<h3>${esc(p.title)}</h3><div class="card-meta"><span>${p.questionCount ?? "See PDF"} questions / groups</span><span>${p.durationMinutes ? p.durationMinutes + " min" : "Timing: see paper"}</span></div><p>${p.kind === "official-sample" ? "Official sample/model set, as labeled by ISI." : "Study from the institution’s original PDF."}</p><div class="button-group"><button class="button small secondary" data-paper="${p.id}">Timed companion ↗</button><a class="button small ghost" href="${esc(p.url)}" target="_blank" rel="noopener noreferrer">PDF ↗</a></div></article>`).join("") || '<div class="empty">No papers match this search.</div>'}</div>`
+      )}</div><div class="notice">Practice sets use our own question mix and marks. For the exact paper structure, choose an official paper below. When you finish or time runs out, written proofs go to the C++ checker. You can request model feedback on your own wording after submission. Structured proofs in supported families can earn verified marks.</div><div class="section-heading"><h2>From the official archives</h2><span class="tiny">Verified 3 November 2026</span></div><div class="filters">${["all", "CMI", "ISI", "RMO"].map((e) => `<button class="filter ${examFilter === e ? "active" : ""}" aria-pressed="${examFilter === e}" data-filter="${e}">${e === "all" ? "All tracks" : e}</button>`).join("")}<input class="search-input" id="paper-search" aria-label="Search papers by year or title" placeholder="Search year or paper…" value="${esc(search)}"></div>${archiveError ? '<div class="notice warning">The archive could not load. Reload to try again.</div>' : ""}<div class="paper-grid">${papers.map((p) => `<article class="card paper-card">${badge(p.label)}<h3>${esc(p.title)}</h3><div class="card-meta"><span>${p.questionCount ?? "See PDF"} questions / groups</span><span>${p.durationMinutes ? p.durationMinutes + " min" : "Timing: see paper"}</span></div><p>${p.kind === "official-sample" ? "Official sample/model set, as labeled by ISI." : "Study from the institution’s original PDF."}</p><div class="button-group"><button class="button small secondary" data-paper="${p.id}">Timed companion ↗</button><a class="button small ghost" href="${esc(p.url)}" target="_blank" rel="noopener noreferrer">PDF ↗</a></div></article>`).join("") || '<div class="empty">No papers match this search.</div>'}</div>`
   );
 }
 function chapters() {
@@ -286,7 +302,7 @@ function chapters() {
       "Build depth, chapter by chapter.",
       "Original drills and a carefully indexed path through the official archives.",
     ) +
-    `<div class="topic-list" style="grid-template-columns:repeat(auto-fit,minmax(175px,1fr))">${topicCards()}</div><div class="section-heading"><h2>${chapter === "all" ? "All chapter references" : topicLabels[chapter]}</h2><button class="text-link" id="chapter-drill">Generate a chapter drill ↗</button></div><div class="filters"><select id="chapter-select" style="width:auto" aria-label="Chapter">${topicOptions()}</select>${["all", "CMI", "ISI", "RMO"].map((e) => `<button class="filter ${examFilter === e ? "active" : ""}" data-filter="${e}">${e === "all" ? "All tracks" : e}</button>`).join("")}<button class="button small secondary" id="chapter-test">Start reference set (${Math.min(refs.length, 6)}) ↗</button></div><div class="notice">These entries identify questions in official PDFs. Open the source for the complete statement; the timed companion saves your working alongside each reference. Chapter tags are editorial classifications.</div><div class="card table-wrap"><table class="table"><thead><tr><th>QUESTION</th><th>CHAPTER</th><th>SOURCE</th><th>OPEN</th></tr></thead><tbody>${refs.map((r) => `<tr><td><strong>${esc(r.title)}</strong><br><span class="tiny">${esc(r.questionNumber)} · ${esc(r.type)}</span></td><td>${topicLabels[r.topic]}</td><td>${r.exam} ${r.year}<br><span class="tiny">${esc(r.sourceLabel)}</span></td><td><a href="${esc(r.url)}" target="_blank" rel="noopener noreferrer">PDF ↗</a></td></tr>`).join("") || '<tr><td colspan="4">No verified references for this selection yet. Try another chapter or track.</td></tr>'}</tbody></table></div>`
+    `<div class="topic-list" style="grid-template-columns:repeat(auto-fit,minmax(175px,1fr))">${topicCards()}</div><div class="section-heading"><h2>${chapter === "all" ? "All chapter references" : topicLabels[chapter]}</h2><button class="text-link" id="chapter-drill">Generate a chapter drill ↗</button></div><div class="filters"><select id="chapter-select" style="width:auto" aria-label="Chapter">${topicOptions()}</select>${["all", "CMI", "ISI", "RMO"].map((e) => `<button class="filter ${examFilter === e ? "active" : ""}" aria-pressed="${examFilter === e}" data-filter="${e}">${e === "all" ? "All tracks" : e}</button>`).join("")}<button class="button small secondary" id="chapter-test">Start reference set (${Math.min(refs.length, 6)}) ↗</button></div><div class="notice">These entries identify questions in official PDFs. Open the source for the complete statement; the timed companion saves your working alongside each reference. Chapter tags are editorial classifications.</div><div class="card table-wrap"><table class="table"><thead><tr><th>QUESTION</th><th>CHAPTER</th><th>SOURCE</th><th>OPEN</th></tr></thead><tbody>${refs.map((r) => `<tr><td><strong>${esc(r.title)}</strong><br><span class="tiny">${esc(r.questionNumber)} · ${esc(r.type)}</span></td><td>${topicLabels[r.topic]}</td><td>${r.exam} ${r.year}<br><span class="tiny">${esc(r.sourceLabel)}</span></td><td><a href="${esc(r.url)}" target="_blank" rel="noopener noreferrer">PDF ↗</a></td></tr>`).join("") || '<tr><td colspan="4">No verified references for this selection yet. Try another chapter or track.</td></tr>'}</tbody></table></div>`
   );
 }
 function generator() {
@@ -314,10 +330,7 @@ function rubric(q, inputs = false) {
     .join("");
 }
 function proof() {
-  currentProof =
-    reviewQuestion ||
-    questionBank.find((q) => q.id === proofId) ||
-    questionBank.find((q) => q.type === "proof");
+  currentProof = proofQuestion();
   return (
     heading(
       "The proof studio.",
@@ -333,12 +346,12 @@ function proof() {
       )
       .join(
         "",
-      )}</select><div class="question-statement">${esc(currentProof.statement)}</div>${badge(currentProof.difficulty)} <span class="tiny">${currentProof.maxMarks} marks · original practice</span></div><div class="card spacer"><label for="proof-answer">Your argument</label><div class="math-toolbar" role="group" aria-label="Insert mathematics symbol">${["∀", "∃", "⇒", "⇔", "∈", "ℝ", "ℤ", "≤", "≥", "≠", "≡", "Σ", "√", "²", "□"].map((symbol) => `<button type="button" data-insert="${symbol}" aria-label="Insert ${symbol}">${symbol}</button>`).join("")}</div><textarea class="text-area" id="proof-answer" maxlength="50000" placeholder="Begin with what is given. State the claim, justify each step, and finish with your conclusion. Plain text and Unicode mathematics work here.">${esc(proofDraft)}</textarea>${certificateGuide(currentProof)}${modelPanel()}<div id="arithmetic-feedback"></div><div class="saved-text" id="proof-save">Draft saved on this device · ${proofDraft.trim() ? proofDraft.trim().split(/\s+/).length : 0} words</div><div class="button-group"><button class="button violet" id="assess">Prepare review ∴</button><button class="button secondary" id="audit-proof">Check arithmetic =</button><button class="button ghost" id="export-proof">Export submission ↓</button></div></div><div id="proof-feedback">${proofResult ? feedbackView(proofResult) : ""}</div></section><aside class="card rubric-card"><span class="eyebrow">WHAT A COMPLETE ARGUMENT NEEDS</span><h3 class="compact-heading">Problem-specific rubric</h3>${rubric(currentProof)}<div class="notice">The C++ checker verifies explicit arithmetic equalities. The structured certificate checker verifies witnesses for supported problems. A reviewer assesses free-form arguments against this rubric. Model readings give practice marks with excerpts from your own proof. Human assessments and verified certificate marks are shown separately.</div><details><summary>Reference solution</summary><div class="solution">${esc(currentProof.solution)}</div></details><p class="tiny spacer">Review methods draw on published IMO coordination and UKMT marking guidance. No institutional affiliation or endorsement.</p><a class="text-link" href="#sources">Read the grading method ↗</a></aside></div>`
+      )}</select><div class="question-statement">${esc(currentProof.statement)}</div>${badge(currentProof.difficulty)} <span class="tiny">${currentProof.maxMarks} marks · original practice</span></div><div class="card spacer"><label for="proof-answer">Your argument</label><div class="math-toolbar" role="group" aria-label="Insert mathematics symbol">${["∀", "∃", "⇒", "⇔", "∈", "ℝ", "ℤ", "≤", "≥", "≠", "≡", "Σ", "√", "²", "□"].map((symbol) => `<button type="button" data-insert="${symbol}" aria-label="Insert ${symbol}">${symbol}</button>`).join("")}</div><textarea class="text-area" id="proof-answer" maxlength="50000" placeholder="Begin with what is given. State the claim, justify each step, and finish with your conclusion. Plain text and Unicode mathematics work here.">${esc(proofDraft)}</textarea>${certificateGuide(currentProof)}${modelPanel()}<div id="arithmetic-feedback"></div><div class="saved-text" id="proof-save">Draft saved on this device · ${draftWords()}</div><div class="button-group"><button class="button violet" id="assess">Prepare review ∴</button><button class="button secondary" id="audit-proof">Check arithmetic =</button><button class="button ghost" id="export-proof">Export submission ↓</button></div></div><div id="proof-feedback">${proofResult ? feedbackView(proofResult) : ""}</div></section><aside class="card rubric-card"><span class="eyebrow">WHAT A COMPLETE ARGUMENT NEEDS</span><h3 class="compact-heading">Problem-specific rubric</h3>${rubric(currentProof)}<div class="notice">The C++ checker verifies explicit arithmetic equalities. The structured certificate checker verifies witnesses for supported problems. A reviewer assesses free-form arguments against this rubric. Model readings give practice marks with excerpts from your own proof. Human assessments and verified certificate marks are shown separately.</div><details><summary>Reference solution</summary><div class="solution">${esc(currentProof.solution)}</div></details><p class="tiny spacer">Review methods draw on published IMO coordination and UKMT marking guidance. No institutional affiliation or endorsement.</p><a class="text-link" href="#sources">Read the grading method ↗</a></aside></div>`
   );
 }
 function feedbackView(result) {
   if (result.complete !== undefined && result.lowerBoundPoints !== undefined) return certificateResult(result);
-  return `<section class="card spacer"><div class="card-head"><h3 style="margin:0">Ready for a careful review</h3>${badge("AWAITING HUMAN REVIEW", "violet")}</div><p>${result.wordCount} words preserved. No automated correctness score has been assigned.</p><ul class="sources-list">${result.feedback.map((s) => `<li>${esc(s)}</li>`).join("")}</ul><details class="details"><summary>Record a human or self assessment</summary><p class="tiny spacer">Use the rubric against the complete argument. This records a local assessment; reviewer identity and expertise are not verified.</p><form id="review-form">${rubric(currentProof, true)}<div class="form-grid" style="grid-template-columns:1fr"><div><label for="reviewer">Reviewer name or “Self assessment”</label><input id="reviewer" required value="Self assessment"></div><div><label for="rationale">Reasoning behind the marks</label><textarea class="text-area" style="min-height:90px" id="rationale" required placeholder="Explain the valid steps, any gaps, and credit for alternative approaches."></textarea></div></div><button class="button secondary" type="submit">Save assessment</button></form></details></section>`;
+  return `<section class="card spacer"><div class="card-head"><h3 style="margin:0">Ready for a careful review</h3>${badge("AWAITING HUMAN REVIEW", "violet")}</div><p>${plural(result.wordCount, "word", "words")} preserved. No automated correctness score has been assigned.</p><ul class="sources-list">${result.feedback.map((s) => `<li>${esc(s)}</li>`).join("")}</ul><details class="details"><summary>Record a human or self assessment</summary><p class="tiny spacer">Use the rubric against the complete argument. This records a local assessment; reviewer identity and expertise are not verified.</p><form id="review-form">${rubric(currentProof, true)}<div class="form-grid" style="grid-template-columns:1fr"><div><label for="reviewer">Reviewer name or “Self assessment”</label><input id="reviewer" required value="Self assessment"></div><div><label for="rationale">Reasoning behind the marks</label><textarea class="text-area" style="min-height:90px" id="rationale" required placeholder="Explain the valid steps, any gaps, and credit for alternative approaches."></textarea></div></div><button class="button secondary" type="submit">Save assessment</button></form></details></section>`;
 }
 function sources() {
   return (
@@ -360,7 +373,7 @@ function progress() {
       "Your completed sessions and review records, stored on this device.",
       '<button class="button secondary" id="export-backup">Export backup ↓</button>',
     ) +
-    `<div class="stats"><div class="stat"><span class="stat-icon">▤</span><div><strong>${history.length}</strong><small>Completed sessions</small></div></div><div class="stat"><span class="stat-icon">✓</span><div><strong>${nums.length ? Math.round((correct / nums.length) * 100) + "%" : "—"}</strong><small>First-attempt numeric accuracy</small></div></div><div class="stat"><span class="stat-icon">∴</span><div><strong>${results.filter((r) => r.type !== "numeric").length}</strong><small>Proof / reference responses</small></div></div><div class="stat"><span class="stat-icon">✧</span><div><strong>${reviews.length}</strong><small>Recorded assessments</small></div></div></div><p class="tiny">Accuracy uses the first answered attempt at each distinct numeric question. Retries, blank responses, unavailable checks and proof marks are excluded. This is practice feedback, not an exam prediction.</p><div class="section-heading"><h2>Your chapter map</h2></div><div class="topic-progress">${summary.topics.map((t) => `<article><h3>${topicLabels[t.topic]}</h3><div class="progress-bar"><span style="width:${t.accuracy || 0}%"></span></div><small>${t.attempted ? `${t.correct} / ${t.attempted} first attempts correct` : "Ready for your first question"}</small></article>`).join("")}</div><div class="section-heading"><h2>Session history</h2></div>${history.length ? `<div class="card table-wrap"><table class="table"><thead><tr><th>SESSION</th><th>COMPLETED</th><th>RESPONSES</th><th>REVIEW</th></tr></thead><tbody>${history.map((a) => `<tr><td>${esc(a.title)}</td><td>${new Date(a.finishedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</td><td>${Object.values(a.answers).filter((x) => String(x).trim()).length} / ${a.questions.length}</td><td><button class="text-link" data-report="${a.attemptId}">View ↗</button></td></tr>`).join("")}</tbody></table></div>` : '<div class="empty"><strong>Your story starts with the first attempt.</strong><p>Complete a practice session to see it here.</p><button class="button" data-go="tests">Find a challenge ↗</button></div>'}${reviews.length ? `<h2 class="compact-heading">Assessment records</h2><div class="stack">${reviews.map((r) => `<div class="card"><div class="question-top"><h3>${esc(r.questionTitle)}</h3>${badge(r.score + " / " + r.maxMarks, "mint")}</div><p>${esc(r.reviewer)} · identity unverified<br>${esc(r.rationale)}</p></div>`).join("")}</div>` : ""}<div class="card spacer"><h3>Restore a backup</h3><p>Import a Avenquellis backup or a backup exported under its previous name. Restored numeric results are recalculated; assessment records are treated as unverified local records.</p><input class="file-input" id="import-backup" type="file" accept="application/json,.json" aria-label="Import practice backup"></div>`
+    `<div class="stats"><div class="stat"><span class="stat-icon">▤</span><div><strong>${history.length}</strong><small>Completed sessions</small></div></div><div class="stat"><span class="stat-icon">✓</span><div><strong>${nums.length ? Math.round((correct / nums.length) * 100) + "%" : "—"}</strong><small>First-attempt numeric accuracy</small></div></div><div class="stat"><span class="stat-icon">∴</span><div><strong>${results.filter((r) => r.type !== "numeric").length}</strong><small>Proof / reference responses</small></div></div><div class="stat"><span class="stat-icon">✧</span><div><strong>${reviews.length}</strong><small>Recorded assessments</small></div></div></div><p class="tiny">Accuracy uses the first answered attempt at each distinct numeric question. Retries, blank responses, unavailable checks and proof marks are excluded. This is practice feedback, not an exam prediction.</p><div class="section-heading"><h2>Your chapter map</h2></div><div class="topic-progress">${summary.topics.map((t) => `<article><h3>${topicLabels[t.topic]}</h3><div class="progress-bar"><span style="width:${t.accuracy || 0}%"></span></div><small>${t.attempted ? `${t.correct} / ${t.attempted} first attempts correct` : "Ready for your first question"}</small></article>`).join("")}</div><div class="section-heading"><h2>Session history</h2></div>${history.length ? `<div class="card table-wrap"><table class="table"><thead><tr><th>SESSION</th><th>COMPLETED</th><th>RESPONSES</th><th>REVIEW</th></tr></thead><tbody>${history.map((a) => `<tr><td>${esc(a.title)}</td><td>${new Date(a.finishedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</td><td>${Object.values(a.answers).filter((x) => String(x).trim()).length} / ${a.questions.length}</td><td><button class="text-link" data-report="${a.attemptId}">View ↗</button></td></tr>`).join("")}</tbody></table></div>` : '<div class="empty"><strong>Your story starts with the first attempt.</strong><p>Complete a practice session to see it here.</p><button class="button" data-go="tests">Find a challenge ↗</button></div>'}${reviews.length ? `<h2 class="compact-heading">Assessment records</h2><div class="stack">${reviews.map((r) => `<div class="card"><div class="question-top"><h3>${esc(r.questionTitle)}</h3>${badge(r.score + " / " + r.maxMarks, "mint")}</div><p>${esc(r.reviewer)} · identity unverified<br>${esc(r.rationale)}</p></div>`).join("")}</div>` : ""}<div class="card spacer"><h3>Restore a backup</h3><p>Import an Avenquellis backup or a backup exported under its previous name. Restored numeric results are recalculated; assessment records are treated as unverified local records.</p><input class="file-input" id="import-backup" type="file" accept="application/json,.json" aria-label="Import practice backup"></div>`
   );
 }
 function sessionView() {
@@ -374,7 +387,7 @@ function sessionView() {
     answered = Object.values(session.answers).filter((a) =>
       String(a).trim(),
     ).length;
-  return `<div class="session-top"><div><span class="eyebrow">${session.reference ? "OFFICIAL-PAPER COMPANION" : "ORIGINAL PRACTICE"}</span><h1>${esc(session.title)}</h1></div><div><label>TIME REMAINING</label><div class="timer" id="timer">${timeText(remainingSeconds(session))}</div></div></div><div class="session-layout"><section><article class="question-box"><div class="question-top"><div>${badge("QUESTION " + (session.current + 1))}${badge(topicLabels[q.topic] || "Official reference")}</div><span class="tiny">${q.maxMarks ?? "See paper"} marks · ${q.type}</span></div><h2 class="compact-heading">${esc(q.title)}</h2><div class="question-statement">${esc(q.statement)}</div>${q.source?.url ? `<a class="button secondary" href="${esc(q.source.url)}" target="_blank" rel="noopener noreferrer">Open official question ↗</a><p class="tiny spacer">Keep the official PDF open alongside this writing workspace.</p>` : ""}${q.type === "proof" ? certificateGuide(q) : ""}<label for="session-answer">${q.type === "numeric" ? "Your answer · exact number, fraction or expression" : "Your proof / working"}</label>${q.type === "numeric" ? `<input id="session-answer" inputmode="text" maxlength="4096" placeholder="e.g. (1/3 + 1/6) * 4" value="${esc(session.answers[q.id] || "")}">` : `<textarea class="text-area" id="session-answer" maxlength="50000" placeholder="Write your reasoning here…">${esc(session.answers[q.id] || "")}</textarea>`}<div class="saved-text" id="answer-saved">${storageOK ? "Saved locally. You can leave and resume." : "Storage unavailable. Keep this tab open and export your work."}</div><div class="session-actions"><button class="button ghost" id="previous" ${session.current === 0 ? "disabled" : ""}>← Previous</button><button class="button ghost" id="flag">${session.flags[q.id] ? "★ Flagged" : "☆ Flag for review"}</button><button class="button secondary" id="next" ${session.current === session.questions.length - 1 ? "disabled" : ""}>Next →</button></div></article></section><aside class="card"><h3>Your questions</h3><p class="tiny">${answered} of ${session.questions.length} answered</p><div class="progress-bar"><span style="width:${(answered / session.questions.length) * 100}%"></span></div><div class="question-nav">${session.questions.map((q, i) => `<button data-qindex="${i}" aria-label="Question ${i + 1}" class="${i === session.current ? "current" : ""} ${session.answers[q.id]?.trim() ? "answered" : ""} ${session.flags[q.id] ? "flagged" : ""}">${i + 1}</button>`).join("")}</div><p class="tiny">Green: answered<br>Amber underline: flagged</p><button class="button" id="submit-session" style="width:100%">Finish & review ↗</button><button class="text-link spacer" id="export-active">Export answers ↓</button></aside></div>`;
+  return `<div class="session-top"><div><span class="eyebrow">${session.reference ? "OFFICIAL-PAPER COMPANION" : "ORIGINAL PRACTICE"}</span><h1>${esc(session.title)}</h1></div><div><label>TIME REMAINING</label><div class="timer" id="timer">${timeText(remainingSeconds(session))}</div></div></div><div class="session-layout"><section><article class="question-box"><div class="question-top"><div>${badge("QUESTION " + (session.current + 1))}${badge(topicLabels[q.topic] || "Official reference")}</div><span class="tiny">${q.maxMarks ?? "See paper"} marks · ${q.type}</span></div><h2 class="compact-heading">${esc(q.title)}</h2><div class="question-statement">${esc(q.statement)}</div>${q.source?.url ? `<a class="button secondary" href="${esc(q.source.url)}" target="_blank" rel="noopener noreferrer">Open official question ↗</a><p class="tiny spacer">Keep the official PDF open alongside this writing workspace.</p>` : ""}${q.type === "proof" ? certificateGuide(q) : ""}<label for="session-answer">${q.type === "numeric" ? "Your answer · exact number, fraction or expression" : "Your proof / working"}</label>${q.type === "numeric" ? `<input id="session-answer" inputmode="text" maxlength="4096" placeholder="e.g. (1/3 + 1/6) * 4" value="${esc(session.answers[q.id] || "")}">` : `<textarea class="text-area" id="session-answer" maxlength="50000" placeholder="Write your reasoning here…">${esc(session.answers[q.id] || "")}</textarea>`}<div class="saved-text" id="answer-saved">${storageOK ? "Saved locally. You can leave and resume." : "Storage unavailable. Keep this tab open and export your work."}</div><div class="session-actions"><button class="button ghost" id="previous" ${session.current === 0 ? "disabled" : ""}>← Previous</button><button class="button ghost" id="flag">${session.flags[q.id] ? "★ Flagged" : "☆ Flag for review"}</button><button class="button secondary" id="next" ${session.current === session.questions.length - 1 ? "disabled" : ""}>Next →</button></div></article></section><aside class="card"><h3>Your questions</h3><p class="tiny">${answered} of ${session.questions.length} answered</p><div class="progress-bar"><span style="width:${(answered / session.questions.length) * 100}%"></span></div><div class="question-nav">${session.questions.map((q, i) => `<button data-qindex="${i}" aria-label="Question ${i + 1}${session.answers[q.id]?.trim() ? ", answered" : ""}${session.flags[q.id] ? ", flagged" : ""}"${i === session.current ? ' aria-current="step"' : ""} class="${i === session.current ? "current" : ""} ${session.answers[q.id]?.trim() ? "answered" : ""} ${session.flags[q.id] ? "flagged" : ""}">${i + 1}</button>`).join("")}</div><p class="tiny">Green: answered<br>Amber underline: flagged</p><button class="button" id="submit-session" style="width:100%">Finish & review ↗</button><button class="text-link spacer" id="export-active">Export answers ↓</button></aside></div>`;
 }
 function timeText(n) {
   return `${Math.floor(n / 3600)
@@ -396,14 +409,15 @@ function report() {
         r.score !== null,
     ),
     earned = checked.reduce((s, r) => s + r.score, 0),
-    max = checked.reduce((s, r) => s + r.maxMarks, 0);
+    max = checked.reduce((s, r) => s + r.maxMarks, 0),
+    pending = a.results.filter((r) => (r.status === "needs_review" || r.status === "checker_unavailable") && !reviews.some((v) => v.attemptId === a.attemptId && v.questionId === r.id)).length;
   return (
     heading(
       "Look closer. Learn more.",
       esc(a.title),
       '<button class="button secondary" id="export-report">Export this attempt ↓</button>',
     ) +
-    `<section class="card"><div class="question-top"><div><span class="eyebrow">AUTOMATICALLY CHECKED MARKS</span><div class="result-number">${max ? `${earned} <span class="muted" style="font-size:22px">/ ${max}</span>` : "—"}</div></div><div>${badge(a.results.filter((r) => (r.status === "needs_review" || r.status === "checker_unavailable") && !reviews.some((v) => v.attemptId === a.attemptId && v.questionId === r.id)).length + " responses need review", "violet")}</div></div><p class="subtitle">This total includes numeric answers and fully verified structured proofs. Model marks for free-form proofs appear separately under each response. Official-paper responses require human review.</p><button class="button small ghost spacer" id="retry-session">Retry this set ↻</button></section>${a.questions
+    `<section class="card"><div class="question-top"><div><span class="eyebrow">AUTOMATICALLY CHECKED MARKS</span><div class="result-number">${max ? `${earned} <span class="muted" style="font-size:22px">/ ${max}</span>` : "—"}</div></div><div>${badge(`${plural(pending, "response needs", "responses need")} review`, "violet")}</div></div><p class="subtitle">This total includes numeric answers and fully verified structured proofs. Model marks for free-form proofs appear separately under each response. Official-paper responses require human review.</p><button class="button small ghost spacer" id="retry-session">Retry this set ↻</button></section>${a.questions
       .map((q, i) => {
         const r = a.results[i],
           record = reviews.find(
@@ -417,7 +431,7 @@ function report() {
 function render() {
   stopOrbit();
   page = (location.hash.slice(1) || "overview").split("?")[0];
-  if (!pageNames[page]) page = "overview";
+  if (!Object.hasOwn(pageNames, page)) page = "overview";
   document.title = `${pageNames[page]} · Avenquellis`;
   $("#breadcrumb").textContent = pageNames[page];
   document
@@ -472,6 +486,7 @@ function download(name, data) {
 }
 function modal(content) {
   $("#modal-content").innerHTML = content;
+  $("#modal-content .modal-title")?.setAttribute("id", "modal-heading");
   $("#modal").showModal();
 }
 function start(mock) {
@@ -782,9 +797,10 @@ function bind() {
     };
     $("#proof-question").onchange = (e) => {
       if (e.target.value === "custom") return;
-      proofDrafts[currentProof.id] = proofDraft;
+      proofDrafts[draftSlot()] = proofDraft;
       proofId = e.target.value;
       reviewQuestion = null;
+      reviewAttemptId = null;
       proofAttemptId = null;
       proofDraft = proofDrafts[proofId] || "";
       proofResult = null;
@@ -794,13 +810,13 @@ function bind() {
     $("#proof-answer").oninput = (e) => {
       proofDraft = e.target.value;
       proofAttemptId = null;
-      proofDrafts[currentProof.id] = proofDraft;
+      proofDrafts[draftSlot()] = proofDraft;
       proofResult = null;
       $("#proof-feedback").innerHTML = "";
       $("#arithmetic-feedback").innerHTML = "";
       persist();
       $("#proof-save").textContent =
-        `${storageOK ? "Draft saved" : "Storage unavailable"} · ${proofDraft.trim() ? proofDraft.trim().split(/\s+/).length : 0} words`;
+        `${storageOK ? "Draft saved" : "Storage unavailable"} · ${draftWords()}`;
     };
     $("#assess").onclick = async () => {
       const draft=proofDraft,question=currentProof,button=$("#assess");
@@ -916,9 +932,10 @@ function bind() {
         (e) =>
           (e.onclick = () => {
             const i = Number(e.dataset.reviewQ);
-            if (currentProof) proofDrafts[currentProof.id] = proofDraft;
+            if (currentProof) proofDrafts[draftSlot()] = proofDraft;
             reviewQuestion = a.questions[i];
             proofAttemptId = a.attemptId;
+            reviewAttemptId = a.attemptId;
             proofDraft = a.answers[reviewQuestion.id] || "";
             proofResult = null;
             go("proof");
@@ -939,6 +956,7 @@ function bind() {
         reviewQuestion,
         proofDrafts,
         proofAttemptId,
+        reviewAttemptId,
         bookmarks,
       });
     document.querySelectorAll("[data-report]").forEach(
@@ -966,8 +984,9 @@ function bindForge() {
       download("avenquellis-question.json", generated);
   if ($("#proof-generated"))
     $("#proof-generated").onclick = () => {
-      if (currentProof) proofDrafts[currentProof.id] = proofDraft;
+      if (currentProof) proofDrafts[draftSlot()] = proofDraft;
       proofAttemptId = null;
+      reviewAttemptId = null;
       reviewQuestion = generated;
       proofDraft = proofDrafts[generated.id] || "";
       proofResult = null;
@@ -1032,6 +1051,7 @@ async function importBackup(e) {
         reviewQuestion,
         proofDrafts,
         proofAttemptId,
+        reviewAttemptId,
         bookmarks,
       });
     $("#confirm-import").onclick = () => {
@@ -1052,6 +1072,7 @@ async function importBackup(e) {
         reviewQuestion = restored.reviewQuestion || null;
         proofDrafts = restored.proofDrafts || {};
         proofAttemptId = restored.proofAttemptId || null;
+        reviewAttemptId = restored.reviewAttemptId || null;
         proofResult = null;
         activeReport = null;
         bookmarks = restored.bookmarks || [];
@@ -1085,18 +1106,19 @@ $(".close-modal").onclick = () => $("#modal").close();
 $("#modal").addEventListener("click", (e) => {
   if (e.target === $("#modal")) $("#modal").close();
 });
+function showMotion() {
+  const label = paused ? "Resume 3D animation" : "Pause 3D animation";
+  $("#motion").textContent = paused ? "▷" : "Ⅱ";
+  $("#motion").setAttribute("aria-label", label);
+  $("#motion").title = label;
+}
 $("#motion").onclick = () => {
   paused = !paused;
   persist();
-  $("#motion").textContent = paused ? "▷" : "Ⅱ";
-  $("#motion").setAttribute(
-    "aria-label",
-    paused ? "Resume 3D animation" : "Pause 3D animation",
-  );
-  $("#motion").title = paused ? "Resume 3D animation" : "Pause 3D animation";
+  showMotion();
   if (page === "overview") mountOrbit($("#orbit"), paused);
 };
-$("#motion").textContent = paused ? "▷" : "Ⅱ";
+showMotion();
 window.addEventListener("hashchange", () => {
   render();
   window.scrollTo(0, 0);

@@ -6,8 +6,11 @@ import {resolveQuestionRef} from './lib/questions.js';
 const storageKey='avenquellis.prose-reviews.v1';
 const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const refFor=q=>({templateId:q.templateId,seed:q.generator?.seed,exam:q.exam,difficulty:q.requestedDifficulty});
-function canonical(q){const known=resolveQuestionRef({id:q.id,...refFor(q)});return known?.type==='proof' && known.statement===q.statement && JSON.stringify(known.rubric)===JSON.stringify(q.rubric)?known:null;}
-async function keyFor(q,answer){const bytes=new TextEncoder().encode(JSON.stringify([q.id,q.statement,q.rubric,answer]));const hash=await crypto.subtle.digest('SHA-256',bytes);return [...new Uint8Array(hash)].map(n=>n.toString(16).padStart(2,'0')).join('');}
+const rubricRows=r=>(r||[]).map(c=>({id:c.id,description:c.description,points:c.points}));
+// Earlier releases hashed advanced-template rubrics in this row order; their saved reviews keep matching.
+const legacyRows=r=>(r||[]).map(c=>({id:c.id,points:c.points,description:c.description}));
+function canonical(q){const known=resolveQuestionRef({id:q.id,...refFor(q)});return known?.type==='proof' && known.statement===q.statement && JSON.stringify(rubricRows(known.rubric))===JSON.stringify(rubricRows(q.rubric))?known:null;}
+async function keyFor(q,answer,rows=rubricRows){const bytes=new TextEncoder().encode(JSON.stringify([q.id,q.statement,rows(q.rubric),answer]));const hash=await crypto.subtle.digest('SHA-256',bytes);return [...new Uint8Array(hash)].map(n=>n.toString(16).padStart(2,'0')).join('');}
 let cachedText, cachedRecords = [];
 export function modelReviewRecords() {
   try {
@@ -30,8 +33,8 @@ export function replaceModelReviews(records) {
   } catch { return false; }
 }
 export async function rememberModelReview(q, answer, review) {
-  const key = await keyFor(q, answer);
-  const records = modelReviewRecords().filter(row => row.key !== key || row.review.provider !== review.provider);
+  const key = await keyFor(q, answer), legacy = await keyFor(q, answer, legacyRows);
+  const records = modelReviewRecords().filter(row => (row.key !== key && row.key !== legacy) || row.review.provider !== review.provider);
   const latest = [{key, review}, ...records];
   // Evict both readings of the least recent answer together.
   const keys = new Set([...new Set(latest.map(row => row.key))].slice(0, 20));
@@ -39,8 +42,8 @@ export async function rememberModelReview(q, answer, review) {
 }
 export async function storedModelReviews(q, answer) {
   if (q?.type !== 'proof' || !answer) return [];
-  const key = await keyFor(q, answer);
-  return modelReviewRecords().filter(row => row.key === key).map(row => row.review)
+  const keys = [await keyFor(q, answer), await keyFor(q, answer, legacyRows)];
+  return modelReviewRecords().filter(row => keys.includes(row.key)).map(row => row.review)
     .sort((a, b) => Number(a.provider === 'browser-webllm') - Number(b.provider === 'browser-webllm'));
 }
 function compact(r,q){return {model:r.provenance?.model,provider:r.provenance?.provider,promptVersion:r.provenance?.promptVersion,date:new Date().toISOString(),max:q.maxMarks,suggested:r.suggestedScore,range:r.reviewerScoreRange,criteria:r.criterionProposals||[],reviews:(r.reviews||[]).map(v=>({number:v.reviewer,status:v.status,score:v.score,rationale:v.rationale,gaps:v.gaps,code:v.failure?.code})),notice:r.uncertainty?.explanation};}
