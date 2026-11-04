@@ -99,7 +99,8 @@ export function reviewerMessages(question, submission, reviewerIndex) {
 
 function parseBindingOutput(output, question, answer) {
   const response = output?.response;
-  if (!response || !['string', 'object'].includes(typeof response)) {
+  if ((output?.finish_reason !== undefined && output.finish_reason !== 'stop') || output?.refusal ||
+      !response || !['string', 'object'].includes(typeof response)) {
     throw new EvaluatorError('incomplete_output', 'Workers AI did not return a structured review.');
   }
   const content = typeof response === 'string' ? response : JSON.stringify(response);
@@ -115,7 +116,8 @@ function parseBindingOutput(output, question, answer) {
 
 function parseSpanBindingOutput(output, question, answer) {
   const response = output?.response;
-  if (output?.finish_reason === 'length' || response === null || response === undefined || !['object','string'].includes(typeof response)) {
+  if ((output?.finish_reason !== undefined && output.finish_reason !== 'stop') || output?.refusal ||
+      response === null || response === undefined || !['object','string'].includes(typeof response)) {
     throw new EvaluatorError('incomplete_output', 'Workers AI did not return a complete span review.');
   }
   const content = typeof response === 'string' ? response : JSON.stringify(response);

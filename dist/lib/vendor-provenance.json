@@ -19,7 +19,7 @@
       "destination": "dist/lib/questions.js",
       "packageName": "@avenquellis/question-engine",
       "version": "0.1.0",
-      "sha256": "79b7a82c4152b0bccfd34545416e9b3e12f7bf145c31a6cd0e1e8860abf24f5c"
+      "sha256": "0fa615ad709a4df8f026fe1a7b9482968dd9f468cf511e278e74260c5de87704"
     },
     {
       "repository": "avenquellis-proof-grader",
@@ -59,7 +59,7 @@
       "destination": "server/grader/provider.js",
       "packageName": "@avenquellis/proof-grader",
       "version": "0.8.0",
-      "sha256": "e4dd74f1324b4f5531355d64640528b7406cbcf4a955c1dc2f7463b6a3172997"
+      "sha256": "aecb425dd9abc33eee8f9143e4f5cf56ad9af9c470271bd78e9adc4bd4248f78"
     },
     {
       "repository": "avenquellis-proof-grader",
@@ -67,7 +67,7 @@
       "destination": "server/grader/service.js",
       "packageName": "@avenquellis/proof-grader",
       "version": "0.8.0",
-      "sha256": "12424a30f5cc5455d222bf000148dc112d5580235571223a1a570b1a5176c828"
+      "sha256": "611960b50927cb73bb4e0cc74dd19928819a601eb2a72dda561587ffd69493da"
     },
     {
       "repository": "avenquellis-proof-grader",
