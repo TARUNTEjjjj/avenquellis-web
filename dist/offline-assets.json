@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "version": "221fd009513227702e530616",
-  "totalBytes": 713034,
+  "version": "7e6b9abb749381c1a1f1927b",
+  "totalBytes": 713919,
   "assetCount": 38,
   "assets": [
     {
@@ -52,7 +52,7 @@
     {
       "url": "lib/advanced-templates.js",
       "bytes": 32978,
-      "sha256": "76c37d7e60aa374a2d9e517fd2b58061f904b1e363b33c39e65c16f827bef185"
+      "sha256": "43358ea316f24fd0ae56fde2687e8f3b1d706f04a689f7a3caa6601606290ed8"
     },
     {
       "url": "lib/arithmetic-audit.js",
@@ -76,8 +76,8 @@
     },
     {
       "url": "lib/grader.js",
-      "bytes": 9423,
-      "sha256": "d4d7b77c8b3ae07266474e7d8e8a369eeb02113448376ebaefb2af7e0e36690f"
+      "bytes": 9944,
+      "sha256": "3de2590a69027bf07a9a1c65cdf944761870ef432d99b180024f56b332529c15"
     },
     {
       "url": "lib/handwriting-image.js",
@@ -126,8 +126,8 @@
     },
     {
       "url": "lib/questions.js",
-      "bytes": 26458,
-      "sha256": "b9953a736c0d08c80b7b5e9e5b20d44f167c2a139da79b04590c820f77cb7fbd"
+      "bytes": 26822,
+      "sha256": "79b7a82c4152b0bccfd34545416e9b3e12f7bf145c31a6cd0e1e8860abf24f5c"
     },
     {
       "url": "lib/session.js",
@@ -137,7 +137,7 @@
     {
       "url": "lib/vendor-provenance.json",
       "bytes": 9114,
-      "sha256": "77ab660838734a642f80e487c99a296ff60da0821b2f1e2c62de3998e80acf81"
+      "sha256": "926a5a37b4bcec7f51bb2e7860c877e407288d2095ef82b22cd3fb5b2f453347"
     },
     {
       "url": "manifest.webmanifest",

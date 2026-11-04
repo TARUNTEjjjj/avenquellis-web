@@ -145,13 +145,18 @@ function bindingFailure(error) {
 }
 
 // Keep unanswered model calls counted even after the caller's local deadline.
+// The runtime may cancel a subrequest without ever settling it, so a slot also
+// expires BINDING_SLOT_GRACE_MS after that deadline.
 // This bound applies to one isolate. An account-wide budget belongs in the host.
-let activeBindingCalls = 0;
+const BINDING_SLOT_GRACE_MS = 60000;
+const bindingSlots = new Set();
 
 export function createWorkersAiEvaluator({config, reviewerIndex}) {
   if (![0, 1].includes(reviewerIndex)) throw new TypeError('reviewerIndex must be 0 or 1.');
   return async ({question, submission}) => {
-    if (activeBindingCalls >= 4) throw new EvaluatorError('provider_busy', 'The evaluator is busy.');
+    const now = Date.now();
+    for (const slot of bindingSlots) if (slot.expires <= now) bindingSlots.delete(slot);
+    if (bindingSlots.size >= 4) throw new EvaluatorError('provider_busy', 'The evaluator is busy.');
     const useSpans = config.protocol === 'span-v2';
     const input = useSpans ? makeSpanReviewRequest(question, submission, reviewerIndex, config.maxTokens) : {
       messages: reviewerMessages(question, submission, reviewerIndex),
@@ -160,10 +165,11 @@ export function createWorkersAiEvaluator({config, reviewerIndex}) {
       response_format: {type: 'json_schema', json_schema: reviewSchema(question)}
     };
     let timer;
-    activeBindingCalls++;
+    const slot = {expires: now + config.timeoutMs + BINDING_SLOT_GRACE_MS};
+    bindingSlots.add(slot);
     const inference = Promise.resolve()
       .then(() => config.binding.run(config.model, input))
-      .finally(() => { activeBindingCalls--; });
+      .finally(() => { bindingSlots.delete(slot); });
     const deadline = new Promise((_, reject) => {
       timer = setTimeout(() => reject(new EvaluatorError('timeout', 'Workers AI exceeded the configured deadline.')), config.timeoutMs);
     });
@@ -185,7 +191,7 @@ export function createHttpEvaluator({config,reviewerIndex,fetchImpl=globalThis.f
     const timer=setTimeout(()=>controller.abort(),config.timeoutMs);
     try {
       const body={model:config.model,stream:false,messages:reviewerMessages(question,submission,reviewerIndex),response_format:{type:'json_schema',json_schema:{name:'proof_review',strict:true,schema:reviewSchema(question)}},[config.tokenParameter]:config.maxTokens};
-      const response=await fetchImpl(config.endpoint,{method:'POST',redirect:'error',signal:controller.signal,headers:{'Content-Type':'application/json',...(config.apiKey?{Authorization:`Bearer ${config.apiKey}`}:{})},body:JSON.stringify(body)});
+      const response=await fetchImpl(config.endpoint,{method:'POST',redirect:'manual',signal:controller.signal,headers:{'Content-Type':'application/json',...(config.apiKey?{Authorization:`Bearer ${config.apiKey}`}:{})},body:JSON.stringify(body)});
       if (!response.ok) {await response.body?.cancel();throw new EvaluatorError('provider_http_error',`Evaluator returned HTTP ${response.status}.`);}
       let payload; try {payload=JSON.parse(await boundedBody(response));} catch (error) {if(error instanceof EvaluatorError) throw error;throw new EvaluatorError('invalid_output','Evaluator returned malformed JSON.');}
       const choice=payload?.choices?.[0];

@@ -1,7 +1,8 @@
 import {assessProof,finalizeReview,gradingSources} from './index.js';
 import {evaluateProof,readEvaluatorConfig,EvaluatorError} from './provider.js';
 
-export const MAX_REQUEST_BYTES=100000;
+// Room for a 50,000-character answer of three-byte UTF-8 symbols (150,000 bytes) and the rest of the request.
+export const MAX_REQUEST_BYTES=200000;
 function tokenEqual(given,expected) {
   let different=given.length ^ expected.length;
   for (let i=0;i<Math.max(given.length,expected.length);i++) different|=(given.charCodeAt(i)||0) ^ (expected.charCodeAt(i)||0);
