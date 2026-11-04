@@ -369,6 +369,7 @@ export function validateBackup(raw) {
       reviewQuestion: null,
       proofDrafts: {},
       proofAttemptId: null,
+      reviewAttemptId: null,
       bookmarks: [],
     };
   }
@@ -397,6 +398,11 @@ export function validateBackup(raw) {
         50000,
       );
   }
+  // Older backups name the reviewed attempt only while its submitted proof is unedited.
+  const reviewAttemptId = nullableId(
+    raw.reviewAttemptId ?? raw.proofAttemptId,
+    "reviewed attempt id",
+  );
   return {
     mode: "full",
     modelReviews: raw.modelReviews === undefined ? null : validateModelReviews(raw.modelReviews),
@@ -408,6 +414,7 @@ export function validateBackup(raw) {
     reviewQuestion,
     proofDrafts,
     proofAttemptId: nullableId(raw.proofAttemptId, "proof attempt id"),
+    reviewAttemptId: reviewQuestion ? reviewAttemptId : null,
     bookmarks:
       raw.bookmarks == null
         ? []

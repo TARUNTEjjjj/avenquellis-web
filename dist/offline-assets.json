@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "version": "592e6bc3eff4db3beef9e42d",
-  "totalBytes": 714406,
+  "version": "8d7f30bd8a3fd7cf63b6407b",
+  "totalBytes": 715476,
   "assetCount": 38,
   "assets": [
     {
       "url": "app.js",
-      "bytes": 64877,
-      "sha256": "ab7d1cd4f049c9d0fb9b523323628beafc3f7d4bd88f735788936ee47f12ddf8"
+      "bytes": 65650,
+      "sha256": "a7929657a2f660b9e04e810fc40ff3254c68b76dc18681ec1473c8c1a7223f1b"
     },
     {
       "url": "archive.json",
@@ -61,8 +61,8 @@
     },
     {
       "url": "lib/backup.js",
-      "bytes": 15957,
-      "sha256": "3956c88124b9ad4e71f2efd935d8ae934788dcbdf7932f6260f5eea2d512d974"
+      "bytes": 16254,
+      "sha256": "0ee8c8bd2a95d8983e0d4765af1507e723ecc32abd4a7f33c24b8f1518e0961b"
     },
     {
       "url": "lib/certificate.js",
