@@ -237,6 +237,10 @@ function session(value, completed = false) {
         ? null
         : number(value.maxMarks, "test marks", 0, 60000, true),
   };
+  if (value.submittedAt != null) {
+    s.submittedAt = time(value.submittedAt, "submission time");
+    if (s.submittedAt < startedAt) fail("Submission time precedes start time.");
+  }
   if (value.exam !== undefined) {
     if (!["CMI", "ISI", "RMO"].includes(value.exam)) fail("Unknown test exam.");
     s.exam = value.exam;
