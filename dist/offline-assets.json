@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "version": "4cd2d5848d6980782dafa13e",
-  "totalBytes": 720074,
+  "version": "c8074e471865120fe175c262",
+  "totalBytes": 719201,
   "assetCount": 39,
   "assets": [
     {
       "url": "app.js",
-      "bytes": 66750,
-      "sha256": "32adeaae6700fa48f42aab91c716975d5e92132d3a744a661a0a07e9669aca36"
+      "bytes": 66238,
+      "sha256": "371e77bf95dfff0b6b52c86414e3b6c0107f200b4f973b0b66f8e0cda6e2efea"
     },
     {
       "url": "archive.json",
@@ -21,8 +21,8 @@
     },
     {
       "url": "benchmark-report.js",
-      "bytes": 4269,
-      "sha256": "3e8737a208048553495b91acc06491baaddb46618cb260feb64a70652161a076"
+      "bytes": 4060,
+      "sha256": "d774f8b67ccf69d442aa96fc3791164b2dc495f2e1d5f22370c6b81d326df7b2"
     },
     {
       "url": "certificate-ui.js",
@@ -151,8 +151,8 @@
     },
     {
       "url": "math-lab.js",
-      "bytes": 4985,
-      "sha256": "69eaf8132ee5a09bbc9baa0eabc7944bc22a744bd8e98266e6c400a8e51c65fe"
+      "bytes": 4833,
+      "sha256": "b64553c761c514e82d63ecfe2c3a1baaea8cec7d60ce5ad13b7077fb9b4da015"
     },
     {
       "url": "math/axiom-math-runtime.js",
