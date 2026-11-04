@@ -62,7 +62,9 @@ export function createNativeGenerator(module) {
       if(!record(options)||Object.keys(options).some(k=>!optionKeys.has(k))||typeof options.mode!=='string'||!Object.hasOwn(modes,options.mode))
         fail('Use question, chapter or mock mode with supported fields.');
       const seed=options.seed===undefined?1:options.seed,count=options.count===undefined?6:options.count;
-      if(typeof seed==='string' ? seed.length>249||!wellFormed(seed) : !Number.isSafeInteger(seed))fail('Use a valid text seed or a safe integer.');
+      // Same limit and message as src/index.js and the native engine.
+      if(typeof seed==='string'&&seed.length>249)fail('Seed is too long for a 256-unit question reference.');
+      if(typeof seed==='string' ? !wellFormed(seed) : !Number.isSafeInteger(seed))fail('Use a valid text seed or a safe integer.');
       if(!Number.isInteger(count)||count<1||count>30)fail('Count must be from 1 to 30.');
       return invoke(modes[options.mode],[flag(options.topic,'all'),flag(options.exam,'CMI'),flag(options.difficulty,'advanced'),flag(options.type,'all'),typeof seed,String(seed),String(count)]);
     },
