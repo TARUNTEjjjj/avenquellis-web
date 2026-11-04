@@ -417,7 +417,7 @@ function report() {
 function render() {
   stopOrbit();
   page = (location.hash.slice(1) || "overview").split("?")[0];
-  if (!pageNames[page]) page = "overview";
+  if (!Object.hasOwn(pageNames, page)) page = "overview";
   document.title = `${pageNames[page]} · Avenquellis`;
   $("#breadcrumb").textContent = pageNames[page];
   document
