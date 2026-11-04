@@ -31,7 +31,7 @@
   "sourceFiles": {
     "src/grader.cpp": "0fd42d20b374b83cc128be4bebe49690fa0e0f4b7066bd5fa65f35da18b64e51",
     "src/certificate.cpp": "647291775db203c49d5e2c2c07058e21fa22d7fa4300344cf3462735eceb94f0",
-    "src/json_api.cpp": "ce32fd07129fc12b853df74d62bf8ba022f11fdb92c6d609d032691fea1abad7",
+    "src/json_api.cpp": "28714ffe5ec8bc784520767cd01f43c85fbe72cfd578afcb89fa661d23eb2844",
     "wasm/bridge.cpp": "9661b67a761f491e5b9717b808439359d4a692af9217d7fc4f82be6d314686e3",
     "src/json_api.hpp": "6617b955212ee32302b951ae7fc6be7af0069de4777b33b1672bda11eec2d152",
     "include/noether/grader/grader.hpp": "cf065cc111e17eb9fa31789a00e877d4bcdc2b31195b00d12acb1bc6d7ea957f",
@@ -43,8 +43,8 @@
       "sha256": "286587de5217e5375959b08bcf379a21958c3ee7cf9098c53e906481bcde6722"
     },
     "avenquellis-grader-runtime.wasm": {
-      "bytes": 298159,
-      "sha256": "a8eaafa0b2ecd620e0893e470c2ae53d44f312e81cde5bb09e34f13834c63910"
+      "bytes": 298268,
+      "sha256": "1d24f60527caf49eb020a23008d341de02b1409dea8d0ec9d1629bf324d78f00"
     }
   }
 }
