@@ -81,7 +81,7 @@ export function makeSession(mock, now = Date.now()) {
   };
 }
 export function finishSession(session, now = Date.now(), grader=checkCertificate) {
-  const { results: previousResults, ...submission } = session;
+  const { results: previousResults, submittedAt, ...submission } = session;
   return {
     ...structuredClone(submission),
     status: "completed",
@@ -137,6 +137,7 @@ export function validSession(s) {
       (q) => q && typeof q.id === "string" && typeof q.statement === "string",
     ) &&
     Number.isFinite(s.deadline) &&
+    (s.submittedAt == null || (Number.isSafeInteger(s.submittedAt) && s.submittedAt >= s.startedAt)) &&
     Number.isInteger(s.current) &&
     s.current >= 0 &&
     s.current < s.questions.length &&
