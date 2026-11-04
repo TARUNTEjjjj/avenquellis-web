@@ -377,7 +377,7 @@ function progress() {
   );
 }
 function sessionView() {
-  if (completing || session?.submittedAt != null) {
+  if (session && (completingSession === session || session.submittedAt != null)) {
     return heading("Checking your attempt…", storageOK
       ? "Your submitted work is saved. Checking will resume if you reopen this page."
       : "Keep this tab open while we check your submitted work. Browser storage is unavailable.");
@@ -519,13 +519,13 @@ function start(mock) {
   persist();
   go("session");
 }
-let completing = false;
+let completingSession = null;
 async function complete() {
-  if (!session || completing) return;
-  completing = true;
+  if (!session || completingSession === session) return;
+  const original = session;
+  completingSession = original;
   session.submittedAt ??= Date.now();
   persist();
-  const original = session;
   const submitted = structuredClone(session);
   const finishedAt = submitted.submittedAt;
   if(page==="session"){
@@ -547,7 +547,9 @@ async function complete() {
     history.unshift(result);
     history=history.slice(0,100);activeReport=result;session=null;
     persist();go("report");
-  } finally { completing=false; }
+  } finally {
+    if (completingSession === original) completingSession = null;
+  }
 }
 function referenceQuestion(r) {
   return {
@@ -862,7 +864,7 @@ function bind() {
     };
     bindReview();
   }
-  if (page === "session" && session && !completing && session.submittedAt == null) {
+  if (page === "session" && session && completingSession !== session && session.submittedAt == null) {
     bindCertificateGuide(
       session.questions[session.current],
       $("#session-answer"),
@@ -1139,7 +1141,7 @@ setInterval(() => {
   if (!session) return;
   const remaining = remainingSeconds(session);
   if ($("#timer")) $("#timer").textContent = timeText(remaining);
-  if ((remaining === 0 || session.submittedAt != null) && !completing) {
+  if ((remaining === 0 || session.submittedAt != null) && completingSession !== session) {
     const expired = session.submittedAt == null;
     if ($("#modal").open) $("#modal").close();
     void complete();
