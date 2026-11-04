@@ -70,3 +70,9 @@ test('at most two simultaneous native inferences are admitted in an isolate',asy
   assert.equal((await handler({request:post(photo,{'cf-connecting-ip':'c'}),env})).status,429);
   finish({response:'n is even'});assert.equal((await a).status,200);assert.equal((await b).status,200);
 });
+test('a timed-out transcription frees its slot even when the model call never settles',async()=>{
+  let calls=0;const env=enabled(()=>++calls<=2?new Promise(()=>{}):{response:'n is even'});const handler=createTranscriptionHandler({timeoutMs:5});
+  for(const address of ['a','b'])assert.equal((await handler({request:post(photo,{'cf-connecting-ip':address}),env})).status,504);
+  const later=await handler({request:post(photo,{'cf-connecting-ip':'c'}),env});
+  assert.equal(later.status,200);assert.deepEqual(await later.json(),{text:'n is even',model:transcriptionModel});assert.equal(calls,3);
+});
