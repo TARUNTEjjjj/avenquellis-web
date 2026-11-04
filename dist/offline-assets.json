@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "version": "71e1097d0b1e70d79994570e",
-  "totalBytes": 715765,
+  "version": "88af3f09f0e067f20378325b",
+  "totalBytes": 715907,
   "assetCount": 38,
   "assets": [
     {
       "url": "app.js",
-      "bytes": 65907,
-      "sha256": "b8d2f70255874d57a14dbd7525f5deaa7b323d89dd7c61fdf4577d1d0af4c9b6"
+      "bytes": 66049,
+      "sha256": "e4b2ff08b27183a5612838085e67872c68836303bd79e5eedef9c1062484a282"
     },
     {
       "url": "archive.json",

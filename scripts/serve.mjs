@@ -46,5 +46,5 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   if (!Number.isInteger(port) || port < 1 || port > 65535) throw new RangeError('PORT must be an integer from 1 to 65535.');
   const server = createStaticServer();
   server.on('error', error => {console.error(error.message); process.exitCode = 1;});
-  server.listen(port, '127.0.0.1', () => console.log(`Noether Local: http://127.0.0.1:${port}`));
+  server.listen(port, '127.0.0.1', () => console.log(`Avenquellis static preview: http://127.0.0.1:${port}`));
 }

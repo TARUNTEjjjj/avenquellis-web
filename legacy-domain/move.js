@@ -5,6 +5,7 @@ function download(name,text) {
   const blob=new Blob([text],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
   a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);
 }
+const count=(n,one,many)=>`${n} ${n===1?one:many}`;
 let result;
 try{result=readMigration(localStorage);}catch{result={accessible:false,snapshots:[],issues:[],originals:{}};}
 if(!result.accessible){
@@ -17,7 +18,7 @@ if(!result.accessible){
   for(const [index,entry] of result.snapshots.entries()){
     const box=document.createElement('section'),heading=document.createElement('h2'),info=document.createElement('p'),button=document.createElement('button');
     heading.textContent=entry.name+' workspace';
-    const b=entry.backup,parts=[`${b.history.length} completed tests`,`${b.reviews.length} recorded assessments`,`${b.modelReviews?.length??0} model reviews`];
+    const b=entry.backup,parts=[count(b.history.length,'completed test','completed tests'),count(b.reviews.length,'recorded assessment','recorded assessments'),count(b.modelReviews?.length??0,'model review','model reviews')];
     info.textContent=parts.join(' · ');
     button.type='button';if(index===0)button.id='download';button.textContent='Download '+entry.name+' backup';button.onclick=()=>download(`${entry.name.toLowerCase()}-to-avenquellis-backup.json`,JSON.stringify(b));box.append(heading,info,button);
     if(b.session){const clock=document.createElement('p');const deadline=new Date(b.session.deadline);
