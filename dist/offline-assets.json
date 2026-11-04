@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "version": "958a2b26e9b9633acb6b2aa8",
+  "version": "71e1097d0b1e70d79994570e",
   "totalBytes": 715765,
   "assetCount": 38,
   "assets": [
@@ -192,7 +192,7 @@
     {
       "url": "style.css",
       "bytes": 33439,
-      "sha256": "204a6869921d64e3ecdf491dd5fba2cfc0a8d51d0452964a18e87fe62e6568de"
+      "sha256": "b125bbaf8d09e9a22964843bdfca3e18733fac029382ef5b98cc39209e6dd8a5"
     }
   ],
   "skipped": [

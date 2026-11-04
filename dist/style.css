@@ -150,7 +150,7 @@ button:active:not(:disabled) {
   text-align: center;
 }
 .nav-label {
-  color: #66748e;
+  color: #7d8ba5;
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 1.8px;
@@ -760,7 +760,7 @@ footer {
   justify-content: space-between;
   border-top: 1px solid #192233;
   padding: 21px 38px;
-  color: #56637c;
+  color: #7d8ba5;
   font-size: 8px;
   letter-spacing: 0.8px;
 }
