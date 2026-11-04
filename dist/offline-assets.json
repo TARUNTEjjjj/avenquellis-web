@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "version": "7191db117cc68f2ad748856d",
-  "totalBytes": 714386,
+  "version": "592e6bc3eff4db3beef9e42d",
+  "totalBytes": 714406,
   "assetCount": 38,
   "assets": [
     {
@@ -81,8 +81,8 @@
     },
     {
       "url": "lib/handwriting-image.js",
-      "bytes": 4683,
-      "sha256": "08219ba29ebd9c1a7cdf8be9cb6a877c328eba1a72fc0996fa2392e6ada37ece"
+      "bytes": 4703,
+      "sha256": "3ecc29ed40e63f8cecc5df8c60fc50d77425ab8ea0c8a2462cad391b5e3b1e8c"
     },
     {
       "url": "lib/native-consensus.js",

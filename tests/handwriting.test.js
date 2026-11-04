@@ -26,6 +26,9 @@ test('bounded image detection and metadata removal reject malformed or trailing 
   assert.throws(()=>inspectPhoto(new TextEncoder().encode('<svg onload=alert(1)>')));
   assert.throws(()=>inspectJpeg(photo.slice(0,-2),true));
   assert.throws(()=>inspectJpeg(new Uint8Array([...photo,3]),true));
+  // Gain maps and motion-photo video follow the primary image; the local preview re-encodes it, the server stays strict.
+  assert.deepEqual(inspectPhoto(new Uint8Array([...photo,...photo])),{type:'image/jpeg',width:3,height:4});
+  assert.throws(()=>inspectJpeg(new Uint8Array([...photo,...photo]),true));
   const png=new Uint8Array(33);png.set([137,80,78,71,13,10,26,10,0,0,0,13,73,72,68,82]);
   const view=new DataView(png.buffer);view.setUint32(16,1000);view.setUint32(20,1200);
   assert.equal(inspectPhoto(png).height,1200);view.setUint32(16,100000);assert.throws(()=>inspectPhoto(png),/large/);
