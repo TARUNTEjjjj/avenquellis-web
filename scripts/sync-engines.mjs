@@ -17,8 +17,9 @@ const browserFiles = [
   "build-info.json",
   "source-commit.txt",
   "AXIOM-MATH-LICENSE.txt",
+  "THIRD-PARTY-NOTICES.txt",
 ];
-const generatorFiles = ["adapter.mjs", "manifest.json", "avenquellis-questions.wasm"];
+const generatorFiles = ["adapter.mjs", "manifest.json", "avenquellis-questions.wasm", "THIRD-PARTY-NOTICES.txt"];
 const graderFiles = ["runtime.js", "native-grader.js", "avenquellis-grader-runtime.js",
   "avenquellis-grader-runtime.wasm", "build-info.json", "source-commit.txt", "THIRD-PARTY-NOTICES.txt"];
 const components = [
