@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "version": "88af3f09f0e067f20378325b",
-  "totalBytes": 715907,
+  "version": "f3b3b49cd6edac95d627d2e3",
+  "totalBytes": 716705,
   "assetCount": 38,
   "assets": [
     {
@@ -96,13 +96,13 @@
     },
     {
       "url": "lib/native-grade/avenquellis-grader-runtime.wasm",
-      "bytes": 298159,
-      "sha256": "a8eaafa0b2ecd620e0893e470c2ae53d44f312e81cde5bb09e34f13834c63910"
+      "bytes": 298268,
+      "sha256": "1d24f60527caf49eb020a23008d341de02b1409dea8d0ec9d1629bf324d78f00"
     },
     {
       "url": "lib/native-grade/build-info.json",
       "bytes": 1845,
-      "sha256": "ddf8dbe3c9ba984cb9c1aab556a5863b42ba49b382a64297f12539c2ae738aa8"
+      "sha256": "5c286cdd8667717d64941ef7c81fbda9be4ce892208bb16aed1893dbf5dbd035"
     },
     {
       "url": "lib/native-grade/native-grader.js",
@@ -136,8 +136,8 @@
     },
     {
       "url": "lib/vendor-provenance.json",
-      "bytes": 9114,
-      "sha256": "926a5a37b4bcec7f51bb2e7860c877e407288d2095ef82b22cd3fb5b2f453347"
+      "bytes": 9803,
+      "sha256": "7cd7859248ad3fde29d7374ee85afbf3ad2fc46652327c7873e85d31e087c986"
     },
     {
       "url": "manifest.webmanifest",
