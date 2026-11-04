@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "version": "8d7f30bd8a3fd7cf63b6407b",
-  "totalBytes": 715476,
+  "version": "958a2b26e9b9633acb6b2aa8",
+  "totalBytes": 715765,
   "assetCount": 38,
   "assets": [
     {
       "url": "app.js",
-      "bytes": 65650,
-      "sha256": "a7929657a2f660b9e04e810fc40ff3254c68b76dc18681ec1473c8c1a7223f1b"
+      "bytes": 65907,
+      "sha256": "b8d2f70255874d57a14dbd7525f5deaa7b323d89dd7c61fdf4577d1d0af4c9b6"
     },
     {
       "url": "archive.json",
@@ -46,8 +46,8 @@
     },
     {
       "url": "index.html",
-      "bytes": 4058,
-      "sha256": "8dd0c0e71db08565a4565c5b80e7b0518406dddaaeaf60ee81a9f852a8833c76"
+      "bytes": 4090,
+      "sha256": "5216cb8fe4d6a7b174c180fa500d5a01f361fd899d5f79af587ab1dac626da43"
     },
     {
       "url": "lib/advanced-templates.js",
