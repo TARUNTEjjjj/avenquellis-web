@@ -38,3 +38,10 @@ test('validates request transport, disallows forged options and recovers after a
   const recovered=await post({mode:'question',seed:'after-invalid'});
   assert.equal(recovered.status,200);
 });
+test('an over-long seed gets the JavaScript and native C++ message from the endpoint',async()=>{
+  const seed='a'.repeat(250),response=await post({mode:'question',seed});
+  assert.equal(response.status,400);
+  const {error}=await response.json();
+  assert.equal(error.code,'invalid_input');
+  assert.throws(()=>generateQuestion({seed}),{message:error.message});
+});
