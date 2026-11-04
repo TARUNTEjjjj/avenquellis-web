@@ -13,15 +13,19 @@ export async function readJson(request) {
   if (Number(request.headers.get('content-length') || 0) > MAX_REQUEST_BYTES) throw Object.assign(new Error('Request too large.'),{status:413});
   const reader=request.body?.getReader();
   if (!reader) throw new TypeError('A JSON request body is required.');
-  const decoder=new TextDecoder(); let bytes=0,text='';
+  const decoder=new TextDecoder('utf-8',{fatal:true}); let bytes=0,text='';
   try {
     while (true) {
       const {done,value}=await reader.read();if(done)break;
       bytes+=value.byteLength;
       if (bytes > MAX_REQUEST_BYTES) {await reader.cancel();throw Object.assign(new Error('Request too large.'),{status:413});}
-      text+=decoder.decode(value,{stream:true});
+      try {text+=decoder.decode(value,{stream:true});}
+      catch {throw new TypeError('Malformed UTF-8 JSON request.');}
     }
-    const input=JSON.parse(text+decoder.decode());
+    let input;
+    // Engine-specific JSON.parse diagnostics can quote a private proof. Never return those diagnostics.
+    try {input=JSON.parse(text+decoder.decode());}
+    catch {throw new TypeError('Malformed UTF-8 JSON request.');}
     if (!input || typeof input !== 'object' || Array.isArray(input)) throw new TypeError('A JSON object is required.');
     return input;
   } finally {reader.releaseLock();}
