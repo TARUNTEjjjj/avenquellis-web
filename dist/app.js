@@ -1047,6 +1047,8 @@ function bindReview() {
 }
 async function importBackup(e) {
   const file = e.target.files[0];
+  // Clear the choice so that choosing the same file again, after Cancel or a rejected file, is noticed.
+  e.target.value = "";
   if (!file) return;
   try {
     if (file.size > 10000000) throw Error("Backup exceeds 10 MB.");
