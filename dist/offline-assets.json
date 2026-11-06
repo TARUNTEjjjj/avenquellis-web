@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "version": "233834b58d19320e22992745",
-  "totalBytes": 720199,
+  "version": "699de4895223239f3efd84cd",
+  "totalBytes": 720957,
   "assetCount": 39,
   "assets": [
     {
       "url": "app.js",
-      "bytes": 66325,
-      "sha256": "c3cf9b9d007667c76864e680e8ff6d145ec12b97be33b516df3e87534e83d72f"
+      "bytes": 66589,
+      "sha256": "98bb1d96c70bde99520c6d42a51a8ff35cf8b62973795f234f9914f5a0cedd5e"
     },
     {
       "url": "archive.json",
@@ -136,8 +136,8 @@
     },
     {
       "url": "lib/startup.js",
-      "bytes": 1018,
-      "sha256": "1d85dd906e1009e898cb2614259b57d4bc3bc3bbe60064eb7535712a0bb5d468"
+      "bytes": 1512,
+      "sha256": "5f03f6455ce01a56919c6a509d1451e376d3ebdae43f7b5f59e96564e1e1a750"
     },
     {
       "url": "lib/vendor-provenance.json",

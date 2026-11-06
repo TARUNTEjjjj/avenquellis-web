@@ -25,13 +25,19 @@ import { libraryView, bindLibrary } from "./question-library.js";
 import { auditArithmetic } from "./lib/arithmetic-audit.js";
 import { compareExactLiterals } from "./lib/exact-rational.js";
 import { summarizeProgress } from "./lib/progress.js";
-import { loadWorkspaceResources } from "./lib/startup.js";
+import { loadWorkspaceResources, bufferEvents } from "./lib/startup.js";
 import {
   certificateGuide,
   bindCertificateGuide,
   certificateExamples,
   certificateResult,
 } from "./certificate-ui.js";
+// register-offline.js reports on window load, which does not wait for the top-level
+// await below. Hold its notices until the workspace can show them.
+const offlineNotices = bufferEvents(window, [
+  "avenquellis:offline-ready",
+  "avenquellis:offline-update-ready",
+]);
 // Load independent optional resources together. Slow requests must not hide the
 // workspace indefinitely; existing literal, hosted-checker and catalog fallbacks remain usable.
 const [mathApi, nativeGrader, loadedArchive] = await loadWorkspaceResources({
@@ -1144,7 +1150,11 @@ setInterval(() => {
 }, 1000);
 render();
 
-window.addEventListener("avenquellis:offline-ready", () => {
+offlineNotices.deliver((event) => {
+  if (event.type === "avenquellis:offline-update-ready") {
+    toast(event.detail.message);
+    return;
+  }
   const status = document.querySelector("#offline-status");
   if (status) {
     status.textContent = "Ready offline · source PDFs need internet";
@@ -1152,6 +1162,3 @@ window.addEventListener("avenquellis:offline-ready", () => {
       "The app and exact C++ engine are saved on this device. Browser storage may be cleared by your browser.";
   }
 });
-window.addEventListener("avenquellis:offline-update-ready", (event) =>
-  toast(event.detail.message),
-);

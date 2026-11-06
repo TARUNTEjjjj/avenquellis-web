@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {optionalResource, loadWorkspaceResources} from '../dist/lib/startup.js';
+import {readFile} from 'node:fs/promises';
+import {optionalResource, loadWorkspaceResources, bufferEvents} from '../dist/lib/startup.js';
 
 test('optional startup resources preserve successful results and isolate failures', async () => {
   const engine = {name:'loaded engine'};
@@ -59,4 +60,27 @@ test('a malformed or unavailable catalog cannot discard a healthy local checker'
   const catalog = {papers:[], questionReferences:[], sources:[]};
   assert.deepEqual(await loadWorkspaceResources({loadMath:() => null, loadGrader:() => grader,
     fetchImpl:async () => Response.json(catalog)}), [null, grader, catalog]);
+});
+
+const offlineTypes = ['avenquellis:offline-ready', 'avenquellis:offline-update-ready'];
+
+test('offline notices raised while the workspace starts are kept and delivered once, in order', () => {
+  const target = new EventTarget();
+  const notices = bufferEvents(target, offlineTypes);
+  target.dispatchEvent(new CustomEvent('avenquellis:offline-update-ready', {detail:{message:'Update saved'}}));
+  target.dispatchEvent(new Event('avenquellis:offline-ready'));
+  target.dispatchEvent(new Event('avenquellis:offline-unavailable'));
+  const seen = [];
+  notices.deliver(event => seen.push([event.type, event.detail?.message]));
+  assert.deepEqual(seen, [['avenquellis:offline-update-ready', 'Update saved'], ['avenquellis:offline-ready', undefined]]);
+  target.dispatchEvent(new Event('avenquellis:offline-ready'));
+  assert.deepEqual(seen.map(([type]) => type), [...offlineTypes.slice().reverse(), 'avenquellis:offline-ready']);
+});
+
+// register-offline.js runs on window load, which does not wait for app.js's top-level await.
+test('app.js starts holding offline notices before it awaits startup resources', async () => {
+  const source = await readFile(new URL('../dist/app.js', import.meta.url), 'utf8');
+  const holding = source.indexOf('bufferEvents(window'), waiting = source.indexOf('await loadWorkspaceResources(');
+  assert.ok(holding >= 0 && waiting > holding);
+  assert.ok(!/addEventListener\(\s*["']avenquellis:offline/.test(source), 'Offline notices must go through the startup buffer.');
 });
