@@ -54,10 +54,13 @@ const number = (value, label, min, max, integer = false) => {
     fail(`${label} is out of range.`);
   return value;
 };
-const id = (value, label) => {
+const SAFE_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]*$/;
+// Official archive references name question ranges with an en dash, e.g. cmi-2024-a2–a3.
+const QUESTION_ID = /^[A-Za-z0-9][A-Za-z0-9._:–-]*$/;
+const id = (value, label, pattern = SAFE_ID) => {
   text(value, label, 200, false);
   if (
-    !/^[A-Za-z0-9][A-Za-z0-9._:-]*$/.test(value) ||
+    !pattern.test(value) ||
     Object.hasOwn(Object.prototype, value) ||
     value === "prototype"
   )
@@ -127,7 +130,7 @@ function question(value) {
   if (!TOPICS.has(value.topic) && !(reference && value.topic === "reference"))
     fail("Unknown question topic.");
   const q = {
-    id: id(value.id, "question id"),
+    id: id(value.id, "question id", QUESTION_ID),
     title: text(value.title, "question title", 500, false),
     statement: text(value.statement, "question statement", 50000, false),
     topic: value.topic,

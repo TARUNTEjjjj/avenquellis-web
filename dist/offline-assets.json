@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "version": "c8074e471865120fe175c262",
-  "totalBytes": 719201,
+  "version": "6d4f5c1b31452f5623613ff0",
+  "totalBytes": 719406,
   "assetCount": 39,
   "assets": [
     {
@@ -61,8 +61,8 @@
     },
     {
       "url": "lib/backup.js",
-      "bytes": 16438,
-      "sha256": "24dfdf5b3860ed236f991b6e9dff705e94e489d1b69de8b8a328cad537f74826"
+      "bytes": 16643,
+      "sha256": "45d1a4e34f2849725d561f209dbc98737bdb924301cee1c253671e74f194779f"
     },
     {
       "url": "lib/certificate.js",
