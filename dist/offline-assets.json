@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "version": "699de4895223239f3efd84cd",
-  "totalBytes": 720957,
+  "version": "e3d25317b15a69dc13548968",
+  "totalBytes": 721429,
   "assetCount": 39,
   "assets": [
     {
@@ -26,8 +26,8 @@
     },
     {
       "url": "certificate-ui.js",
-      "bytes": 6934,
-      "sha256": "8091418867a66259ada65c6f898e46b6d996d7e9cf70ce10b577b5856437df75"
+      "bytes": 7107,
+      "sha256": "23c1574e57bb03c3e92c21c1195fd9b208ea9552159775940e7767a3edf7703c"
     },
     {
       "url": "handwriting.css",
@@ -176,8 +176,8 @@
     },
     {
       "url": "model-review.js",
-      "bytes": 12076,
-      "sha256": "294294b674687160e43a33241077de0885166b888e1a23021a648ab5b66de293"
+      "bytes": 12375,
+      "sha256": "e874484f2920b25c318b4c1dd5b0338c2536d495ebc693fed77f8ff5b69a8aef"
     },
     {
       "url": "orbit.js",

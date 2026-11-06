@@ -87,3 +87,17 @@ test('Check certificate falls back to the hosted checker only when the local one
   t.mock.method(globalThis, 'fetch', staticHost);
   await assert.rejects(checkCertificate(question, 'My proof', async () => {throw Error('WASM unavailable');}), /Connect to Avenquellis/);
 });
+
+// Startup stops waiting for a stalled checker download after eight seconds; the button must not wait on it forever.
+test('Check certificate stops waiting for a stalled local checker and uses the hosted one', async t => {
+  t.mock.timers.enable({apis:['setTimeout']});
+  const fetchMock = t.mock.method(globalThis, 'fetch', async () => Response.json({questionId:question.id, status:'incomplete_certificate', score:null, lowerBoundPoints:2}));
+  let settled = false;
+  const checking = checkCertificate(question, 'My proof', () => new Promise(() => {})).finally(() => {settled = true;});
+  await Promise.resolve();
+  t.mock.timers.tick(3000);
+  for (let turn = 0; turn < 50 && !settled; turn++) await new Promise(resolve => setImmediate(resolve));
+  assert.ok(settled, 'Check certificate is still waiting for the stalled checker download.');
+  assert.equal((await checking).lowerBoundPoints, 2);
+  assert.equal(fetchMock.mock.callCount(), 1);
+});

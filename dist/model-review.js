@@ -3,6 +3,7 @@ import {preloadNativeGrader} from './lib/native-grader.js';
 import {applyNativeConsensus} from './lib/native-consensus.js';
 import {validateModelReviews} from './lib/backup.js';
 import {resolveQuestionRef} from './lib/questions.js';
+import {optionalResource} from './lib/startup.js';
 const storageKey='avenquellis.prose-reviews.v1';
 const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const refFor=q=>({templateId:q.templateId,seed:q.generator?.seed,exam:q.exam,difficulty:q.requestedDifficulty});
@@ -101,7 +102,12 @@ export function bindModelPanel(q,field){
        }
        return;
      }
-     if(location==='device') result=applyNativeConsensus(question,answer,result,await preloadNativeGrader());
+     if(location==='device'){
+       // A stalled checker download gets the same deadline as at startup, not an endless wait.
+       const grader=await optionalResource(preloadNativeGrader);
+       if(!grader)throw new Error('The proof checker could not load. Your draft is saved.');
+       result=applyNativeConsensus(question,answer,result,grader);
+     }
      const review = compact(result, q);
      const hasMarks = review.reviews.some(v => v.status === 'proposal');
      const persisted = hasMarks && await rememberModelReview(q, answer, review);
