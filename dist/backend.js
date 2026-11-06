@@ -37,6 +37,10 @@ export async function assessOnServer(question, answer) {
     method:'POST', headers:{'Content-Type':'application/json'},
     body:JSON.stringify(proofRequest(question,answer)), signal:AbortSignal.timeout(15000)
   });
+  // Static hosts and error pages reply with text or HTML rather than the checker's JSON.
+  if (!response.headers.get('content-type')?.includes('application/json')) {
+    throw Error('Connect to Avenquellis to check this proof.');
+  }
   const result=await response.json();
   if (!response.ok || result.questionId !== question.id || !result.status) {
     throw Error(result.error?.message || result.error || 'The proof checker could not assess this question.');

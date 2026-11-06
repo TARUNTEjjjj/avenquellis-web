@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {assessForPractice} from '../dist/backend.js';
+import {checkCertificate} from '../dist/certificate-ui.js';
 import {instantiateGrader} from '../dist/lib/native-grade/runtime.js';
 import {questionBank, generateMock} from '../dist/lib/questions.js';
 import {makeSession, finishSession} from '../dist/lib/session.js';
@@ -59,4 +60,30 @@ test('unavailable, broken or mismatched local engines fall back to the hosted ch
 test('failure of both checkers stays a failure instead of inventing a score', async t => {
   t.mock.method(globalThis, 'fetch', async () => {throw new TypeError('Failed to fetch');});
   await assert.rejects(assessForPractice(question, 'My proof', null), /Failed to fetch/);
+});
+
+// A static preview answers POST /api/assess with 405 text/plain, as does any host without Pages Functions.
+const staticHost = async () => new Response('Method not allowed\n', {status:405, headers:{'Content-Type':'text/plain; charset=utf-8'}});
+
+test('a non-JSON hosted reply becomes a readable failure, not a JSON parse error', async t => {
+  t.mock.method(globalThis, 'fetch', staticHost);
+  await assert.rejects(assessForPractice(question, 'My proof', null), {message:'Connect to Avenquellis to check this proof.'});
+});
+
+test('Check certificate uses the loaded checker while the hosted checker is unreachable', async t => {
+  const fetchMock = t.mock.method(globalThis, 'fetch', staticHost);
+  const complete = await checkCertificate(question, full, async () => grader);
+  assert.equal(complete.status, 'verified_certificate');
+  assert.equal(complete.score, question.maxMarks);
+  const partial = await checkCertificate(question, full.replace('reverse: 1 1', 'reverse: 1 2'), async () => grader);
+  assert.equal(partial.lowerBoundPoints, 4);
+  assert.equal(await checkCertificate(question, 'All common positive divisors are equal.', async () => grader), null);
+  assert.equal(fetchMock.mock.callCount(), 0);
+});
+
+test('Check certificate falls back to the hosted checker only when the local one cannot load', async t => {
+  t.mock.method(globalThis, 'fetch', async () => Response.json({questionId:question.id, status:'incomplete_certificate', score:null, lowerBoundPoints:2}));
+  assert.equal((await checkCertificate(question, 'My proof', async () => {throw Error('WASM unavailable');})).lowerBoundPoints, 2);
+  t.mock.method(globalThis, 'fetch', staticHost);
+  await assert.rejects(checkCertificate(question, 'My proof', async () => {throw Error('WASM unavailable');}), /Connect to Avenquellis/);
 });

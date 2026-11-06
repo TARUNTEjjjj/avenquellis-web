@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "version": "6d4f5c1b31452f5623613ff0",
-  "totalBytes": 719406,
+  "version": "233834b58d19320e22992745",
+  "totalBytes": 720199,
   "assetCount": 39,
   "assets": [
     {
       "url": "app.js",
-      "bytes": 66238,
-      "sha256": "371e77bf95dfff0b6b52c86414e3b6c0107f200b4f973b0b66f8e0cda6e2efea"
+      "bytes": 66325,
+      "sha256": "c3cf9b9d007667c76864e680e8ff6d145ec12b97be33b516df3e87534e83d72f"
     },
     {
       "url": "archive.json",
@@ -16,8 +16,8 @@
     },
     {
       "url": "backend.js",
-      "bytes": 2158,
-      "sha256": "6724e34a1b93ec9eead0824e12f125cf6f2d82b75f3f05e950f37de00b39aad4"
+      "bytes": 2393,
+      "sha256": "18963215cbe49a5f0b20eaea3af38eaf814fec7c8b7eb42cc76f83813302cd37"
     },
     {
       "url": "benchmark-report.js",
@@ -26,8 +26,8 @@
     },
     {
       "url": "certificate-ui.js",
-      "bytes": 6463,
-      "sha256": "576e3ebd4c9796a16753395e2048122bbd4cb1aafefb3900a46eb3cca73db917"
+      "bytes": 6934,
+      "sha256": "8091418867a66259ada65c6f898e46b6d996d7e9cf70ce10b577b5856437df75"
     },
     {
       "url": "handwriting.css",
