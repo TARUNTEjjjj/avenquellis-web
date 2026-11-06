@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "version": "a1abc70370f825fa11ac1daa",
-  "totalBytes": 721557,
-  "assetCount": 39,
+  "version": "d5405a8c7f1d2a1699d2b124",
+  "totalBytes": 723483,
+  "assetCount": 40,
   "assets": [
     {
       "url": "app.js",
-      "bytes": 66717,
-      "sha256": "ca17eb50add9a64e0b2be5e2f68f1f5ddea19e8978baf6d9e58a9471d01608cf"
+      "bytes": 67306,
+      "sha256": "e28a36523c82f1b7d3506d3f411bc9c725b6d6374f7ec0137b4a309063e7f4c3"
     },
     {
       "url": "archive.json",
@@ -143,6 +143,11 @@
       "url": "lib/vendor-provenance.json",
       "bytes": 9803,
       "sha256": "befc61e10abc6d9bb2c4115e52b5a8f8e52b2b91dc3a39eef7792440595d4ead"
+    },
+    {
+      "url": "lib/workspace-storage.js",
+      "bytes": 1337,
+      "sha256": "0c1ae24a77696728bf9a46733b59674bba63435836f4e7c1fd9ae08efcdf339d"
     },
     {
       "url": "manifest.webmanifest",
