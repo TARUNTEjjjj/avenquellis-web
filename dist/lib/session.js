@@ -17,6 +17,7 @@ export function checkNumericResponse(value, expected) {
       if (
         !result ||
         typeof result.ok !== "boolean" ||
+        (result.ok && typeof result.equivalent !== "boolean") ||
         result.code === "engine_unavailable" ||
         result.unavailable ||
         (!result.ok && result.side !== "left")
@@ -40,6 +41,8 @@ export function checkNumericResponse(value, expected) {
     }
   }
   const result = compareExactLiterals(answer, expected);
+  if (!result.ok && result.side === "right")
+    return { ...result, unavailable: true, checker: "unavailable" };
   if (
     !result.ok &&
     /^[\d\s.+\-*/()]+$/.test(answer) &&

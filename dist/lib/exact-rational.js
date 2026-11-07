@@ -51,16 +51,20 @@ export function parseExactLiteral(value) {
 export function compareExactLiterals(left, right) {
   const a = parseExactLiteral(left),
     b = parseExactLiteral(right);
-  return a && b
-    ? {
-        ok: true,
-        equivalent: a.n === b.n && a.d === b.d,
-        left: a.text,
-        right: b.text,
-      }
-    : {
-        ok: false,
-        error:
-          "Enter an exact integer, decimal, or fraction. Expressions require the C++ engine.",
-      };
+  if (!b) return {
+    ok: false,
+    side: "right",
+    error: "The answer key cannot be read by the literal fallback. Load the C++ checker.",
+  };
+  if (!a) return {
+    ok: false,
+    side: "left",
+    error: "Enter an exact integer, decimal, or fraction. Expressions require the C++ engine.",
+  };
+  return {
+    ok: true,
+    equivalent: a.n === b.n && a.d === b.d,
+    left: a.text,
+    right: b.text,
+  };
 }
