@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "version": "d5405a8c7f1d2a1699d2b124",
-  "totalBytes": 723483,
+  "version": "d1bbff381b9af90ce4c3bfc7",
+  "totalBytes": 724154,
   "assetCount": 40,
   "assets": [
     {
       "url": "app.js",
-      "bytes": 67306,
-      "sha256": "e28a36523c82f1b7d3506d3f411bc9c725b6d6374f7ec0137b4a309063e7f4c3"
+      "bytes": 67280,
+      "sha256": "5f2183a16816ba6c1777ab6c8481bf22b3a3164d82227b706109775bb7d9b2f9"
     },
     {
       "url": "archive.json",
@@ -71,8 +71,8 @@
     },
     {
       "url": "lib/exact-rational.js",
-      "bytes": 1770,
-      "sha256": "2acdcca9568cc58f2e8277ef7d3e42b8c644bbe9eb4d1ac69e339ae4baea3ba5"
+      "bytes": 1894,
+      "sha256": "59d7e148ac2e10e9befc02e05f7e837b60c6592a86d96b20265ec29c70bacc04"
     },
     {
       "url": "lib/grader.js",
@@ -126,13 +126,13 @@
     },
     {
       "url": "lib/questions.js",
-      "bytes": 27363,
-      "sha256": "0fa615ad709a4df8f026fe1a7b9482968dd9f468cf511e278e74260c5de87704"
+      "bytes": 27757,
+      "sha256": "9afaff9741d78f8f2908ea073e0d28b3dffd61ada499e13f9b5aaa43b44fd037"
     },
     {
       "url": "lib/session.js",
-      "bytes": 4954,
-      "sha256": "29d87f199e869cdffb08735c591783fbf803ced748eed2f128f747bd3f730cc7"
+      "bytes": 5133,
+      "sha256": "d127870b6ef1ecc0821e5573f48c18b668f0ca1fe303ca06322272c430d2d756"
     },
     {
       "url": "lib/startup.js",
@@ -142,7 +142,7 @@
     {
       "url": "lib/vendor-provenance.json",
       "bytes": 9803,
-      "sha256": "befc61e10abc6d9bb2c4115e52b5a8f8e52b2b91dc3a39eef7792440595d4ead"
+      "sha256": "b14e70012587d0a5b24a37363bfc85469d83abbd35632182bae5a63e6edb40b5"
     },
     {
       "url": "lib/workspace-storage.js",

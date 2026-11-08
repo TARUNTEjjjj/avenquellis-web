@@ -1,5 +1,17 @@
 # Avenquellis production verification
 
+## Reliability review — 7 November 2026
+
+- 66 JavaScript tests passed, including new regressions that keep malformed successful checker results and unreadable answer keys pending instead of awarding zero marks. Incorrect learner literals still receive their normal result.
+- Synchronized the reviewed question-engine and proof-grader sources through the verified engine sync. The binomial helper now handles impossible selections and unsafe numeric results explicitly, and rejected grading request bodies are cancelled without waiting for cleanup.
+- The build validated 31 JavaScript files, 16 official paper records, 62 references, 29 vendored engine assets and all 39 offline snapshot entries. Pages staging verified packed optional GPU assets without downloading model weights.
+- The source libraries passed 36 and 85 JavaScript tests respectively, their actual WebAssembly checks, and four native CTest suites each, including native/browser parity and installed consumers.
+- The student-facing data explanation now accurately describes local checking first and hosted fallback when the local checker is unavailable. No model inference was requested in these checks.
+
+These are local implementation and artifact checks. They do not establish examiner accuracy, user-capacity guarantees, or post-deployment browser behavior. Historical production checks follow.
+
+## Prior production verification
+
 To repeat native parity checks, run `node scripts/check-native-pages.mjs https://avenquellis.pages.dev /path/to/avenquellis-questions` from this repository. It compares complete results for single questions, chapter sets and full mocks and tests rejected combinations. It uses no model inference.
 
 The following checks used a fresh Chrome profile against [the public Cloudflare Pages site](https://avenquellis.pages.dev/). The production deployment tested was [9e86c0c0](https://9e86c0c0.avenquellis.pages.dev/).

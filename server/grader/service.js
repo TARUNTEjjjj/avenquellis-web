@@ -9,8 +9,11 @@ function tokenEqual(given,expected) {
   return different === 0;
 }
 export async function readJson(request) {
-  if ((request.headers.get('content-type') || '').split(';',1)[0].trim().toLowerCase() !== 'application/json') throw Object.assign(new Error('Use application/json.'),{status:415});
-  if (Number(request.headers.get('content-length') || 0) > MAX_REQUEST_BYTES) throw Object.assign(new Error('Request too large.'),{status:413});
+  // Cleanup is best-effort: a slow or failed cancellation must not delay the
+  // validation response or replace it with an implementation-specific error.
+  const discardBody=()=>{void request.body?.cancel().catch(()=>{});};
+  if ((request.headers.get('content-type') || '').split(';',1)[0].trim().toLowerCase() !== 'application/json') {discardBody();throw Object.assign(new Error('Use application/json.'),{status:415});}
+  if (Number(request.headers.get('content-length') || 0) > MAX_REQUEST_BYTES) {discardBody();throw Object.assign(new Error('Request too large.'),{status:413});}
   const reader=request.body?.getReader();
   if (!reader) throw new TypeError('A JSON request body is required.');
   const decoder=new TextDecoder('utf-8',{fatal:true}); let bytes=0,text='';
@@ -18,7 +21,7 @@ export async function readJson(request) {
     while (true) {
       const {done,value}=await reader.read();if(done)break;
       bytes+=value.byteLength;
-      if (bytes > MAX_REQUEST_BYTES) {await reader.cancel();throw Object.assign(new Error('Request too large.'),{status:413});}
+      if (bytes > MAX_REQUEST_BYTES) throw Object.assign(new Error('Request too large.'),{status:413});
       try {text+=decoder.decode(value,{stream:true});}
       catch {throw new TypeError('Malformed UTF-8 JSON request.');}
     }
@@ -28,6 +31,9 @@ export async function readJson(request) {
     catch {throw new TypeError('Malformed UTF-8 JSON request.');}
     if (!input || typeof input !== 'object' || Array.isArray(input)) throw new TypeError('A JSON object is required.');
     return input;
+  } catch(error) {
+    void reader.cancel().catch(()=>{});
+    throw error;
   } finally {reader.releaseLock();}
 }
 /** One handler instance maintains a small concurrency bound; public deployments require a secret. */

@@ -72,3 +72,22 @@ test('checker failures and invalid answer keys never turn into zero marks',()=>{
   configureExactChecker(()=>({ok:false,side:'left',error:'Division by zero'}));assert.equal(finishSession(s,1).results[0].score,0);
  }finally{configureExactChecker(null);}
 });
+
+test('malformed successful checker responses keep marks pending instead of marking wrong',()=>{
+ try {
+  const s=makeSession(mock,0);s.answers.n1='1/2';
+  for(const result of [{ok:true},{ok:true,equivalent:null},{ok:true,equivalent:'false'},{ok:true,equivalent:1}]){
+   configureExactChecker(()=>result);const checked=finishSession(s,1).results[0];
+   assert.equal(checked.score,null);assert.equal(checked.status,'checker_unavailable');
+  }
+ }finally{configureExactChecker(null);}
+});
+
+test('fallback refuses an unreadable answer key without penalizing the learner',()=>{
+ configureExactChecker(null);
+ for(const expected of ['1/0','2+2','not a key']){
+  const s=makeSession({...mock,questions:[{...mock.questions[0],answer:expected}]},0);s.answers.n1='1/2';
+  const checked=finishSession(s,1).results[0];assert.equal(checked.score,null);assert.equal(checked.status,'checker_unavailable');
+ }
+ assert.equal(checkNumericResponse('bad answer','1/2').unavailable,undefined);
+});
