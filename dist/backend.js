@@ -1,8 +1,14 @@
 // The creation API is the C++ generator running in Cloudflare Pages Functions.
-export async function generateOnServer(mode, options) {
+export async function generateOnServer(mode, options, {signal} = {}) {
+  const controller=new AbortController();
+  const abort=()=>controller.abort(signal.reason);
+  signal?.addEventListener('abort',abort,{once:true});
+  if(signal?.aborted)abort();
+  const timeout=setTimeout(()=>controller.abort(new DOMException('The generator timed out. Try again.','TimeoutError')),20000);
+  try {
   const response = await fetch('./api/generate', {
     method: 'POST', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({mode,...options}), signal: AbortSignal.timeout(20000)
+    body: JSON.stringify({mode,...options}), signal: controller.signal
   });
   if (!response.headers.get('content-type')?.includes('application/json')) {
     throw Error('Connect to Avenquellis to generate a practice set.');
@@ -12,6 +18,10 @@ export async function generateOnServer(mode, options) {
     throw Error(data.error?.message || 'The question generator is unavailable. Try again in a moment.');
   }
   return data.result;
+  } finally {
+    clearTimeout(timeout);
+    signal?.removeEventListener('abort',abort);
+  }
 }
 
 export function proofRequest(question, answer) {

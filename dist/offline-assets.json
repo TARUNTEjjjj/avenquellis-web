@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "version": "2a82b756531563f968f3b7e0",
-  "totalBytes": 719959,
+  "version": "097b7a286a1511fb3456fbea",
+  "totalBytes": 721265,
   "assetCount": 39,
   "assets": [
     {
       "url": "app.js",
-      "bytes": 66299,
-      "sha256": "a1f70c5644e94701727b53d6483613e98d5f00e68c006654d452f43831842e15"
+      "bytes": 67078,
+      "sha256": "2802ae6d0acff04d55d4002e7cae331e26cc5ee5df72ec73b8c622a64a529054"
     },
     {
       "url": "archive.json",
@@ -16,8 +16,8 @@
     },
     {
       "url": "backend.js",
-      "bytes": 2158,
-      "sha256": "6724e34a1b93ec9eead0824e12f125cf6f2d82b75f3f05e950f37de00b39aad4"
+      "bytes": 2571,
+      "sha256": "b17bbded32ef8483999e6617c7a61eeaf21ab782dac9ba259688644c3423dd23"
     },
     {
       "url": "benchmark-report.js",
@@ -141,8 +141,8 @@
     },
     {
       "url": "lib/vendor-provenance.json",
-      "bytes": 9803,
-      "sha256": "b14e70012587d0a5b24a37363bfc85469d83abbd35632182bae5a63e6edb40b5"
+      "bytes": 9869,
+      "sha256": "0aaded2562bd01f816af5810b0e2ffb436bd3aa1850f60f2c5a6fb79a8c3385d"
     },
     {
       "url": "manifest.webmanifest",
@@ -196,8 +196,8 @@
     },
     {
       "url": "style.css",
-      "bytes": 33439,
-      "sha256": "b125bbaf8d09e9a22964843bdfca3e18733fac029382ef5b98cc39209e6dd8a5"
+      "bytes": 33487,
+      "sha256": "d4882571f1fe8d7eb6c4c7864439cc8e7752af9c07e5bfb80a5aa139d449f734"
     }
   ],
   "skipped": [
