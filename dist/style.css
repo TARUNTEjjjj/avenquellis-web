@@ -413,6 +413,9 @@ h3 {
   color: #a3b2c8;
   margin-bottom: 23px;
 }
+#cancel-generation[hidden] {
+  display: none;
+}
 .button {
   display: inline-flex;
   align-items: center;

@@ -426,7 +426,10 @@ function report() {
       .join("")}`
   );
 }
+let cancelGeneration=null;
 function render() {
+  cancelGeneration?.();
+  cancelGeneration=null;
   stopOrbit();
   page = (location.hash.slice(1) || "overview").split("?")[0];
   if (!Object.hasOwn(pageNames, page)) page = "overview";
@@ -739,23 +742,31 @@ function bind() {
       if (rmo && ["calculus", "probability"].includes($("#gen-topic").value))
         $("#gen-topic").value = "all";
     };
-    let requestId=0;
+    let requestId=0,controller=null;
+    const cancel=document.createElement('button');
+    cancel.type='button';cancel.className='button ghost';cancel.id='cancel-generation';
+    cancel.textContent='Cancel generation';cancel.hidden=true;
+    $('#assemble').parentElement.append(cancel);
+    cancel.onclick=()=>controller?.abort();
+    cancelGeneration=()=>controller?.abort();
     const createFromForm=async(single)=>{
       const form=$("#generate-form"), id=++requestId, options=generateOptions();
-      const button=single?form.querySelector('[type=submit]'):$("#assemble");
-      button.disabled=true;
+      controller?.abort();
+      const currentController=new AbortController();controller=currentController;
+      const buttons=[form.querySelector('[type=submit]'),$("#assemble")];
+      buttons.forEach(button=>{button.disabled=true;});cancel.hidden=false;
       const slot=$("#forge-output");
       slot.textContent="Generating your practice material…";
       try {
         const mode=single?"question":options.topic==="all"?"mock":"chapter";
         if (single) delete options.count;
-        const result=await generateOnServer(mode,options);
+        const result=await generateOnServer(mode,options,{signal:currentController.signal});
         if(!form.isConnected||id!==requestId)return;
         generated=single?result:null;generatedMock=single?null:result;
         slot.innerHTML=single?questionPreview(result):mockPreview(result);
         bindForge();
-      } catch(error){if(id===requestId&&form.isConnected)slot.textContent=error.message;}
-      finally{button.disabled=false;}
+      } catch(error){if(id===requestId&&form.isConnected)slot.textContent=currentController.signal.aborted?'Generation cancelled. Change the settings and try again.':error.message;}
+      finally{if(id===requestId){buttons.forEach(button=>{button.disabled=false;});cancel.hidden=true;}}
     };
     $("#generate-form").onsubmit = (event) => {event.preventDefault();void createFromForm(true);};
     $("#assemble").onclick = () => createFromForm(false);
