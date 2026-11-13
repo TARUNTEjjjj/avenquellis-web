@@ -1,6 +1,6 @@
 # Avenquellis
 
-A 3D mathematics workspace for CMI, ISI and Class XII olympiad preparation, hosted on **[Cloudflare Pages](https://avenquellis.pages.dev/)**. The GitHub source repository is private; the learning website is public.
+A 3D mathematics workspace for CMI, ISI and Class XII olympiad preparation, hosted on **[Cloudflare Pages](https://avenquellis.pages.dev/)**. The GitHub source repository and learning website are public.
 
 ## Run and verify
 
@@ -30,7 +30,7 @@ The build creates a content-hashed offline snapshot, validates the official cata
 
 [Production checks](docs/RELEASE-CHECK.md) cover individual questions, mixed and chapter mocks, handwritten submissions, complete certificates and partial prose.
 
-## Three private repositories
+## Three repositories
 
 | Repository | Responsibility |
 | --- | --- |
@@ -70,6 +70,6 @@ Production explicitly selects `verbatim-v1`. The experimental `span-v2` protocol
 
 The site uses the existing Workers Free plan, with [10,000 free neurons per day](https://developers.cloudflare.com/workers-ai/platform/pricing/). Two reviews per submission draw from this shared allowance. When it is exhausted, hosted marking must wait for the reset. The optional browser model, Qwen3 1.7B, downloads roughly 1 GB on explicit request and requires a compatible WebGPU device. It keeps proof content local. It matched only 3 of its 12 suggested marks on a 24-proof pilot, so the interface presents it as experimental feedback.
 
-See [Sources & methods](https://avenquellis.pages.dev/#sources) for the blind score comparisons and their limits. [Private per-case evidence and reproduction instructions](https://github.com/TARUNTEjjjj/avenquellis-proof-grader/tree/main/benchmark/evidence) distinguish expert research labels from official competition marks. The same model can make the same mistake twice. No agreement rate here establishes examiner-level accuracy on CMI, ISI or RMO scripts.
+See [Sources & methods](https://avenquellis.pages.dev/#sources) for the blind score comparisons and their limits. [Per-case evidence and reproduction instructions](https://github.com/TARUNTEjjjj/avenquellis-proof-grader/tree/main/benchmark/evidence) distinguish expert research labels from official competition marks. The same model can make the same mistake twice. No agreement rate here establishes examiner-level accuracy on CMI, ISI or RMO scripts.
 
 Answers, drafts, bookmarks and reviews live in this browser's local storage, without cross-device sync or server backup. For the latest 20 exact answers the browser can retain one hosted and one local review, keyed to the problem, rubric and answer. Both can be exported in the proof, its attempt or a global backup. Restored reviews are labeled unverified. Export backups from Your progress. Reviewer names are user-entered and unverified. Worked solutions are included in the public app code: this is a learning workspace, not a secure exam system or a source of certified grades.
