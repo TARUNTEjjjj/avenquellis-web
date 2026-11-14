@@ -113,32 +113,51 @@ test('canonical index redirects are avoided during install, navigation and cache
 });
 
 
-test('nested resource indexes survive Pages redirects and navigate offline at their directory URL',async t=>{
+test('nested app indexes survive Pages redirects and navigate offline at their directory URL',async t=>{
   const {directory,files}=await fixture(t);
-  await mkdir(join(directory,'resources'));
-  files['resources/index.html']='<!doctype html><h1>Resource library</h1>';
-  files['resources/catalog.json']='{"schemaVersion":1,"items":[]}';
-  for(const path of ['resources/index.html','resources/catalog.json'])await writeFile(join(directory,path),files[path]);
+  await mkdir(join(directory,'guides'));
+  files['guides/index.html']='<!doctype html><h1>App guide</h1>';
+  files['guides/catalog.json']='{"schemaVersion":1,"items":[]}';
+  for(const path of ['guides/index.html','guides/catalog.json'])await writeFile(join(directory,path),files[path]);
   await buildOffline({directory});
   const app=await runtime(directory,files);
-  const nested='https://math.example/lab/resources/';
+  const nested='https://math.example/lab/guides/';
   const network=[];const serve=app.context.fetch;
   app.context.fetch=async(url,options)=>{
     network.push(url);
     if(url.endsWith('/index.html'))throw new TypeError('Pages index redirect rejected');
-    if(url===nested)return new Response(files['resources/index.html']);
+    if(url===nested)return new Response(files['guides/index.html']);
     return serve(url,options);
   };
   await app.lifecycle('install');
   assert.ok(network.includes(nested));
   assert.ok(!network.some(url=>url.endsWith('/index.html')));
   app.context.fetch=async()=>{throw new TypeError('offline');};
-  assert.equal(await(await app.request(nested,{mode:'navigate'})).text(),files['resources/index.html']);
-  assert.equal(await(await app.request(nested+'index.html',{mode:'navigate'})).text(),files['resources/index.html']);
-  assert.equal(await(await app.request(nested+'catalog.json')).text(),files['resources/catalog.json']);
+  assert.equal(await(await app.request(nested,{mode:'navigate'})).text(),files['guides/index.html']);
+  assert.equal(await(await app.request(nested+'index.html',{mode:'navigate'})).text(),files['guides/index.html']);
+  assert.equal(await(await app.request(nested+'catalog.json')).text(),files['guides/catalog.json']);
   assert.equal(await app.request('https://raw.githubusercontent.com/TARUNTEjjjj/avenquellis-web/main/resources/catalog.json'),undefined,'External refreshed metadata bypasses the app snapshot cache');
   const cache=[...app.storage.values()][0];cache.delete(nested+'index.html');
-  app.context.fetch=async url=>{assert.equal(url,nested);return new Response(files['resources/index.html']);};
-  assert.equal(await(await app.request(nested,{mode:'navigate'})).text(),files['resources/index.html']);
+  app.context.fetch=async url=>{assert.equal(url,nested);return new Response(files['guides/index.html']);};
+  assert.equal(await(await app.request(nested,{mode:'navigate'})).text(),files['guides/index.html']);
   assert.ok(cache.has(nested+'index.html'));
+});
+
+test('the main app leaves all resource-library files and cache ownership to the scoped worker',async t=>{
+  const {directory,files}=await fixture(t);
+  await mkdir(join(directory,'resources'));
+  for(const file of ['index.html','explorer.mjs','offline-worker.js','catalog.json']) {
+    files['resources/'+file]='Public library asset';
+    await writeFile(join(directory,'resources',file),files['resources/'+file]);
+  }
+  const manifest=await buildOffline({directory});
+  assert.ok(manifest.skipped.includes('resources'));
+  assert.ok(!manifest.assets.some(asset=>asset.url.startsWith('resources/')));
+  const app=await runtime(directory,files);
+  const libraryCache='resource-library-shell:/resources/:current';
+  app.storage.set(libraryCache,new Map());
+  await app.lifecycle('install');await app.lifecycle('activate');
+  assert.ok(app.storage.has(libraryCache));
+  for(const path of ['resources/','resources/index.html','resources/explorer.mjs','resources/offline-worker.js','resources/catalog.json'])
+    assert.equal(await app.request('https://math.example/lab/'+path,{mode:path.endsWith('/')?'navigate':'cors'}),undefined,path);
 });
