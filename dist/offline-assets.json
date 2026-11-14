@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "version": "40fb6855cecc79b1e46433ac",
-  "totalBytes": 768476,
+  "version": "8dd174e8c9321c65ab4808aa",
+  "totalBytes": 768477,
   "assetCount": 43,
   "assets": [
     {
@@ -196,8 +196,8 @@
     },
     {
       "url": "resources/catalog.json",
-      "bytes": 23178,
-      "sha256": "8315b0bf103e2c1371a22d89b6c374be1905402f4ea161e0b5c697f4028dbab2"
+      "bytes": 23179,
+      "sha256": "0956f3e276beb8ed17896b22ebbd302c2d5abd9d108b6fb5e10539bd16529f17"
     },
     {
       "url": "resources/explorer.css",
