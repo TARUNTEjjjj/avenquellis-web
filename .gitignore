@@ -7,3 +7,7 @@ node_modules/
 .env.*
 !.env.example
 .dev.vars
+
+# Private transport cache; publish only the normalized resource snapshot.
+resources/*.cache.json
+resources/*.tmp

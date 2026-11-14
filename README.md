@@ -73,3 +73,7 @@ The site uses the existing Workers Free plan, with [10,000 free neurons per day]
 See [Sources & methods](https://avenquellis.pages.dev/#sources) for the blind score comparisons and their limits. [Per-case evidence and reproduction instructions](https://github.com/TARUNTEjjjj/avenquellis-proof-grader/tree/main/benchmark/evidence) distinguish expert research labels from official competition marks. The same model can make the same mistake twice. No agreement rate here establishes examiner-level accuracy on CMI, ISI or RMO scripts.
 
 Answers, drafts, bookmarks and reviews live in this browser's local storage, without cross-device sync or server backup. For the latest 20 exact answers the browser can retain one hosted and one local review, keyed to the problem, rubric and answer. Both can be exported in the proof, its attempt or a global backup. Restored reviews are labeled unverified. Export backups from Your progress. Reviewer names are user-entered and unverified. Worked solutions are included in the public app code: this is a learning workspace, not a secure exam system or a source of certified grades.
+
+## GitHub resource collection
+
+Explore the project-specific [resource catalog](resources/README.md): curated references, star-ranked discovery, dated source metadata, cached failure recovery and an optional read-only server API. The daily refresh workflow updates the public catalog. The resource library reads the latest GitHub snapshot with a bundled offline fallback; application-code updates still follow the existing deployment process.

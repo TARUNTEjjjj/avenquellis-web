@@ -33,13 +33,15 @@ const PREFIX='avenquellis-offline:'+SCOPE.pathname+':';
 const CACHE=PREFIX+SNAPSHOT.version;
 const ASSETS=new Map(SNAPSHOT.assets.map(asset=>[new URL(asset.url,SCOPE).href,asset]));
 const INDEX=new URL('index.html',SCOPE).href;
+// Keep physical filenames for integrity/cache identity, but use Pages' canonical
+// directory URLs on the network and when resolving nested index navigation.
+const INDEX_ALIASES=new Map([...ASSETS.keys()].filter(url=>url.endsWith('/index.html')).map(url=>[url.slice(0,-'index.html'.length),url]));
 const digest=async bytes=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),byte=>byte.toString(16).padStart(2,'0')).join('');
 async function verifiedFetch(url,asset,timeoutMs=10000) {
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeoutMs);
   try {
-    // Static hosts may redirect /index.html to /. Keep the file URL as the cache key
-    // and verify the app root against the exact index.html digest.
-    const networkUrl=url===INDEX?SCOPE.href:url;
+    // Pages redirects every index.html, including nested resource-library pages.
+    const networkUrl=url.endsWith('/index.html')?url.slice(0,-'index.html'.length):url;
     const response=await fetch(networkUrl,{cache:'no-store',credentials:'same-origin',redirect:'error',signal:controller.signal});
     if (!response.ok || response.type==='opaque') throw new Error('Asset unavailable');
     const reader=response.body?.getReader();
@@ -82,8 +84,9 @@ self.addEventListener('fetch',event=>{
   const url=new URL(request.url);
   if(url.origin!==SCOPE.origin)return;
   url.hash='';url.search='';
+  const cacheUrl=INDEX_ALIASES.get(url.href)||url.href;
   const navigation=request.mode==='navigate'&&(url.href===SCOPE.href||url.href===INDEX);
-  const asset=ASSETS.get(url.href);
+  const asset=ASSETS.get(cacheUrl);
   if(!navigation&&!asset)return; // No API responses, external PDFs, or arbitrary URLs.
   event.respondWith((async()=>{
     const cache=await caches.open(CACHE);
@@ -91,9 +94,9 @@ self.addEventListener('fetch',event=>{
       try {return await verifiedFetch(INDEX,ASSETS.get(INDEX),4000);}
       catch {return await cache.match(INDEX)||new Response('The app is not available offline yet. Reconnect and reload.',{status:503,headers:{'Content-Type':'text/plain; charset=utf-8'}});}
     }
-    const saved=await cache.match(url.href);
+    const saved=await cache.match(cacheUrl);
     if(saved)return saved;
-    try {const response=await verifiedFetch(url.href,asset);await cache.put(url.href,response.clone());return response;}
+    try {const response=await verifiedFetch(cacheUrl,asset);await cache.put(cacheUrl,response.clone());return response;}
     catch {return new Response('This app asset is unavailable. Reconnect and reopen the app.',{status:503,headers:{'Content-Type':'text/plain; charset=utf-8'}});}
   })());
 });
