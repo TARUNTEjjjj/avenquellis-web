@@ -15,7 +15,9 @@ async function collect(directory,prefix='') {
   const assets=[],skipped=[];
   for (const entry of (await readdir(directory,{withFileTypes:true})).sort((a,b)=>a.name.localeCompare(b.name,'en'))) {
     const relative=prefix+entry.name;
-    if (relative === 'device-runtime' || entry.name.startsWith('.') || sensitiveName.test(entry.name)) {skipped.push(relative);continue;}
+    // The library has its own /resources/ worker, version, and verified shell.
+    // Keep its changing modules out of the main app's immutable snapshot.
+    if (relative === 'device-runtime' || relative === 'resources' || entry.name.startsWith('.') || sensitiveName.test(entry.name)) {skipped.push(relative);continue;}
     if (entry.isDirectory()) {const child=await collect(join(directory,entry.name),relative+'/');assets.push(...child.assets);skipped.push(...child.skipped);continue;}
     if (!entry.isFile() || excluded.has(relative) || !extensions.has(extname(entry.name).toLowerCase())) continue;
     const file=join(directory,entry.name),size=(await stat(file)).size;

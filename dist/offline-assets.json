@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "version": "e13ddf49c69e399b652d8899",
-  "totalBytes": 768477,
-  "assetCount": 43,
+  "version": "e84117291b68c6e07ac0a85f",
+  "totalBytes": 721399,
+  "assetCount": 39,
   "assets": [
     {
       "url": "app.js",
@@ -46,8 +46,8 @@
     },
     {
       "url": "index.html",
-      "bytes": 4282,
-      "sha256": "26c3c4489b79e9ada6522ca2d09f7fa23273b69781ec7cbd47f8c177ef2169ba"
+      "bytes": 4346,
+      "sha256": "53e1ca060f62884b95516292cab44f4abea220cadae72d97882a65395f22b17d"
     },
     {
       "url": "lib/advanced-templates.js",
@@ -195,33 +195,14 @@
       "sha256": "c85aeb69411a54cb02b7714028e555b9907a890b96b0c8be70a768ac2266edbd"
     },
     {
-      "url": "resources/catalog.json",
-      "bytes": 23179,
-      "sha256": "a3708c8684d2bec9f9f82b0c1c81c825060de875c53a4e98a01f4a0aa65ff533"
-    },
-    {
-      "url": "resources/explorer.css",
-      "bytes": 7200,
-      "sha256": "9e1b72e7d11959f1d4c03a6d42d9e9097fdb144bd395f733dee49816bc5f5386"
-    },
-    {
-      "url": "resources/explorer.mjs",
-      "bytes": 12400,
-      "sha256": "3f61e658cd2f0484ea9043ca1448fcf17ee558441b684ec552730e06ccbf2ee2"
-    },
-    {
-      "url": "resources/index.html",
-      "bytes": 4363,
-      "sha256": "bce458617a2195b9e3f696414fd9783d54d9443eb503295dae8f065e5021e874"
-    },
-    {
       "url": "style.css",
       "bytes": 33487,
       "sha256": "d4882571f1fe8d7eb6c4c7864439cc8e7752af9c07e5bfb80a5aa139d449f734"
     }
   ],
   "skipped": [
-    "device-runtime"
+    "device-runtime",
+    "resources"
   ],
   "limits": {
     "maxAssetBytes": 10485760,
