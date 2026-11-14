@@ -1,7 +1,8 @@
 /* Public resource page only. The staging script supplies a complete shell inventory. */
-const VERSION = "8fb402533c3ebec781bc5a0e";
+const VERSION = "ff2c033ce7dea16cf4791536";
+const APP_VERSION = "f65a816470824d3be69b31ff5a1cf186422884197011abd9adde23d4dbcc6d88";
 const PROJECT = "avenquellis-web";
-const INVENTORY = [{"file":"index.html","bytes":5221,"sha256":"f17122285ad5bfb3940d5e812259811a96df880e2ee00be1f8ee633fc93a048a"},{"file":"explorer.css","bytes":8017,"sha256":"faabf99f39f38be4a0ddbaddd886fd8da6ebec3815b8a4381743f0c263ef658c"},{"file":"explorer.mjs","bytes":9180,"sha256":"0fd5d9dcf60b978b84a5976c74b5f61ebceeb29dab9cf112782929ca2b8109ad"},{"file":"catalog.json","bytes":null,"sha256":null},{"file":"catalog.mjs","bytes":7977,"sha256":"8309f5e6fa56111728bc0c45cd9aefbbf7531de5cd4146fa697a2e7a0a6eb518"},{"file":"storage.mjs","bytes":5451,"sha256":"8dbfa788416a8570b530d6a4933ea6771d803213f5a26aaf41aca65e8961e374"},{"file":"live.mjs","bytes":8309,"sha256":"af3402b126fea612050541784c700370dbb2dfd317f6385ca5cf48003a9d3029"},{"file":"background.mjs","bytes":442,"sha256":"cb4d60f1a87f25a51f1ed249d24828f1df95f4288f421a9d5e87fbf03b7ba502"},{"file":"offline.mjs","bytes":3744,"sha256":"872efd9dcddf15a895a6f9510d9c3f33c37c40976baf17ce8add85d94711cbc1"}];
+const INVENTORY = [{"file":"index.html","bytes":5372,"sha256":"51fb465eae3e9207b1d9470a9890d6bd2f3c8c91cd384d7b66084cb12f837dfe"},{"file":"explorer.css","bytes":8017,"sha256":"faabf99f39f38be4a0ddbaddd886fd8da6ebec3815b8a4381743f0c263ef658c"},{"file":"explorer.mjs","bytes":9252,"sha256":"90b385cb838fea812f926fb1f0cab509f9a2400f8970a74bc67d6da3c2e98bc1"},{"file":"catalog.json","bytes":null,"sha256":null},{"file":"catalog.mjs","bytes":7977,"sha256":"8309f5e6fa56111728bc0c45cd9aefbbf7531de5cd4146fa697a2e7a0a6eb518"},{"file":"storage.mjs","bytes":5451,"sha256":"8dbfa788416a8570b530d6a4933ea6771d803213f5a26aaf41aca65e8961e374"},{"file":"live.mjs","bytes":8309,"sha256":"af3402b126fea612050541784c700370dbb2dfd317f6385ca5cf48003a9d3029"},{"file":"background.mjs","bytes":514,"sha256":"6debef47b22f19dcd4dedc29aff85aaa70ed613ffbe810f0bf50007a3eb493bb"},{"file":"offline.mjs","bytes":3744,"sha256":"872efd9dcddf15a895a6f9510d9c3f33c37c40976baf17ce8add85d94711cbc1"},{"file":"app-updates.mjs","bytes":14118,"sha256":"295685aa2aea24a0d53af635274bce9947302c54105f8a7b825dc03764512080"}];
 const SCOPE = new URL(self.registration.scope);
 const PREFIX = 'resource-library-shell:' + SCOPE.pathname + ':';
 const CACHE = PREFIX + VERSION;
@@ -75,7 +76,7 @@ async function shellReady() {
 }
 
 self.addEventListener('install', event => event.waitUntil((async () => {
-  if (SCOPE.pathname !== '/resources/' || ASSETS.size !== 9) throw new Error('Invalid resource shell scope or inventory');
+  if (SCOPE.pathname !== '/resources/' || ASSETS.size !== 10) throw new Error('Invalid resource shell scope or inventory');
   try {
     const responses = await Promise.all([...ASSETS].map(async ([url, asset]) => [url, await verifiedAsset(url, asset)]));
     const cache = await caches.open(CACHE);
@@ -85,7 +86,8 @@ self.addEventListener('install', event => event.waitUntil((async () => {
 })()));
 
 self.addEventListener('activate', event => event.waitUntil((async () => {
-  for (const key of await caches.keys()) if (key.startsWith(PREFIX) && key !== CACHE) await caches.delete(key);
+  const previous = (await caches.keys()).filter(key=>key.startsWith(PREFIX)&&key!==CACHE).at(-1);
+  for (const key of await caches.keys()) if (key.startsWith(PREFIX) && key !== CACHE && key !== previous) await caches.delete(key);
   // This registration's narrow scope never takes control of the main application.
   await self.clients.claim();
 })()));
@@ -118,3 +120,40 @@ self.addEventListener('message', event => {
     event.ports[0].postMessage({type: 'RESOURCE_SHELL_STATUS', ready: await shellReady(), version: VERSION, scope: SCOPE.href});
   })());
 });
+
+(function installWorkerUpdateProtocol({version, scope, ready}) {
+  const origin = new URL(scope).origin;
+  const nonceValid = nonce => typeof nonce === 'string' && /^[a-f0-9]{32}$/.test(nonce);
+  const safeClient = (client, nonce) => new Promise(resolve => {
+    const channel = new MessageChannel();
+    let settled = false;
+    const finish = safe => { if (settled) return; settled = true; clearTimeout(timer); channel.port1.close(); channel.port2.close(); resolve(safe); };
+    const timer = setTimeout(()=>finish(false),2000);
+    channel.port1.onmessage = event => finish(event.data?.type === 'APP_UPDATE_SAFETY' && event.data.nonce === nonce && event.data.safe === true);
+    try { client.postMessage({type:'APP_UPDATE_CAN_ACTIVATE',nonce,version},[channel.port2]); } catch { finish(false); }
+  });
+  self.addEventListener('message', event => {
+    const port = event.ports?.[0], data = event.data;
+    if (!port || !event.source?.id) return;
+    let sourceURL; try { sourceURL = new URL(event.source.url); } catch { return; }
+    if (sourceURL.origin !== origin) return;
+    if (data?.type === 'GET_APP_UPDATE_STATUS') {
+      event.waitUntil((async()=>{try{port.postMessage({type:'APP_UPDATE_STATUS',version,scope,ready:await ready()});}catch{port.postMessage({type:'APP_UPDATE_STATUS',version,scope,ready:false});}})());
+      return;
+    }
+    if (data?.type !== 'ACTIVATE_APP_UPDATE' || data.version !== version || !nonceValid(data.nonce)) return;
+    event.waitUntil((async()=>{
+      let accepted = false;
+      try {
+        if (await ready()) {
+          const windows = (await self.clients.matchAll({type:'window',includeUncontrolled:true})).filter(client=>new URL(client.url).origin===origin);
+          const decisions = await Promise.all(windows.map(client=>safeClient(client,data.nonce)));
+          const current = (await self.clients.matchAll({type:'window',includeUncontrolled:true})).filter(client=>new URL(client.url).origin===origin);
+          accepted = windows.length > 0 && decisions.every(Boolean) && current.every(client=>windows.some(previous=>previous.id===client.id));
+          if (accepted) await self.skipWaiting();
+        }
+      } catch {}
+      port.postMessage({type:'APP_UPDATE_ACTIVATION',version,scope,nonce:data.nonce,accepted});
+    })());
+  });
+})({version: APP_VERSION, scope: self.registration.scope, ready: async () => (shellReady())});

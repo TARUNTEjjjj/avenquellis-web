@@ -7,6 +7,12 @@ import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(root, "dist");
+const appRelease=JSON.parse(await readFile(join(dist,'app-version.json'),'utf8'));
+assert.equal(appRelease.project,'avenquellis-web');
+assert.match(appRelease.version,/^[a-f0-9]{64}$/);
+for(const path of ['index.html','resources/index.html'])
+  assert.ok((await readFile(join(dist,path),'utf8')).includes(`name="app-version" content="${appRelease.version}"`),`Application baseline mismatch: ${path}`);
+assert.ok((await readFile(join(dist,'_headers'),'utf8')).includes('/app-version.json\n  Cache-Control: no-store'));
 for (const asset of [
   "index.html",
   "app.js",
