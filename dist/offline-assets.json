@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "version": "c344e8fc733fe766f2abc212",
-  "totalBytes": 763760,
+  "version": "40fb6855cecc79b1e46433ac",
+  "totalBytes": 768476,
   "assetCount": 43,
   "assets": [
     {
@@ -206,13 +206,13 @@
     },
     {
       "url": "resources/explorer.mjs",
-      "bytes": 7831,
-      "sha256": "d54a226833b2863654697a3d7d7932868c46b5349c0a6c3e8e8208c6e2410f56"
+      "bytes": 12400,
+      "sha256": "3f61e658cd2f0484ea9043ca1448fcf17ee558441b684ec552730e06ccbf2ee2"
     },
     {
       "url": "resources/index.html",
-      "bytes": 4216,
-      "sha256": "5e7e16fa6d10829bcf759b6e4706655a52e370a41d031dfa811b3389d338e00c"
+      "bytes": 4363,
+      "sha256": "bce458617a2195b9e3f696414fd9783d54d9443eb503295dae8f065e5021e874"
     },
     {
       "url": "style.css",

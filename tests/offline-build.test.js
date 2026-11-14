@@ -111,3 +111,34 @@ test('canonical index redirects are avoided during install, navigation and cache
   assert.equal(networkUrls.filter(url=>url===root).length,3);
   assert.ok(!networkUrls.includes(indexUrl));
 });
+
+
+test('nested resource indexes survive Pages redirects and navigate offline at their directory URL',async t=>{
+  const {directory,files}=await fixture(t);
+  await mkdir(join(directory,'resources'));
+  files['resources/index.html']='<!doctype html><h1>Resource library</h1>';
+  files['resources/catalog.json']='{"schemaVersion":1,"items":[]}';
+  for(const path of ['resources/index.html','resources/catalog.json'])await writeFile(join(directory,path),files[path]);
+  await buildOffline({directory});
+  const app=await runtime(directory,files);
+  const nested='https://math.example/lab/resources/';
+  const network=[];const serve=app.context.fetch;
+  app.context.fetch=async(url,options)=>{
+    network.push(url);
+    if(url.endsWith('/index.html'))throw new TypeError('Pages index redirect rejected');
+    if(url===nested)return new Response(files['resources/index.html']);
+    return serve(url,options);
+  };
+  await app.lifecycle('install');
+  assert.ok(network.includes(nested));
+  assert.ok(!network.some(url=>url.endsWith('/index.html')));
+  app.context.fetch=async()=>{throw new TypeError('offline');};
+  assert.equal(await(await app.request(nested,{mode:'navigate'})).text(),files['resources/index.html']);
+  assert.equal(await(await app.request(nested+'index.html',{mode:'navigate'})).text(),files['resources/index.html']);
+  assert.equal(await(await app.request(nested+'catalog.json')).text(),files['resources/catalog.json']);
+  assert.equal(await app.request('https://raw.githubusercontent.com/TARUNTEjjjj/avenquellis-web/main/resources/catalog.json'),undefined,'External refreshed metadata bypasses the app snapshot cache');
+  const cache=[...app.storage.values()][0];cache.delete(nested+'index.html');
+  app.context.fetch=async url=>{assert.equal(url,nested);return new Response(files['resources/index.html']);};
+  assert.equal(await(await app.request(nested,{mode:'navigate'})).text(),files['resources/index.html']);
+  assert.ok(cache.has(nested+'index.html'));
+});
