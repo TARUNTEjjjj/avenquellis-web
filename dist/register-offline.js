@@ -18,7 +18,7 @@ async function register() {
   try {
     const registration=await navigator.serviceWorker.register(new URL('./sw.js',import.meta.url),{scope:new URL('./',import.meta.url).pathname,updateViaCache:'none'});
     const waiting=()=>{
-      if(registration.waiting)emit('offline-update-ready',{message:'An update is saved. Close all Avenquellis tabs and reopen the app when you finish your test.',activation:'after-all-tabs-close'});
+      if(registration.waiting)emit('offline-update-ready',{message:'An update is saved. It opens when all app windows are ready; active work stays open.',activation:'when-all-windows-safe'});
     };
     waiting();
     registration.addEventListener('updatefound',()=>{

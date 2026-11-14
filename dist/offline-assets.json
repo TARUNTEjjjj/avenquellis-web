@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "version": "e84117291b68c6e07ac0a85f",
-  "totalBytes": 721399,
-  "assetCount": 39,
+  "version": "67b9f8946caaaee33d4c0474",
+  "totalBytes": 722220,
+  "assetCount": 40,
   "assets": [
     {
       "url": "app.js",
-      "bytes": 67078,
-      "sha256": "2802ae6d0acff04d55d4002e7cae331e26cc5ee5df72ec73b8c622a64a529054"
+      "bytes": 67298,
+      "sha256": "cd309dfbb4184ca52907ba41a06077471488e64abb4e65fb8446ec9a35720c48"
     },
     {
       "url": "archive.json",
@@ -46,13 +46,18 @@
     },
     {
       "url": "index.html",
-      "bytes": 4346,
-      "sha256": "53e1ca060f62884b95516292cab44f4abea220cadae72d97882a65395f22b17d"
+      "bytes": 4497,
+      "sha256": "fd92f8f6b69d01f1cdd19b774cd87c893c5367f2e0a5cb169e3775906274f515"
     },
     {
       "url": "lib/advanced-templates.js",
       "bytes": 32978,
       "sha256": "43358ea316f24fd0ae56fde2687e8f3b1d706f04a689f7a3caa6601606290ed8"
+    },
+    {
+      "url": "lib/app-update-guard.js",
+      "bytes": 457,
+      "sha256": "9d4c526533e6ce47f06802864427dd38d6af24476a5d3ac547f3e7668475fe92"
     },
     {
       "url": "lib/arithmetic-audit.js",
@@ -191,8 +196,8 @@
     },
     {
       "url": "register-offline.js",
-      "bytes": 2325,
-      "sha256": "c85aeb69411a54cb02b7714028e555b9907a890b96b0c8be70a768ac2266edbd"
+      "bytes": 2318,
+      "sha256": "51f1accda9a11dcc769c5408b2c5ced6f6abc33261dbfea8c2a023f3c560c416"
     },
     {
       "url": "style.css",

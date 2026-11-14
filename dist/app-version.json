@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "project": "avenquellis-web",
+  "version": "8f1d20046768b185a1a42d042d049ed57abf264028611d4de3665698c3acd6ce",
+  "workers": [
+    {
+      "scope": "/",
+      "script": "/sw.js",
+      "version": "8f1d20046768b185a1a42d042d049ed57abf264028611d4de3665698c3acd6ce"
+    },
+    {
+      "scope": "/resources/",
+      "script": "/resources/offline-worker.js",
+      "version": "8f1d20046768b185a1a42d042d049ed57abf264028611d4de3665698c3acd6ce"
+    }
+  ]
+}

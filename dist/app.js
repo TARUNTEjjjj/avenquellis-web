@@ -23,6 +23,7 @@ import { mountOrbit, stopOrbit } from "./orbit.js";
 import { mathLabView, bindMathLab } from "./math-lab.js";
 import { libraryView, bindLibrary } from "./question-library.js";
 import { auditArithmetic } from "./lib/arithmetic-audit.js";
+import { canApplyAppUpdate } from "./lib/app-update-guard.js";
 import { compareExactLiterals } from "./lib/exact-rational.js";
 import { summarizeProgress } from "./lib/progress.js";
 import { loadWorkspaceResources } from "./lib/startup.js";
@@ -34,6 +35,7 @@ import {
 } from "./certificate-ui.js";
 // Load independent optional resources together. Slow requests must not hide the
 // workspace indefinitely; existing literal, hosted-checker and catalog fallbacks remain usable.
+window.appUpdateCanReload = () => false;
 const [mathApi, nativeGrader, loadedArchive] = await loadWorkspaceResources({
   loadMath: async () => {
     const api = await import("./math/exact-math.js");
@@ -1154,6 +1156,9 @@ setInterval(() => {
   }
 }, 1000);
 render();
+
+window.appUpdateCanReload = () => canApplyAppUpdate({ready: true, storageOK,
+  session, completingSession, page});
 
 window.addEventListener("avenquellis:offline-ready", () => {
   const status = document.querySelector("#offline-status");

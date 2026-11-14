@@ -26,7 +26,7 @@ The build creates a content-hashed offline snapshot, validates the official cata
 - Chapter progress counts first answered numeric attempts per distinct problem, excludes blanks and pending checks, and does not present self-assessed proof marks as automatically verified performance.
 - Preparing a proof review and submitting a test use the loaded C++ checker on device, avoiding per-answer network waits. If that engine is unavailable, the hosted checker remains a fallback. Ordinary prose stays pending human review; model marking is a separate explicit action.
 - Startup loads the arithmetic engine, proof checker and paper catalog concurrently with an eight-second fallback deadline, so stalled optional downloads do not hide saved work.
-- Offline app assets, question templates and the C++ engine after a successful first installation. External PDFs still require internet. Updates wait for all old app tabs to close so a running test is not interrupted. Browser storage availability/eviction can affect offline access.
+- Offline app assets, question templates and the C++ engine after a successful first installation. External PDFs still require internet. Application updates wait until every open app window confirms that it is safe and idle; active tests and unsaved edits defer activation. Older windows without the safety protocol must close first. Browser storage availability/eviction can affect offline access.
 
 [Production checks](docs/RELEASE-CHECK.md) cover individual questions, mixed and chapter mocks, handwritten submissions, complete certificates and partial prose.
 
