@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "version": "097b7a286a1511fb3456fbea",
-  "totalBytes": 721265,
-  "assetCount": 39,
+  "version": "c344e8fc733fe766f2abc212",
+  "totalBytes": 763760,
+  "assetCount": 43,
   "assets": [
     {
       "url": "app.js",
@@ -46,8 +46,8 @@
     },
     {
       "url": "index.html",
-      "bytes": 4212,
-      "sha256": "3497a12e38f8436b2f7a09b3a3f37f7763086ddfdcf6112181ac50e530cddf55"
+      "bytes": 4282,
+      "sha256": "26c3c4489b79e9ada6522ca2d09f7fa23273b69781ec7cbd47f8c177ef2169ba"
     },
     {
       "url": "lib/advanced-templates.js",
@@ -193,6 +193,26 @@
       "url": "register-offline.js",
       "bytes": 2325,
       "sha256": "c85aeb69411a54cb02b7714028e555b9907a890b96b0c8be70a768ac2266edbd"
+    },
+    {
+      "url": "resources/catalog.json",
+      "bytes": 23178,
+      "sha256": "8315b0bf103e2c1371a22d89b6c374be1905402f4ea161e0b5c697f4028dbab2"
+    },
+    {
+      "url": "resources/explorer.css",
+      "bytes": 7200,
+      "sha256": "9e1b72e7d11959f1d4c03a6d42d9e9097fdb144bd395f733dee49816bc5f5386"
+    },
+    {
+      "url": "resources/explorer.mjs",
+      "bytes": 7831,
+      "sha256": "d54a226833b2863654697a3d7d7932868c46b5349c0a6c3e8e8208c6e2410f56"
+    },
+    {
+      "url": "resources/index.html",
+      "bytes": 4216,
+      "sha256": "5e7e16fa6d10829bcf759b6e4706655a52e370a41d031dfa811b3389d338e00c"
     },
     {
       "url": "style.css",
