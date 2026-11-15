@@ -4,7 +4,9 @@ import {applyNativeConsensus} from './lib/native-consensus.js';
 import {validateModelReviews} from './lib/backup.js';
 import {resolveQuestionRef} from './lib/questions.js';
 import {optionalResource} from './lib/startup.js';
+import {keepUnreadable} from './lib/workspace-store.js';
 const storageKey='avenquellis.prose-reviews.v1';
+export const modelReviewKey=storageKey;
 const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const refFor=q=>({templateId:q.templateId,seed:q.generator?.seed,exam:q.exam,difficulty:q.requestedDifficulty});
 const rubricRows=r=>(r||[]).map(c=>({id:c.id,description:c.description,points:c.points}));
@@ -23,13 +25,32 @@ export function modelReviewRecords() {
     return cachedRecords;
   } catch { return []; }
 }
+const readableReviews = text => {
+  try { validateModelReviews(JSON.parse(text) ?? [], false); return true; } catch { return false; }
+};
 export function replaceModelReviews(records) {
   try {
     const checked = validateModelReviews(records, false);
     const encoded = JSON.stringify(checked);
+    // A saved list this release cannot read is kept aside, never written over.
+    const current = localStorage.getItem(storageKey);
+    if (current !== null && current !== cachedText && !readableReviews(current) &&
+        !keepUnreadable(localStorage, storageKey, current)) return false;
     localStorage.setItem(storageKey, encoded);
     cachedText = encoded;
     cachedRecords = checked;
+    return true;
+  } catch { return false; }
+}
+/** The saved practice-review list exactly as stored (null when there is none), for putBackModelReviews. */
+export function modelReviewText() {
+  try { return localStorage.getItem(storageKey); } catch { return null; }
+}
+/** Put back a list modelReviewText returned, when a restore that replaced it cannot save the workspace. */
+export function putBackModelReviews(text) {
+  try {
+    if (text === null) localStorage.removeItem(storageKey);
+    else localStorage.setItem(storageKey, text);
     return true;
   } catch { return false; }
 }

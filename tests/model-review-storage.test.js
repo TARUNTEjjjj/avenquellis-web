@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {validateBackup} from '../dist/lib/backup.js';
 import {questionBank} from '../dist/lib/questions.js';
-import {rememberModelReview, modelReviewRecords, storedModelReviews, modelResult, replaceModelReviews} from '../dist/model-review.js';
+import {rememberModelReview, modelReviewRecords, storedModelReviews, modelResult, replaceModelReviews, modelReviewText, putBackModelReviews} from '../dist/model-review.js';
 
 const question = {id: 'sample', type: 'proof', statement: 'Prove the identity.', rubric: [{id: 'c1', description: 'Justify the identity.', points: 4}]};
 function review(provider, points = [3, 3]) {
@@ -86,4 +86,26 @@ test('reviews saved under the earlier advanced rubric key survive the engine row
   assert.equal(await rememberModelReview(restored.reviewQuestion, 'answer', review('workers-ai', [4, 4])), true);
   assert.deepEqual(modelReviewRecords().map(row => [row.key === legacyKey, row.review.provider]), [[false, 'workers-ai'], [true, 'browser-webllm']]);
   assert.deepEqual((await storedModelReviews(bank, 'answer')).map(r => r.suggested), [4, null]);
+});
+
+test('a restore that cannot save the workspace puts this device\'s practice reviews back exactly', async () => {
+  const values = new Map();
+  Object.defineProperty(globalThis, 'localStorage', {configurable: true, value: {getItem: key => values.get(key) ?? null,
+    setItem: (key, value) => values.set(key, String(value)), removeItem: key => values.delete(key)}});
+  await rememberModelReview(question, 'answer', review('workers-ai'));
+  const device = modelReviewText();
+  assert.equal(device, values.get('avenquellis.prose-reviews.v1'));
+  // The restore writes the backup's list first; then the workspace does not fit and the restore is undone.
+  assert.ok(replaceModelReviews([]));
+  assert.deepEqual(modelReviewRecords(), []);
+  assert.ok(putBackModelReviews(device));
+  assert.equal(values.get('avenquellis.prose-reviews.v1'), device);
+  assert.deepEqual((await storedModelReviews(question, 'answer')).map(r => r.provider), ['workers-ai']);
+  // A device that had no saved list is left without one.
+  values.clear();
+  assert.equal(modelReviewText(), null);
+  assert.ok(replaceModelReviews(JSON.parse(device)));
+  assert.ok(putBackModelReviews(null));
+  assert.equal(values.has('avenquellis.prose-reviews.v1'), false);
+  assert.deepEqual(modelReviewRecords(), []);
 });

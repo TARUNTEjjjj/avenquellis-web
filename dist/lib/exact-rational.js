@@ -48,6 +48,17 @@ export function parseExactLiteral(value) {
     return null;
   }
 }
+const LITERAL = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/;
+// A literal, or a quotient of two with a nonzero divisor, that is well formed and defined but outside the bounds above.
+function beyondBounds(value) {
+  const parts = String(value ?? "").trim().split("/").map((part) => part.trim());
+  return (
+    parts.length <= 2 &&
+    parts.every((part) => LITERAL.test(part)) &&
+    (parts.length === 1 || /[1-9]/.test(parts[1])) &&
+    !parseExactLiteral(value)
+  );
+}
 export function compareExactLiterals(left, right) {
   const a = parseExactLiteral(left),
     b = parseExactLiteral(right);
@@ -59,7 +70,10 @@ export function compareExactLiterals(left, right) {
   if (!a) return {
     ok: false,
     side: "left",
-    error: "Enter an exact integer, decimal, or fraction. Expressions require the C++ engine.",
+    // Like the C++ engine's bounds, this message says "exceeds": the answer is not wrong, only too large to check here.
+    error: beyondBounds(left)
+      ? "This number exceeds the exact checker's bounds: 200 characters, 19 integer digits, 18 fractional digits and a signed 64-bit reduced value."
+      : "Enter an exact integer, decimal, or fraction. Expressions require the C++ engine.",
   };
   return {
     ok: true,

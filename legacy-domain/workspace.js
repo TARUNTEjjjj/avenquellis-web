@@ -25,9 +25,15 @@ function makeBackup(workspace,models,stamp,warnings) {
     if(w[key].length>max)warnings.push(key+' exceeds the import limit');
     return cap(w[key],max,!last);
   };
-  const drafts=object(w.proofDrafts)?Object.entries(w.proofDrafts):[];
+  const history=array('history',100);
+  // A backup holds 500 proof drafts. Empty drafts, and unedited copies of submitted answers kept as
+  // `${attemptId}:${questionId}`, hold nothing the backup lacks, so they are left out before any other draft.
+  const submitted=new Map();
+  for(const attempt of history)for(const question of Array.isArray(attempt?.questions)?attempt.questions:[])
+    submitted.set(`${attempt.attemptId}:${question?.id}`,attempt.answers?.[question?.id]||'');
+  const drafts=(object(w.proofDrafts)?Object.entries(w.proofDrafts):[]).filter(([slot,text])=>text!==''&&submitted.get(slot)!==text);
   if(drafts.length>500)warnings.push('proof drafts exceed the import limit');
-  const backup={schema:'avenquellis-backup-v1',exportedAt:stamp,history:array('history',100),reviews:array('reviews',100),
+  const backup={schema:'avenquellis-backup-v1',exportedAt:stamp,history,reviews:array('reviews',100),
     session:object(w.session)?w.session:null,proofDraft:typeof w.proofDraft==='string'?w.proofDraft:'',proofId:w.proofId??null,
     reviewQuestion:w.reviewQuestion??null,proofDrafts:Object.fromEntries(drafts.slice(-500)),proofAttemptId:w.proofAttemptId??null,bookmarks:array('bookmarks',500,true)};
   if(models!==null){if(models.length>40)warnings.push('model reviews exceed the import limit');backup.modelReviews=models.slice(0,40);}

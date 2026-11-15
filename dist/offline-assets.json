@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "version": "ff14f6a356578d643852f0ca",
-  "totalBytes": 728138,
-  "assetCount": 42,
+  "version": "8bc5a09b14511a4a4442dfc0",
+  "totalBytes": 774269,
+  "assetCount": 43,
   "assets": [
     {
       "url": "app.js",
-      "bytes": 68589,
-      "sha256": "64e3024fd80bd3446fd55bc1d0e6add906213e95fd78b4839f0202d330634d99"
+      "bytes": 89694,
+      "sha256": "d22cbcb63604be08434cdf2ad4ff46a6ab90f090b66f77548fa1101347b80fe5"
     },
     {
       "url": "archive.json",
@@ -16,8 +16,8 @@
     },
     {
       "url": "backend.js",
-      "bytes": 2806,
-      "sha256": "ea17c441606a6656976c92f5e716966730c360ef7c27e7b1623b372bf69e96eb"
+      "bytes": 3247,
+      "sha256": "feb985cad068baae39ee6052b05d024b7900babdd9768d5051afb3177f98a0a8"
     },
     {
       "url": "benchmark-report.js",
@@ -26,8 +26,8 @@
     },
     {
       "url": "certificate-ui.js",
-      "bytes": 7107,
-      "sha256": "23c1574e57bb03c3e92c21c1195fd9b208ea9552159775940e7767a3edf7703c"
+      "bytes": 7440,
+      "sha256": "7444e111fe64f0e6fe10d870b691ade0fc5dfdd526c7c9cf24f2152b17175d82"
     },
     {
       "url": "handwriting.css",
@@ -36,8 +36,8 @@
     },
     {
       "url": "handwriting.js",
-      "bytes": 9755,
-      "sha256": "9fbbfcf00bf9f7ed2a69ca4e02d100cf812aa675954c6a7b37a1f7a2694dc9cb"
+      "bytes": 10270,
+      "sha256": "d2c34ceb1574a0ae499ef4184e79d42dfbe0eba7ad0ed3896148379a2d9ecb3a"
     },
     {
       "url": "icon.svg",
@@ -47,7 +47,7 @@
     {
       "url": "index.html",
       "bytes": 4497,
-      "sha256": "619899a3f1c3a58d2e6688dbd10ad53274c286423a2d0b199d0ea57d17cae910"
+      "sha256": "e658b856703c0328a5f0da02a83ae0c37677137c243c7fc58855e9d2fbf74212"
     },
     {
       "url": "lib/advanced-templates.js",
@@ -56,8 +56,8 @@
     },
     {
       "url": "lib/app-update-guard.js",
-      "bytes": 457,
-      "sha256": "9d4c526533e6ce47f06802864427dd38d6af24476a5d3ac547f3e7668475fe92"
+      "bytes": 574,
+      "sha256": "1828e85428715e36982c8886337fd23b4982a36f38f3ea256ed444a9d2eed376"
     },
     {
       "url": "lib/arithmetic-audit.js",
@@ -66,8 +66,8 @@
     },
     {
       "url": "lib/backup.js",
-      "bytes": 16643,
-      "sha256": "45d1a4e34f2849725d561f209dbc98737bdb924301cee1c253671e74f194779f"
+      "bytes": 17777,
+      "sha256": "5866e72f3015b5b17523d3fd15e4c7f8b507e5187bc416d42c2ea0dce93a1875"
     },
     {
       "url": "lib/certificate.js",
@@ -76,8 +76,8 @@
     },
     {
       "url": "lib/exact-rational.js",
-      "bytes": 1894,
-      "sha256": "59d7e148ac2e10e9befc02e05f7e837b60c6592a86d96b20265ec29c70bacc04"
+      "bytes": 2651,
+      "sha256": "503b287f347370999091cfdf30653a0c21a3e92684fe29f22d8cdb488f919926"
     },
     {
       "url": "lib/grader.js",
@@ -131,8 +131,8 @@
     },
     {
       "url": "lib/progress.js",
-      "bytes": 1576,
-      "sha256": "b2aa7694bc353346b616e0392d9e1da4c45f438f766dada3a17061228a073287"
+      "bytes": 2204,
+      "sha256": "3a233cb90de3819fdc6ac90a8707476cfbc05c4e05801c37497f88584f0f7888"
     },
     {
       "url": "lib/questions.js",
@@ -141,8 +141,8 @@
     },
     {
       "url": "lib/session.js",
-      "bytes": 5133,
-      "sha256": "d127870b6ef1ecc0821e5573f48c18b668f0ca1fe303ca06322272c430d2d756"
+      "bytes": 8803,
+      "sha256": "ec783d5b41bb68de9dd0e79059c2163aa00b6e64ca11501c0eaa09e229451a96"
     },
     {
       "url": "lib/startup.js",
@@ -158,6 +158,11 @@
       "url": "lib/workspace-storage.js",
       "bytes": 1337,
       "sha256": "0c1ae24a77696728bf9a46733b59674bba63435836f4e7c1fd9ae08efcdf339d"
+    },
+    {
+      "url": "lib/workspace-store.js",
+      "bytes": 16341,
+      "sha256": "07c70431d162bcebf029799b0c188676d72cf9a74d5deb47d2f10e5b3cd31a38"
     },
     {
       "url": "manifest.webmanifest",
@@ -191,8 +196,8 @@
     },
     {
       "url": "model-review.js",
-      "bytes": 12375,
-      "sha256": "e874484f2920b25c318b4c1dd5b0338c2536d495ebc693fed77f8ff5b69a8aef"
+      "bytes": 13436,
+      "sha256": "97f0ccdbfb3a39853f15f66b6881eb4d7304714b134addc33cac44808dcae5f1"
     },
     {
       "url": "orbit.js",
@@ -206,8 +211,8 @@
     },
     {
       "url": "register-offline.js",
-      "bytes": 2318,
-      "sha256": "51f1accda9a11dcc769c5408b2c5ced6f6abc33261dbfea8c2a023f3c560c416"
+      "bytes": 2347,
+      "sha256": "657794ea79bd359dfe88772e7fcafa7c85f15a5308210b39a589e9ca381eb9d8"
     },
     {
       "url": "style.css",

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {validateBackup} from '../dist/lib/backup.js';
-import {makeSession,finishSession} from '../dist/lib/session.js';
+import {makeSession,finishSession,submissionTime,orderTimes,retryTitle} from '../dist/lib/session.js';
 import {generateMock,questionBank} from '../dist/lib/questions.js';
 import {finalizeReview} from '../dist/lib/grader.js';
 const clone=x=>JSON.parse(JSON.stringify(x));
@@ -84,7 +84,134 @@ test('a submitted attempt remains frozen after backup restore', () => {
   assert.equal(restored.submittedAt, original.submittedAt);
   assert.deepEqual(restored.answers, original.answers);
   assert.equal(restored.deadline, original.deadline);
-  for (const submittedAt of ['1000000', -1, original.startedAt - 1]) {
+  for (const submittedAt of ['1000000', -1]) {
     assert.throws(() => validateBackup({...original, submittedAt}));
   }
+  // A submission stamped just before the start, after the clock stepped back, restores at the start.
+  assert.equal(validateBackup({...original, submittedAt: original.startedAt - 1}).session.submittedAt, original.startedAt);
+});
+
+test('work stamped after the clock stepped back is saved in a form its own restore accepts', () => {
+  const s = active(), back = s.startedAt - 300000;
+  s.answers[s.questions[0].id] = 'Submitted after the clock correction';
+  assert.equal(validateBackup(clone({...s, submittedAt: submissionTime(s, back)})).session.submittedAt, s.startedAt);
+  const b = backup();
+  b.history = [orderTimes(finishSession(s, back))];
+  b.session = orderTimes({...active(), submittedAt: back});
+  const restored = validateBackup(clone(b));
+  assert.equal(restored.history[0].finishedAt, s.startedAt);
+  assert.equal(restored.session.submittedAt, b.session.startedAt);
+});
+
+test('a backup the previous release exported after the clock stepped back restores with its times in order', () => {
+  // The previous release stamped the wall clock: a 15-minute step back, 5 minutes in, put both times before the start.
+  const s = active(), back = s.startedAt - 600000, n = s.questions.find(q => q.type === 'numeric');
+  for (const q of s.questions) s.answers[q.id] = q.type === 'numeric' ? String(q.answer) : 'Written before the clock moved.';
+  const b = backup();
+  b.history = [finishSession(s, back)];
+  b.session = {...clone(s), submittedAt: back};
+  assert.ok(b.history[0].finishedAt < s.startedAt && b.session.submittedAt < s.startedAt);
+  const restored = validateBackup(JSON.stringify(b));
+  assert.equal(restored.history[0].finishedAt, s.startedAt);
+  assert.equal(restored.history[0].results.find(r => r.id === n.id).score, n.maxMarks);
+  assert.equal(restored.session.submittedAt, s.startedAt);
+  assert.deepEqual(restored.session.answers, s.answers);
+  // Its exported active draft too.
+  const draft = validateBackup(JSON.stringify(b.session));
+  assert.equal(draft.mode, 'active');
+  assert.equal(draft.session.submittedAt, s.startedAt);
+  // A value that is not a time at all is still refused.
+  for (const bad of ['1000000', -1, 1.5, 8640000000000001]) {
+    assert.throws(() => validateBackup({...b.session, submittedAt: bad}), String(bad));
+    assert.throws(() => validateBackup({...backup(), history: [{...b.history[0], finishedAt: bad}]}), String(bad));
+  }
+});
+
+test('a backup holding one attempt id twice, as the previous release could save it, restores both attempts', () => {
+  const s = active(), n = s.questions.find(q => q.type === 'numeric');
+  const original = finishSession({...s, answers: {[n.id]: String(n.answer)}}, s.startedAt + 1000);
+  // A draft exported before finishing, restored and finished again: same attempt id, newest first.
+  const again = finishSession({...s, answers: {[n.id]: '12345'}}, s.startedAt + 5000);
+  const b = backup();
+  b.history = [again, original];
+  const restored = validateBackup(clone(b));
+  assert.equal(restored.history.length, 2);
+  assert.equal(new Set(restored.history.map(a => a.attemptId)).size, 2);
+  assert.equal(restored.history[1].attemptId, s.attemptId, 'the attempt finished first keeps its id');
+  assert.equal(restored.history[0].answers[n.id], '12345');
+  assert.equal(restored.history[1].results.find(r => r.id === n.id).score, n.maxMarks);
+});
+
+test('a proof draft the symbol buttons pushed past the 50,000-character editor limit still restores', () => {
+  const q = questionBank.find(q => q.type === 'proof'), long = 'Proof step. '.repeat(4167);
+  assert.ok(long.length > 50000);
+  const b = {...backup(), proofDraft: long, proofId: q.id, proofDrafts: {[q.id]: long}};
+  const restored = validateBackup(clone(b));
+  assert.equal(restored.proofDraft, long);
+  assert.equal(restored.proofDrafts[q.id], long);
+  // Submitted answers keep their limit: the answer field never accepted more.
+  const s = active();
+  s.answers[s.questions[0].id] = long;
+  assert.throws(() => validateBackup(s));
+});
+
+test('every official reference set round-trips, including question ranges named with an en dash', async () => {
+  const archive = JSON.parse(await readFile(new URL('../dist/archive.json', import.meta.url), 'utf8'));
+  // The question shape referenceQuestion builds in app.js. Range ids such as cmi-2024-a2–a3 use an en dash.
+  const questions = archive.questionReferences.map(r => ({id: r.id, title: r.title,
+    statement: `Open ${r.exam} ${r.year}, question ${r.questionNumber}, in the official PDF below.`,
+    topic: r.topic, type: 'reference', maxMarks: r.maxMarks ?? null,
+    source: {kind: r.sourceKind, label: r.sourceLabel, url: r.url}}));
+  assert.ok(questions.some(q => q.id.includes('–')));
+  for (let i = 0; i < questions.length; i += 6) {
+    const s = makeSession({id: 'chapter-1000000', title: 'Probability · official references', reference: true,
+      durationMinutes: 120, questions: questions.slice(i, i + 6), maxMarks: null}, 1000000);
+    for (const q of s.questions) s.answers[q.id] = 'Working for ' + q.id;
+    const ids = s.questions.map(q => q.id);
+    // An exported active draft, and a full backup holding the set as history and as the active test.
+    assert.deepEqual(validateBackup(clone(s)).session.questions.map(q => q.id), ids);
+    const b = backup();
+    b.history = [finishSession(s, 1100000)];
+    b.session = clone(s);
+    const restored = validateBackup(clone(b));
+    assert.deepEqual(restored.history[0].questions.map(q => q.id), ids);
+    assert.deepEqual(restored.history[0].answers, s.answers);
+    assert.deepEqual(restored.session.answers, s.answers);
+  }
+  // Only question ids take the en dash; the rest of the identifier rules are unchanged.
+  for (const bad of ['a2–a3 ', '–a2', 'a2—a3']) {
+    const s = active();
+    s.questions[0].id = bad;
+    assert.throws(() => validateBackup(s), bad);
+  }
+  const b = backup();
+  b.bookmarks = ['cmi-2024-a2–a3'];
+  assert.throws(() => validateBackup(b));
+});
+
+test('a long assessment reason or a retried test title the previous release saved still restores', () => {
+  const q = questionBank.find(q => q.type === 'proof'), reason = 'Each step is justified. '.repeat(2400);
+  assert.ok(reason.length > 50000);
+  // The reason field had no length limit, and finalizeReview accepts any non-empty reason.
+  const r = finalizeReview({question: q, criterionScores: Object.fromEntries(q.rubric.map(c => [c.id, 0])),
+    reviewer: 'Self assessment', rationale: reason});
+  const b = backup();
+  b.reviews = [{...r, questionTitle: q.title}];
+  assert.equal(validateBackup(clone(b)).reviews[0].rationale, reason.trim());
+  // Each "Retry this set" added " · retry": 61 retries of "CMI Mixed Practice" made a 506-character title.
+  const s = active(), chained = s.title + ' · retry'.repeat(61);
+  assert.ok(chained.length > 500);
+  const retried = {...s, title: chained};
+  assert.equal(validateBackup(clone(retried)).session.title, chained);
+  b.history = [finishSession(retried, s.startedAt + 1000)];
+  assert.equal(validateBackup(clone(b)).history[0].title, chained);
+  // Retrying now stops lengthening the title within the 500 characters earlier releases restore.
+  let title = s.title;
+  for (let i = 0; i < 100; i++) {
+    const next = retryTitle(title);
+    assert.ok(next.length <= 500 && (next === title || next === title + ' · retry'));
+    title = next;
+  }
+  assert.ok(title.length > 490 && title.startsWith(s.title + ' · retry'));
+  assert.equal(retryTitle(chained), chained);
 });

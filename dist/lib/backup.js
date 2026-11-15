@@ -1,5 +1,5 @@
 import { validateQuestion } from "./grader.js";
-import { parseNumber, validSession, finishSession } from "./session.js";
+import { parseNumber, validSession, finishSession, distinctAttempts, orderTimes } from "./session.js";
 
 const TOPICS = new Set([
   "algebra",
@@ -25,6 +25,12 @@ const KINDS = new Set([
 const fail = (message) => {
   throw new TypeError(`Invalid backup: ${message}`);
 };
+// The proof editor holds 50,000 characters, but the previous release's symbol buttons could save a
+// longer draft. Backups holding one still restore; the 10 MB file limit bounds it.
+const DRAFT_LIMIT = 10000000;
+// The previous release saved assessment reasons of any length, and each "Retry this set" added
+// " · retry" to the test title. Backups holding longer ones still restore; the file limit bounds them too.
+const SAVED_TEXT_LIMIT = DRAFT_LIMIT;
 const object = (value, label) => {
   if (
     !value ||
@@ -73,7 +79,16 @@ const list = (value, label, max) => {
   return value;
 };
 const nullableId = (value, label) => (value == null ? null : id(value, label));
-const time = (value, label) => number(value, label, 0, 8640000000000000, true);
+const MAX_TIME = 8640000000000000;
+const time = (value, label) => number(value, label, 0, MAX_TIME, true);
+// The previous release stamped a submission with the wall clock, which can step back during a test, so a session it
+// exported can hold a submission or finish time before its start. Like saved work on load, such a time is restored
+// as the start time. A value that is not a time at all is still refused.
+const isTime = (value) => Number.isSafeInteger(value) && value >= 0 && value <= MAX_TIME;
+const inOrder = (value) =>
+  [value.submittedAt, value.finishedAt].every((t) => t == null || isTime(t))
+    ? orderTimes(value)
+    : value;
 function url(value) {
   text(value, "source URL", 2000, false);
   let parsed;
@@ -193,6 +208,7 @@ function question(value) {
 }
 function session(value, completed = false) {
   object(value, "session");
+  value = inOrder(value);
   if (!validSession({ ...value, status: "active" })) fail("Malformed session.");
   if (value.status !== (completed ? "completed" : "active"))
     fail("Unexpected session status.");
@@ -219,7 +235,7 @@ function session(value, completed = false) {
   const s = {
     id: id(value.id, "test id"),
     attemptId: id(value.attemptId, "attempt id"),
-    title: text(value.title, "test title", 500, false),
+    title: text(value.title, "test title", SAVED_TEXT_LIMIT, false),
     questions,
     durationMinutes,
     startedAt,
@@ -277,7 +293,7 @@ function review(value) {
     maxMarks,
     criteria: cs,
     reviewer: text(value.reviewer, "reviewer", 200, false),
-    rationale: text(value.rationale, "rationale", 50000, false),
+    rationale: text(value.rationale, "rationale", SAVED_TEXT_LIMIT, false),
     answer: text(value.answer ?? "", "reviewed answer", 50000),
     reviewedAt,
     status: "human_reviewed",
@@ -365,7 +381,7 @@ export function validateBackup(raw) {
   }
   object(raw, "root");
   if (!["avenquellis-backup-v1", "noether-backup-v1"].includes(raw.schema)) {
-    if (!validSession(raw)) fail("Unsupported backup format.");
+    if (!validSession(inOrder(raw))) fail("Unsupported backup format.");
     return {
       mode: "active",
       history: [],
@@ -380,14 +396,13 @@ export function validateBackup(raw) {
       bookmarks: [],
     };
   }
-  const history = list(raw.history, "history", 100).map((a) =>
-    session(a, true),
+  // Backups the previous release saved with two attempts under one id restore with distinct ids.
+  const history = distinctAttempts(
+    list(raw.history, "history", 100).map((a) => session(a, true)),
   );
-  if (new Set(history.map((a) => a.attemptId)).size !== history.length)
-    fail("Repeated attempt id.");
   const reviews = list(raw.reviews, "reviews", 100).map(review);
   const active = raw.session == null ? null : session(raw.session);
-  const proofDraft = text(raw.proofDraft ?? "", "proof draft", 50000),
+  const proofDraft = text(raw.proofDraft ?? "", "proof draft", DRAFT_LIMIT),
     proofId = nullableId(raw.proofId, "proof id");
   const reviewQuestion =
     raw.reviewQuestion == null ? null : question(raw.reviewQuestion);
@@ -402,7 +417,7 @@ export function validateBackup(raw) {
       proofDrafts[id(key, "proof draft id")] = text(
         value,
         "proof draft",
-        50000,
+        DRAFT_LIMIT,
       );
   }
   // Older backups name the reviewed attempt only while its submitted proof is unedited.

@@ -66,6 +66,8 @@ try {
   for (const [i, q] of mock.questions.entries()) {
     answers[q.id] = proof(`New answer ${i}`);
     await page.locator('#session-answer').fill(answers[q.id]);
+    // Typing is saved once it pauses; until then the note says "Saving…".
+    await page.waitForFunction(() => document.querySelector('#answer-saved').textContent !== 'Saving…', null, {timeout:5000});
     assert.equal(await page.locator('#answer-saved').textContent(), 'Answer saved on this device.');
     if (i < mock.questions.length - 1) await page.locator('#next').click();
   }
