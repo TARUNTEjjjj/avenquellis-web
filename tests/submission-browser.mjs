@@ -1,4 +1,4 @@
-/** Optional regression check for navigation and reload while a submission is being assessed. */
+/** Regression check, run in CI, for navigation, reload and a dropped connection while a submission is being assessed. */
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {createStaticServer} from '../scripts/serve.mjs';
