@@ -98,6 +98,14 @@ export async function checkCertificate(question, answer, loadLocal = preloadNati
   return assessment?.lowerBoundPoints != null ? assessment : null;
 }
 
+/** A complete certificate is final. Otherwise its verified marks are a lower bound, so the assessment form stays. */
+export function certificateFeedback(result, assessmentForm) {
+  const card = certificateResult(result);
+  return result?.complete === true && Number.isFinite(result.score)
+    ? card
+    : card + assessmentForm;
+}
+
 /** Pass an onCheck callback only on practice pages. Timed sessions get insertion alone. */
 export function bindCertificateGuide(question, textarea, { onCheck } = {}) {
   if (!textarea) return;

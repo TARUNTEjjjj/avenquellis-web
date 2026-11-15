@@ -6,10 +6,18 @@ export async function generateOnServer(mode, options, {signal} = {}) {
   if(signal?.aborted)abort();
   const timeout=setTimeout(()=>controller.abort(new DOMException('The generator timed out. Try again.','TimeoutError')),20000);
   try {
-  const response = await fetch('./api/generate', {
-    method: 'POST', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({mode,...options}), signal: controller.signal
-  });
+  let response;
+  try {
+    response = await fetch('./api/generate', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({mode,...options}), signal: controller.signal
+    });
+  } catch (error) {
+    // A cancelled or timed-out request keeps its own reason. Any other failure means the generator could not
+    // be reached: the installed app works offline, but the browser's own message ("Failed to fetch") explains nothing.
+    if (controller.signal.aborted) throw error;
+    throw Error('Generating new questions needs an internet connection. The problem collection works offline.');
+  }
   if (!response.headers.get('content-type')?.includes('application/json')) {
     throw Error('Connect to Avenquellis to generate a practice set.');
   }

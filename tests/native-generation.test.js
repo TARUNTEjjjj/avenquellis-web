@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {onRequest,createGenerationHandler} from '../functions/api/generate.js';
 import {getNativeGenerator} from '../server/native-generator/index.js';
 import {generateQuestion,generateMock} from '../dist/lib/questions.js';
+import {generateOnServer} from '../dist/backend.js';
 
 const base='https://avenquellis.pages.dev';
 const post=(body,headers={})=>onRequest({request:new Request(base+'/api/generate',{
@@ -64,4 +65,23 @@ test('an over-long seed gets the JavaScript and native C++ message from the endp
   const {error}=await response.json();
   assert.equal(error.code,'invalid_input');
   assert.throws(()=>generateQuestion({seed}),{message:error.message});
+});
+
+// The installed app works offline, but new questions come from the hosted generator.
+test('generating while offline or on a stalled connection explains itself instead of showing the browser error',async t=>{
+  const request=()=>generateOnServer('mock',{exam:'CMI',count:12,seed:1});
+  t.mock.method(globalThis,'fetch',async()=>{throw new TypeError('Failed to fetch');});
+  await assert.rejects(request(),{message:'Generating new questions needs an internet connection. The problem collection works offline.'});
+  // A stalled request ends at the generator's own 20-second deadline, which says what happened.
+  t.mock.timers.enable({apis:['setTimeout']});
+  t.mock.method(globalThis,'fetch',(_url,{signal})=>new Promise((_,reject)=>signal.addEventListener('abort',()=>reject(signal.reason),{once:true})));
+  const stalled=request();
+  t.mock.timers.tick(20000);
+  await assert.rejects(stalled,{name:'TimeoutError',message:'The generator timed out. Try again.'});
+  t.mock.timers.reset();
+  // A host without Pages Functions answers, but not with the generator's JSON.
+  t.mock.method(globalThis,'fetch',async()=>new Response('Method not allowed',{status:405,headers:{'Content-Type':'text/plain'}}));
+  await assert.rejects(request(),{message:'Connect to Avenquellis to generate a practice set.'});
+  t.mock.method(globalThis,'fetch',async(url,init)=>onRequest({request:new Request(base+'/api/generate',{method:'POST',headers:{...init.headers,Origin:base},body:init.body})}));
+  assert.deepEqual(await request(),generateMock({exam:'CMI',count:12,seed:1}));
 });

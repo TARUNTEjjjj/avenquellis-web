@@ -152,6 +152,33 @@ for (const asset of provenance.components)
     asset.sha256,
     `Vendor asset changed without synchronization: ${asset.destination}`,
   );
+// npm run sync:engines refreshes the generator manifest and provenance; the generator README restates them by hand.
+const generator = JSON.parse(
+  await readFile(join(root, "server/native-generator/manifest.json"), "utf8"),
+);
+const generatorReadme = await readFile(
+  join(root, "server/native-generator/README.md"),
+  "utf8",
+);
+assert.equal(
+  provenance.generatorBuildCommit,
+  generator.sourceCommit,
+  "vendor-provenance.json must name the generator source commit in manifest.json",
+);
+// The README may name other commits beside it, such as the one a release was really built from.
+assert.ok(
+  (generatorReadme.match(/\b[0-9a-f]{40}\b/g) ?? []).includes(generator.sourceCommit),
+  "server/native-generator/README.md must name the source commit in manifest.json",
+);
+for (const fact of [
+  generator.toolchain,
+  `${generator.bytes.toLocaleString("en-US")}-byte`,
+  `ABI version ${generator.abi}`,
+])
+  assert.ok(
+    generatorReadme.includes(fact),
+    `server/native-generator/README.md must state "${fact}" from manifest.json`,
+  );
 const compiled = JSON.parse(
   await readFile(join(dist, "math/build-info.json"), "utf8"),
 );

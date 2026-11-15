@@ -36,6 +36,11 @@ export function appendReviewedWriting(existing,addition,maxLength) {
   return joined;
 }
 
+// One check per mounted panel: whether it holds work that redrawing its page would discard.
+const panels=new Set();
+/** Whether a mounted panel holds a photo, or a transcription that is running or not yet added to the answer. */
+export const handwritingInUse=()=>[...panels].some(inUse=>inUse());
+
 /** Mount after a single proof response field. No image or model call is made by mounting. */
 export function mountHandwriting(field) {
   if(!field || field.nextElementSibling?.hasAttribute('data-handwriting'))return;
@@ -56,12 +61,13 @@ export function mountHandwriting(field) {
   field.insertAdjacentElement('afterend',panel);
   const get=name=>panel.querySelector(`[data-hw-${name}]`);
   const file=get('file'),capture=get('capture'),send=get('send'),remove=get('clear'),review=get('review'),edit=get('edit'),checked=get('reviewed'),append=get('append'),status=get('status'),preview=get('preview');
-  let prepared=null,revision=0,request=null,available=null,checkingStatus=false,hasAppended=false;
+  let prepared=null,preparing=false,revision=0,request=null,available=null,checkingStatus=false,hasAppended=false;
   const live=()=>panel.isConnected&&field.isConnected;
+  const inUse=()=>live()&&(preparing||!!request||(!!prepared&&!hasAppended));panels.add(inUse);
   const update=()=>{send.disabled=!prepared||!!request||available===false;append.disabled=!checked.checked||!edit.value.trim()||hasAppended||field.disabled||field.readOnly;};
   const resetReview=()=>{review.hidden=true;edit.value='';checked.checked=false;hasAppended=false;};
-  const clear=()=>{revision++;request?.abort();request=null;prepared=null;preview.removeAttribute('src');get('figure').hidden=true;remove.hidden=true;file.value='';capture.value='';resetReview();update();};
-  const observer=new MutationObserver(()=>{if(!live()){clear();observer.disconnect();}});observer.observe(document.body,{subtree:true,childList:true});
+  const clear=()=>{revision++;request?.abort();request=null;prepared=null;preparing=false;preview.removeAttribute('src');get('figure').hidden=true;remove.hidden=true;file.value='';capture.value='';resetReview();update();};
+  const observer=new MutationObserver(()=>{if(!live()){clear();observer.disconnect();panels.delete(inUse);}});observer.observe(document.body,{subtree:true,childList:true});
   const capability=async()=>{
     if(checkingStatus)return;checkingStatus=true;
     try{const response=await fetch('./api/transcribe',{cache:'no-store',signal:AbortSignal.timeout(8000)});available=response.ok&&(await response.json()).available===true;}
@@ -73,13 +79,14 @@ export function mountHandwriting(field) {
   get('open').onclick=()=>file.click();get('camera').onclick=()=>capture.click();
   const choose=async input=>{
     const selected=input.files?.[0];if(!selected)return;
-    clear();const version=revision;status.textContent='Preparing a private local preview…';
+    clear();const version=revision;preparing=true;status.textContent='Preparing a private local preview…';
     try{
       const image=await prepareHandwritingPhoto(selected);if(!live()||version!==revision)return;
       prepared=image;preview.src=image.preview;get('figure').hidden=false;remove.hidden=false;
       get('caption').textContent=`Local preview · ${image.width} × ${image.height} pixels`;
       status.textContent=available===false?'Preview ready. Transcription is unavailable on this connection.':'Preview ready. Open “Transcribe photo” to send this page.';
     }catch(error){if(live()&&version===revision)status.textContent=error.message||'Choose a readable JPEG, PNG or WebP photo.';}
+    finally{if(version===revision)preparing=false;}
     update();
   };
   file.onchange=()=>void choose(file);capture.onchange=()=>void choose(capture);

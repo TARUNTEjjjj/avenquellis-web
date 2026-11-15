@@ -27,6 +27,32 @@ test('timed test, existing answers, flags, drafts, history and model marks survi
  assert.equal(restored.history.length,1);assert.equal(restored.proofDrafts[proof.id],session.answers[proof.id]);assert.deepEqual(restored.bookmarks,[proof.id]);
  assert.equal(restored.modelReviews[0].key,reviewKey);assert.ok(restored.modelReviews[0].review.imported);assert.equal(remainingSeconds(restored.session,session.deadline+5),0);
 });
+test('the backup keeps drafts the learner wrote, leaving out empty slots and unedited copies of submitted answers first',()=>{
+ // A draft written first, then 64 tests whose eight proofs were each opened from the report, which kept a copy of the answer.
+ const proofs=questionBank.filter(q=>q.type==='proof').slice(0,8);assert.equal(proofs.length,8);
+ const attempts=Array.from({length:64},(_,i)=>{
+  const s=makeSession({id:'mock-'+i,title:'Mock '+i,questions:proofs,durationMinutes:60},2_000_000+i);s.attemptId='attempt-'+i;
+  for(const q of proofs)s.answers[q.id]=`Submitted proof ${i} of ${q.id}.`;
+  return finishSession(s,s.startedAt+1000);
+ });
+ const drafts={'forged-first':'My own draft, written before any test.','forged-empty':''};
+ for(const a of attempts)for(const q of proofs)drafts[`${a.attemptId}:${q.id}`]=a.answers[q.id];
+ const revised=`${attempts[3].attemptId}:${proofs[1].id}`;drafts[revised]+=' Then revised.';
+ assert.ok(Object.keys(drafts).length>500);
+ assert.ok(!('forged-first' in Object.fromEntries(Object.entries(drafts).slice(-500))),'trimming by position dropped the first draft');
+ const found=readMigration(storage({'noether.v1':{history:attempts,proofDrafts:drafts}}));
+ assert.deepEqual(found.issues,[]);
+ const kept={'forged-first':drafts['forged-first'],[revised]:drafts[revised]};
+ assert.deepEqual(found.snapshots[0].backup.proofDrafts,kept);
+ const restored=validateBackup(JSON.stringify(found.snapshots[0].backup));
+ assert.deepEqual(restored.proofDrafts,kept);assert.equal(restored.history.length,64);
+ // A copy of an answer whose test is not in the backup is the only one left, so it stays.
+ const orphan=readMigration(storage({'noether.v1':{history:attempts.slice(1),proofDrafts:drafts}})).snapshots[0].backup.proofDrafts;
+ assert.equal(orphan[`attempt-0:${proofs[0].id}`],attempts[0].answers[proofs[0].id]);
+ // More than 500 drafts of the learner's own still exceed the backup: the page says so and offers the original records.
+ const many=readMigration(storage({'noether.v1':{proofDrafts:Object.fromEntries(Array.from({length:501},(_,i)=>['forged-'+i,'draft '+i]))}}));
+ assert.deepEqual(many.issues,['Noether proof drafts exceed the import limit']);assert.equal(Object.keys(many.snapshots[0].backup.proofDrafts).length,500);
+});
 test('model-only saved data yields an importable full backup with explicit empty required arrays',()=>{
  const {snapshots}=readMigration(storage({'noether.prose-reviews.v1':modelRecords}));assert.equal(snapshots.length,1);
  const restored=validateBackup(JSON.stringify(snapshots[0].backup));assert.deepEqual(restored.history,[]);assert.deepEqual(restored.reviews,[]);assert.equal(restored.modelReviews.length,1);

@@ -1,3 +1,17 @@
+/**
+ * Responses of a completed attempt still awaiting a review linked to it. A blank response has nothing to
+ * review. An official-paper response has no rubric here and nothing to link a review to: it is compared
+ * with the official paper instead, so it never waits.
+ */
+export function pendingReviews(attempt, reviews) {
+  return (attempt?.results || []).filter(
+    (r) =>
+      (r.status === "needs_review" || r.status === "checker_unavailable") &&
+      r.type !== "reference" &&
+      String(r.answer ?? "").trim() &&
+      !reviews.some((v) => v.attemptId === attempt.attemptId && v.questionId === r.id),
+  ).length;
+}
 export function summarizeProgress(history, reviews, topics) {
   const first = new Map();
   for (const attempt of [...history].sort(

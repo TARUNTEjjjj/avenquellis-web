@@ -49,27 +49,33 @@ async function exercisePendingSubmission(restoreAnotherDraft) {
   if (restoreAnotherDraft) {
     const replacement = makeSession(generateMock({exam:'RMO', count:6, seed:'replacement'}));
     replacement.answers[replacement.questions[0].id] = 'Replacement saved work';
+    const draft = {name:'active-draft.json', mimeType:'application/json', buffer:Buffer.from(JSON.stringify(replacement))};
     await page.locator('a[data-page="progress"]').click();
-    await page.locator('#import-backup').setInputFiles({name:'active-draft.json', mimeType:'application/json',
-      buffer:Buffer.from(JSON.stringify(replacement))});
+    // Like starting a new test, a restore never replaces a submitted test that is still being checked.
+    await page.locator('#import-backup').setInputFiles(draft);
+    await page.waitForFunction(() => document.querySelector('#toast').textContent.includes('still being checked'));
+    assert.equal(await page.locator('#confirm-import').count(), 0);
+    release();
+    await page.locator('.result-number').waitFor();
+    // Once its report is ready, the same draft restores and finishes as its own attempt.
+    await page.locator('a[data-page="progress"]').click();
+    await page.locator('#import-backup').setInputFiles(draft);
     await page.locator('#confirm-import').click();
     await page.locator('a[data-page="overview"]').click();
     await page.locator('[data-go="session"]').click();
     await page.locator('#session-answer').waitFor();
     assert.equal(await page.locator('#session-answer').inputValue(), 'Replacement saved work');
-    release();
-    // Finishing the replacement must still be possible while the original response settles.
     await page.locator('#submit-session').click();
     await page.locator('#confirm-finish').click();
     await page.locator('.result-number').waitFor();
     const state = await page.evaluate(() => JSON.parse(localStorage.getItem('avenquellis.workspace.v1')));
     assert.equal(state.session, null);
-    assert.equal(state.history.length, 1);
-    assert.equal(state.history[0].attemptId, replacement.attemptId);
+    assert.deepEqual(state.history.map(attempt => attempt.attemptId), [replacement.attemptId, saved.session.attemptId]);
     assert.equal(state.history[0].answers[replacement.questions[0].id], 'Replacement saved work');
+    assert.deepEqual(state.history[1].answers, saved.session.answers);
     assert.deepEqual(errors, []);
     await context.close();
-    console.log('Restoring and finishing another draft cannot inherit the abandoned submission state.');
+    console.log('A submitted test is saved before a restored draft can replace it; the draft then finishes as its own attempt.');
     return;
   }
   await page.reload();

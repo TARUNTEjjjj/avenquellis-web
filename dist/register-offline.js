@@ -27,7 +27,7 @@ async function register() {
     });
     const ready=await navigator.serviceWorker.ready;
     const saved=await status(ready.active);
-    if(saved?.ready)emit('offline-ready',{version:saved.version,assetCount:saved.assetCount,message:'App assets are saved for offline use. Official PDFs still require internet.'});
+    if(saved?.ready)emit('offline-ready',{version:saved.version,assetCount:saved.assetCount,message:'App assets are saved for offline use. Generating new questions and official PDFs still require internet.'});
     else emit('offline-unavailable',{reason:'snapshot-unavailable'});
     // No automatic reload, skipWaiting, or forced activation: ongoing tests stay uninterrupted.
   } catch {emit('offline-unavailable',{reason:'installation-failed'});}

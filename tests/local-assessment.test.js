@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {assessForPractice} from '../dist/backend.js';
-import {checkCertificate} from '../dist/certificate-ui.js';
+import {checkCertificate, certificateFeedback} from '../dist/certificate-ui.js';
 import {instantiateGrader} from '../dist/lib/native-grade/runtime.js';
 import {questionBank, generateMock} from '../dist/lib/questions.js';
 import {makeSession, finishSession} from '../dist/lib/session.js';
@@ -100,4 +100,34 @@ test('Check certificate stops waiting for a stalled local checker and uses the h
   assert.ok(settled, 'Check certificate is still waiting for the stalled checker download.');
   assert.equal((await checking).lowerBoundPoints, 2);
   assert.equal(fetchMock.mock.callCount(), 1);
+});
+
+test('an incomplete certificate keeps the human assessment form; a complete one is final', async () => {
+  const form = '<form id="review-form"></form>';
+  const complete = await assessForPractice(question, full, grader);
+  assert.doesNotMatch(certificateFeedback(complete, form), /review-form/);
+  // A wrong reverse line, the blank scaffold, and the scaffold with prose written below it.
+  for (const answer of [full.replace('reverse: 1 1', 'reverse: 1 2'), grader.scaffold(question),
+    grader.scaffold(question) + '\nEvery common divisor of a and b also divides b and a - qb, so the gcds agree.']) {
+    const result = await assessForPractice(question, answer, grader);
+    assert.equal(result.status, 'incomplete_certificate');
+    const html = certificateFeedback(result, form);
+    assert.match(html, /Certificate needs review/);
+    assert.match(html, /id="review-form"/);
+  }
+});
+
+test('Check certificate uses the loaded checker, even while online, and sends nothing to the hosted one', async t => {
+  const fetchMock = t.mock.method(globalThis, 'fetch', staticHost);
+  // The browser reports a connection, which used to send every check to the hosted checker.
+  const browserNavigator = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+  Object.defineProperty(globalThis, 'navigator', {configurable:true, value:{onLine:true}});
+  t.after(() => Object.defineProperty(globalThis, 'navigator', browserNavigator));
+  const complete = await checkCertificate(question, full, async () => grader);
+  assert.equal(complete.status, 'verified_certificate');
+  assert.equal(complete.score, question.maxMarks);
+  const partial = await checkCertificate(question, full.replace('reverse: 1 1', 'reverse: 1 2'), async () => grader);
+  assert.equal(partial.lowerBoundPoints, 4);
+  assert.equal(await checkCertificate(question, 'All common positive divisors are equal.', async () => grader), null);
+  assert.equal(fetchMock.mock.callCount(), 0);
 });

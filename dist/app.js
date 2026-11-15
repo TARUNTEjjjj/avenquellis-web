@@ -1,8 +1,8 @@
 import {generateOnServer, assessForPractice} from "./backend.js";
 import {preloadNativeGrader} from "./lib/native-grader.js";
-import {mountHandwriting} from "./handwriting.js";
+import {mountHandwriting,handwritingInUse} from "./handwriting.js";
 import {benchmarkReport} from "./benchmark-report.js";
-import {modelPanel,bindModelPanel,showModelReport,storedModelReviews,modelReviewRecords,replaceModelReviews} from "./model-review.js";
+import {modelPanel,bindModelPanel,showModelReport,storedModelReviews,modelReviewRecords,replaceModelReviews,modelReviewText,putBackModelReviews,modelReviewKey} from "./model-review.js";
 import {
   topics,
   topicLabels,
@@ -13,13 +13,26 @@ import { finalizeReview, gradingSources } from "./lib/grader.js";
 import {
   makeSession,
   finishSession,
+  regradeAttempt,
+  submissionTime,
+  orderTimes,
+  retryTitle,
+  newAttemptId,
+  distinctAttempts,
   remainingSeconds,
   validSession,
   configureExactChecker,
   configureProofChecker,
 } from "./lib/session.js";
 import { validateBackup } from "./lib/backup.js";
-import { saveWorkspace } from "./lib/workspace-storage.js";
+import {
+  WORKSPACE_KEY,
+  createWorkspaceStore,
+  createSaveScheduler,
+  backupDrafts,
+  reopenSubmittedProof,
+  keepDraft,
+} from "./lib/workspace-store.js";
 import { mountOrbit, stopOrbit } from "./orbit.js";
 import { mathLabView, bindMathLab } from "./math-lab.js";
 import { libraryView, bindLibrary } from "./question-library.js";
@@ -27,13 +40,14 @@ import { auditArithmetic } from "./lib/arithmetic-audit.js";
 import { canApplyAppUpdate } from "./lib/app-update-guard.js";
 import { retryInterrupted } from "./lib/interrupted-check.js";
 import { compareExactLiterals } from "./lib/exact-rational.js";
-import { summarizeProgress } from "./lib/progress.js";
+import { summarizeProgress, pendingReviews } from "./lib/progress.js";
 import { loadWorkspaceResources, bufferEvents } from "./lib/startup.js";
 import {
   certificateGuide,
   bindCertificateGuide,
   certificateExamples,
   certificateResult,
+  certificateFeedback,
 } from "./certificate-ui.js";
 // register-offline.js reports on window load, which does not wait for the top-level
 // await below. Hold its notices until the workspace can show them.
@@ -44,7 +58,7 @@ const offlineNotices = bufferEvents(window, [
 // Load independent optional resources together. Slow requests must not hide the
 // workspace indefinitely; existing literal, hosted-checker and catalog fallbacks remain usable.
 window.appUpdateCanReload = () => false;
-const [mathApi, nativeGrader, loadedArchive] = await loadWorkspaceResources({
+const [mathApi, loadedGrader, loadedArchive] = await loadWorkspaceResources({
   loadMath: async () => {
     const api = await import("./math/exact-math.js");
     await api.initExactMath();
@@ -54,6 +68,15 @@ const [mathApi, nativeGrader, loadedArchive] = await loadWorkspaceResources({
 });
 const mathReady = !!mathApi;
 if (mathReady) configureExactChecker(mathApi.checkExact);
+// A proof checker that misses the startup deadline is used once it arrives.
+let nativeGrader = loadedGrader;
+if (!nativeGrader)
+  preloadNativeGrader().then(
+    (grader) => {
+      nativeGrader = grader;
+    },
+    () => {},
+  );
 
 const $ = (s) => document.querySelector(s),
   esc = (s) =>
@@ -68,33 +91,64 @@ const $ = (s) => document.querySelector(s),
           "'": "&#39;",
         })[c],
     );
-// Restore historical work with the same compiled proof checker used by the live service.
-const nativeCertificate=(question,answer)=>{
-  let result;
-  try {result=nativeGrader?.assess(question,answer);} catch {return null;}
+// Throws while the compiled checker is unavailable, so a saved proof result is kept instead of re-derived without it.
+const checkProof=(question,answer)=>{
+  if(!nativeGrader)throw Error("The proof checker is not loaded.");
+  const result=nativeGrader.assess(question,answer);
   return result && ["verified_certificate","incomplete_certificate"].includes(result.status)?result:null;
 };
+// Restore historical work with the same compiled proof checker used by the live service.
+const nativeCertificate=(question,answer)=>{
+  try {return checkProof(question,answer);} catch {return null;}
+};
 configureProofChecker(nativeCertificate);
-const KEY = "avenquellis.workspace.v1";
+const KEY = WORKSPACE_KEY;
 let storageOK = true;
-function read() {
-  try {
-    return JSON.parse((localStorage.getItem(KEY) ?? localStorage.getItem("noether.v1"))) || {};
-  } catch {
-    storageOK = false;
-    return {};
-  }
+const defaultProofId = questionBank.find((q) => q.type === "proof").id;
+// A complete workspace from saved data: this tab's own at startup, or what another tab saved.
+function normalizeWorkspace(saved) {
+  const reviewQuestion =
+      saved.reviewQuestion && Array.isArray(saved.reviewQuestion.rubric)
+        ? saved.reviewQuestion
+        : null,
+    proofAttemptId = saved.proofAttemptId || null,
+    // Times saved after the device clock stepped back are put in order, so the work stays valid.
+    active = orderTimes(saved.session);
+  return {
+    // Two attempts the previous release saved under one id get distinct ids, so backups restore.
+    history: Array.isArray(saved.history)
+      ? distinctAttempts(saved.history.map(orderTimes))
+      : [],
+    reviews: Array.isArray(saved.reviews) ? saved.reviews : [],
+    session: validSession(active) ? active : null,
+    proofDraft: typeof saved.proofDraft === "string" ? saved.proofDraft : "",
+    proofId: saved.proofId || defaultProofId,
+    paused: !!saved.paused,
+    reviewQuestion,
+    proofDrafts:
+      saved.proofDrafts && typeof saved.proofDrafts === "object"
+        ? saved.proofDrafts
+        : {},
+    proofAttemptId,
+    reviewAttemptId: reviewQuestion ? (saved.reviewAttemptId ?? proofAttemptId) : null,
+    bookmarks: Array.isArray(saved.bookmarks)
+      ? saved.bookmarks.filter((id) => typeof id === "string").slice(0, 500)
+      : [],
+  };
 }
-const saved = read();
-if (mathReady && Array.isArray(saved.history))
+const workspaceStore = createWorkspaceStore(() => localStorage, {
+  key: KEY,
+  normalize: normalizeWorkspace,
+});
+const loaded = workspaceStore.load();
+const saved = normalizeWorkspace(loaded.data);
+if (mathReady)
   saved.history = saved.history.map((a) =>
     validSession({ ...a, status: "active" }) && Number.isFinite(a.finishedAt)
-      ? finishSession(a, a.finishedAt)
+      ? regradeAttempt(a, checkProof)
       : a,
   );
-let bookmarks = Array.isArray(saved.bookmarks)
-  ? saved.bookmarks.filter((id) => typeof id === "string").slice(0, 500)
-  : [];
+let bookmarks = saved.bookmarks;
 let bankFilters = {
   topic: "all",
   level: "all",
@@ -102,12 +156,12 @@ let bankFilters = {
   search: "",
   saved: false,
 };
-let history = Array.isArray(saved.history) ? saved.history : [],
-  reviews = Array.isArray(saved.reviews) ? saved.reviews : [],
-  session = validSession(saved.session) ? saved.session : null,
-  proofDraft = typeof saved.proofDraft === "string" ? saved.proofDraft : "",
-  proofId = saved.proofId || questionBank.find((q) => q.type === "proof").id,
-  paused = !!saved.paused;
+let history = saved.history,
+  reviews = saved.reviews,
+  session = saved.session,
+  proofDraft = saved.proofDraft,
+  proofId = saved.proofId,
+  paused = saved.paused;
 const archive = loadedArchive || { papers: [], questionReferences: [], sources: [] },
   archiveError = !loadedArchive;
 const archiveBadge = document.querySelector("#nav .nav-tag");
@@ -119,18 +173,12 @@ let page = "",
   generatedMock = null,
   currentProof = null,
   proofResult = null,
-  reviewQuestion =
-    saved.reviewQuestion && Array.isArray(saved.reviewQuestion.rubric)
-      ? saved.reviewQuestion
-      : null,
-  proofDrafts =
-    saved.proofDrafts && typeof saved.proofDrafts === "object"
-      ? saved.proofDrafts
-      : {},
+  reviewQuestion = saved.reviewQuestion,
+  proofDrafts = saved.proofDrafts,
   activeReport = null,
-  proofAttemptId = saved.proofAttemptId || null,
+  proofAttemptId = saved.proofAttemptId,
   // The attempt whose submitted proof is open. Unlike proofAttemptId, editing keeps it.
-  reviewAttemptId = reviewQuestion ? (saved.reviewAttemptId ?? proofAttemptId) : null,
+  reviewAttemptId = saved.reviewAttemptId,
   search = "",
   toastTimer;
 const symbols = {
@@ -164,40 +212,193 @@ const draftSlot = () =>
   reviewQuestion && reviewAttemptId
     ? `${reviewAttemptId}:${reviewQuestion.id}`
     : proofQuestion().id;
-function persist() {
-  try {
-    const recent = history.slice(0, 100);
-    const kept = saveWorkspace(localStorage, KEY, {
-      history: recent,
-      reviews: reviews.slice(0, 100),
+const attemptTaken = (id) => history.some((a) => a.attemptId === id);
+const freshAttemptId = () =>
+  newAttemptId(
+    Date.now(),
+    history.map((a) => a.attemptId),
+  );
+// The submitted answer of the attempt question open in the proof studio, or null when none is open.
+function submittedAnswer() {
+  if (!reviewQuestion || !reviewAttemptId) return null;
+  const a = history.find((x) => x.attemptId === reviewAttemptId);
+  return a ? a.answers?.[reviewQuestion.id] || "" : null;
+}
+// Keep the open draft before the proof studio shows other text.
+const leaveDraft = () =>
+  keepDraft(proofDrafts, draftSlot(), proofDraft, submittedAnswer());
+function workspaceState() {
+  return {
+    history: history.slice(0, 100),
+    reviews: reviews.slice(0, 100),
+    session,
+    proofDraft,
+    proofId,
+    paused,
+    reviewQuestion,
+    proofDrafts,
+    proofAttemptId,
+    reviewAttemptId,
+    bookmarks,
+  };
+}
+// What the open page shows of the saved workspace, in two parts: what its fields and buttons act on, and
+// what it only displays. Work taken in from another tab redraws the page only when one of them changed.
+const pageShows = {
+  overview: () => [null, [!!session, history.length, paused]],
+  tests: () => [null, !!session],
+  bank: () => [null, bookmarks],
+  proof: () => [
+    [proofId, reviewQuestion, reviewAttemptId, proofAttemptId, proofDraft],
+    [submittedAnswer(), proofDrafts[draftSlot()]],
+  ],
+  progress: () => [null, [history, reviews]],
+  session: () => {
+    const id = session?.questions[session.current]?.id;
+    return [
+      session && [
+        session.attemptId,
+        session.submittedAt,
+        session.current,
+        session.answers[id],
+        session.flags[id],
+      ],
       session,
-      proofDraft,
-      proofId,
-      paused,
-      reviewQuestion,
-      proofDrafts,
-      proofAttemptId,
-      reviewAttemptId,
-      bookmarks,
-    });
-    storageOK = true;
-    if (kept < recent.length) {
-      // Storage was full, so the oldest completed sessions made room for current work.
-      // Show this after any message from the action that saved, which would replace it.
-      const removed = recent.length - kept;
-      history = history.slice(0, kept);
-      setTimeout(() =>
-        toast(
-          `Browser storage is full, so ${removed === 1 ? "the oldest completed session was" : `the ${removed} oldest completed sessions were`} removed from this device to make room.`,
-        ),
-      );
-    }
-  } catch {
-    storageOK = false;
+    ];
+  },
+  report: () => [null, [activeReport || history[0], reviews]],
+};
+const pageData = () =>
+  (pageShows[page]?.() ?? [null, null]).map((part) => JSON.stringify(part ?? null));
+// Input the open page holds that a redraw would discard: a handwritten page that is being transcribed
+// or reviewed, or an assessment that is being written.
+const pageBusy = () =>
+  handwritingInUse() ||
+  !!$("#rationale")?.value.trim() ||
+  ($("#reviewer") ? $("#reviewer").value !== "Self assessment" : false) ||
+  [...document.querySelectorAll("#review-form [data-score]")].some((e) => Number(e.value) > 0);
+// Take on a workspace combined with another tab's saved work, or one trimmed to fit browser storage.
+function useWorkspace(next) {
+  if (
+    next.proofId !== proofId ||
+    next.proofDraft !== proofDraft ||
+    next.reviewQuestion?.id !== reviewQuestion?.id
+  )
+    proofResult = null;
+  history = next.history;
+  reviews = next.reviews;
+  // Keep the same object while its content is unchanged, so a submission in progress continues.
+  if (JSON.stringify(next.session) !== JSON.stringify(session)) session = next.session;
+  proofDraft = next.proofDraft;
+  proofId = next.proofId;
+  reviewQuestion = next.reviewQuestion;
+  proofDrafts = next.proofDrafts;
+  proofAttemptId = next.proofAttemptId;
+  reviewAttemptId = next.reviewAttemptId;
+  bookmarks = next.bookmarks;
+  if (activeReport)
+    activeReport =
+      history.find((a) => a.attemptId === activeReport.attemptId) ?? activeReport;
+  if (paused !== next.paused) {
+    paused = next.paused;
+    showMotion();
   }
+}
+// A workspace taken on can leave the open page showing an older copy. `redrawDue` says it does, and
+// `redrawNow` that its fields would then act on something else, so that redraw cannot wait.
+let redrawDue = false,
+  redrawNow = false,
+  // Another tab's save that waits while this page holds input.
+  otherTabsWaiting = false,
+  // The notice that the oldest completed sessions made room in a full browser storage.
+  roomNotice = null;
+function settle(result) {
+  if (result.changed) {
+    const [actsOn, displays] = pageData();
+    useWorkspace(result.state);
+    const [actsOnNow, displaysNow] = pageData();
+    if (actsOnNow !== actsOn) redrawNow = true;
+    if (redrawNow || displaysNow !== displays) {
+      redrawDue = true;
+      // After the handler that saved has finished: it often redraws the page itself.
+      queueMicrotask(showLatest);
+    }
+  }
+  if (result.removed.length) {
+    // Storage was full, so the oldest completed sessions made room for current work.
+    // Show this after any message from the action that saved, which would replace it.
+    const removed = result.removed.length;
+    clearTimeout(roomNotice);
+    roomNotice = setTimeout(() =>
+      toast(
+        `Browser storage is full, so ${removed === 1 ? "the oldest completed session was" : `the ${removed} oldest completed sessions were`} removed from this device to make room.`,
+      ),
+    );
+  }
+  storageOK = result.ok;
   const status = $(".local-status");
   if (status)
     status.innerHTML = `<i></i> ${storageOK ? "Saved on this device" : "Storage unavailable · export your work"}`;
+}
+// Other tabs share the saved workspace, so a save first combines in anything they stored.
+// Each save serializes the whole workspace: typing and page redraws save after a short pause
+// (persistSoon), leaving the page saves at once, and every other change saves immediately.
+const saves = createSaveScheduler(() => {
+  const result = workspaceStore.save(workspaceState());
+  settle(result);
+  // The save notes said "Saving…" while this save waited: now they say what it did.
+  showDraftSaved();
+  showAnswerSaved();
+  return result;
+});
+// Returns the save result: {ok, full, removed} say whether it was saved, whether storage had no room even
+// after the oldest completed sessions made room, and which of them did.
+function persist() {
+  return saves.now();
+}
+function persistSoon() {
+  saves.soon();
+}
+// A keystroke is saved once typing pauses. Until that save has run, the note says "Saving…", not "saved",
+// and so does a page drawn while a save waits.
+const showDraftSaved = (saved = true) => {
+  const note = $("#proof-save");
+  if (note)
+    note.textContent = `${!storageOK ? "Storage unavailable" : saved ? "Draft saved" : "Saving…"} · ${draftWords()}`;
+};
+const showAnswerSaved = (saved = true) => {
+  const note = $("#answer-saved");
+  if (note)
+    note.textContent = !storageOK
+      ? "Storage unavailable. Keep this tab open."
+      : saved
+        ? "Answer saved on this device."
+        : "Saving…";
+};
+// Take in work another tab saved since this tab last read or wrote. Returns whether anything changed.
+function syncWorkspace() {
+  const result = workspaceStore.sync(workspaceState());
+  if (!result) return false;
+  settle(result);
+  return true;
+}
+// Redraw the open page when it shows an older copy of the workspace, keeping the field being edited
+// focused. While the page holds input a redraw would discard, a change to what it only displays waits.
+function showLatest() {
+  if (!redrawDue || (!redrawNow && pageBusy())) return;
+  const field = document.activeElement,
+    id = field?.id,
+    start = field?.selectionStart,
+    end = field?.selectionEnd;
+  render();
+  const again = id ? document.getElementById(id) : null;
+  if (again && again !== field) {
+    again.focus();
+    if (typeof start === "number")
+      try {
+        again.setSelectionRange(start, end);
+      } catch {}
+  }
 }
 function toast(s) {
   $("#toast").textContent = s;
@@ -359,12 +560,27 @@ function proof() {
       )
       .join(
         "",
-      )}</select><div class="question-statement">${esc(currentProof.statement)}</div>${badge(currentProof.difficulty)} <span class="tiny">${currentProof.maxMarks} marks · original practice</span></div><div class="card spacer"><label for="proof-answer">Your argument</label><div class="math-toolbar" role="group" aria-label="Insert mathematics symbol">${["∀", "∃", "⇒", "⇔", "∈", "ℝ", "ℤ", "≤", "≥", "≠", "≡", "Σ", "√", "²", "□"].map((symbol) => `<button type="button" data-insert="${symbol}" aria-label="Insert ${symbol}">${symbol}</button>`).join("")}</div><textarea class="text-area" id="proof-answer" maxlength="50000" placeholder="Begin with what is given. State the claim, justify each step, and finish with your conclusion. Plain text and Unicode mathematics work here.">${esc(proofDraft)}</textarea>${certificateGuide(currentProof)}${modelPanel()}<div id="arithmetic-feedback"></div><div class="saved-text" id="proof-save">Draft saved on this device · ${draftWords()}</div><div class="button-group"><button class="button violet" id="assess">Prepare review ∴</button><button class="button secondary" id="audit-proof">Check arithmetic =</button><button class="button ghost" id="export-proof">Export submission ↓</button></div></div><div id="proof-feedback">${proofResult ? feedbackView(proofResult) : ""}</div></section><aside class="card rubric-card"><span class="eyebrow">WHAT A COMPLETE ARGUMENT NEEDS</span><h3 class="compact-heading">Problem-specific rubric</h3>${rubric(currentProof)}<div class="notice">The C++ checker verifies explicit arithmetic equalities. The structured certificate checker verifies witnesses for supported problems. A reviewer assesses free-form arguments against this rubric. Model readings give practice marks with excerpts from your own proof. Human assessments and verified certificate marks are shown separately.</div><details><summary>Reference solution</summary><div class="solution">${esc(currentProof.solution)}</div></details><p class="tiny spacer">Review methods draw on published IMO coordination and UKMT marking guidance. No institutional affiliation or endorsement.</p><a class="text-link" href="#sources">Read the grading method ↗</a></aside></div>`
+      )}</select><div class="question-statement">${esc(currentProof.statement)}</div>${badge(currentProof.difficulty)} <span class="tiny">${currentProof.maxMarks} marks · original practice</span></div><div class="card spacer"><label for="proof-answer">Your argument</label><div class="math-toolbar" role="group" aria-label="Insert mathematics symbol">${["∀", "∃", "⇒", "⇔", "∈", "ℝ", "ℤ", "≤", "≥", "≠", "≡", "Σ", "√", "²", "□"].map((symbol) => `<button type="button" data-insert="${symbol}" aria-label="Insert ${symbol}">${symbol}</button>`).join("")}</div><textarea class="text-area" id="proof-answer" maxlength="50000" placeholder="Begin with what is given. State the claim, justify each step, and finish with your conclusion. Plain text and Unicode mathematics work here.">${esc(proofDraft)}</textarea>${submittedCopyNotice()}${certificateGuide(currentProof)}${modelPanel()}<div id="arithmetic-feedback"></div><div class="saved-text" id="proof-save">${!storageOK ? "Storage unavailable" : saves.pending ? "Saving…" : "Draft saved on this device"} · ${draftWords()}</div><div class="button-group"><button class="button violet" id="assess">Prepare review ∴</button><button class="button secondary" id="audit-proof">Check arithmetic =</button><button class="button ghost" id="export-proof">Export submission ↓</button></div></div><div id="proof-feedback">${proofResult ? feedbackView(proofResult) : ""}</div></section><aside class="card rubric-card"><span class="eyebrow">WHAT A COMPLETE ARGUMENT NEEDS</span><h3 class="compact-heading">Problem-specific rubric</h3>${rubric(currentProof)}<div class="notice">The C++ checker verifies explicit arithmetic equalities. The structured certificate checker verifies witnesses for supported problems. A reviewer assesses free-form arguments against this rubric. Model readings give practice marks with excerpts from your own proof. Human assessments and verified certificate marks are shown separately.</div><details><summary>Reference solution</summary><div class="solution">${esc(currentProof.solution)}</div></details><p class="tiny spacer">Review methods draw on published IMO coordination and UKMT marking guidance. No institutional affiliation or endorsement.</p><a class="text-link" href="#sources">Read the grading method ↗</a></aside></div>`
   );
 }
+// A submitted proof is open: say whether the editor holds the submitted answer or the learner's edited
+// copy of it, and offer the other. Only the submitted answer's assessment counts for the attempt.
+function submittedCopyNotice() {
+  const submitted = submittedAnswer();
+  if (submitted === null) return "";
+  if (proofDraft !== submitted)
+    return `<div class="notice spacer">You are editing a copy of your submitted answer. The submitted answer and its marks stay as they were. <button type="button" class="text-link" id="show-submitted">Show submitted answer</button></div>`;
+  return reopenSubmittedProof(proofDrafts, reviewAttemptId, reviewQuestion.id, submitted).linked
+    ? ""
+    : `<div class="notice spacer">This is your submitted answer. Your edited copy is saved; typing here starts a new copy in its place. <button type="button" class="text-link" id="show-edited">Open edited copy</button></div>`;
+}
+function assessmentForm() {
+  return `<details class="details"><summary>Record a human or self assessment</summary><p class="tiny spacer">Use the rubric against the complete argument. This records a local assessment; reviewer identity and expertise are not verified.</p><form id="review-form">${rubric(currentProof, true)}<div class="form-grid" style="grid-template-columns:1fr"><div><label for="reviewer">Reviewer name or “Self assessment”</label><input id="reviewer" required value="Self assessment"></div><div><label for="rationale">Reasoning behind the marks</label><textarea class="text-area" style="min-height:90px" id="rationale" maxlength="50000" required placeholder="Explain the valid steps, any gaps, and credit for alternative approaches."></textarea></div></div><button class="button secondary" type="submit">Save assessment</button></form></details>`;
+}
 function feedbackView(result) {
-  if (result.complete !== undefined && result.lowerBoundPoints !== undefined) return certificateResult(result);
-  return `<section class="card spacer"><div class="card-head"><h3 style="margin:0">Ready for a careful review</h3>${badge("AWAITING HUMAN REVIEW", "violet")}</div><p>${plural(result.wordCount, "word", "words")} preserved. No automated correctness score has been assigned.</p><ul class="sources-list">${result.feedback.map((s) => `<li>${esc(s)}</li>`).join("")}</ul><details class="details"><summary>Record a human or self assessment</summary><p class="tiny spacer">Use the rubric against the complete argument. This records a local assessment; reviewer identity and expertise are not verified.</p><form id="review-form">${rubric(currentProof, true)}<div class="form-grid" style="grid-template-columns:1fr"><div><label for="reviewer">Reviewer name or “Self assessment”</label><input id="reviewer" required value="Self assessment"></div><div><label for="rationale">Reasoning behind the marks</label><textarea class="text-area" style="min-height:90px" id="rationale" required placeholder="Explain the valid steps, any gaps, and credit for alternative approaches."></textarea></div></div><button class="button secondary" type="submit">Save assessment</button></form></details></section>`;
+  if (result.complete !== undefined && result.lowerBoundPoints !== undefined)
+    return certificateFeedback(result, `<section class="card spacer">${assessmentForm()}</section>`);
+  return `<section class="card spacer"><div class="card-head"><h3 style="margin:0">Ready for a careful review</h3>${badge("AWAITING HUMAN REVIEW", "violet")}</div><p>${plural(result.wordCount, "word", "words")} preserved. No automated correctness score has been assigned.</p><ul class="sources-list">${result.feedback.map((s) => `<li>${esc(s)}</li>`).join("")}</ul>${assessmentForm()}</section>`;
 }
 function sources() {
   return (
@@ -374,6 +590,23 @@ function sources() {
     ) +
     `<div class="split"><section class="card"><h2>Official question archives</h2><p>Original institution-hosted PDFs, with paper years and question references checked. Source questions remain in their official documents.</p><ul class="sources-list">${archive.sources.map((s) => `<li><a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">${esc(s.title)} ↗</a></li>`).join("")}</ul><h3 class="compact-heading">How the catalog is organized</h3><p>${archive.papers.length} paper/sample records and ${archive.questionReferences.length} chapter references. ISI documents labeled “sample” remain samples. A timed companion is a writing workspace alongside the linked PDF, not a fully transcribed paper. Unknown official timings are left unspecified; you choose a practice timer.</p><h3>Original question generation</h3><p>${engineInfo.templateCount} template families vary parameters reproducibly. Their solutions and rubrics are authored with each template. Difficulty labels are estimates. Automated mathematical invariant tests cover selected families, not a guarantee of every future question.</p></section><section class="card"><h2>How proof review works</h2><p>One problem-specific rubric, a preserved submission, and explicit credit for each mathematical step. Alternative valid solutions must be considered by the reviewer.</p><ul class="sources-list">${gradingSources.map((s) => `<li><a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">${esc(s.title)} ↗</a><br><span class="tiny">${esc(s.adaptation)}</span></li>`).join("")}</ul><div class="notice warning">Model suggestions can differ from expert marks. Free-form proofs receive no automatic final mark. Two number-theory families also accept structured proofs: verified steps earn demonstrated credit and a fully checked certificate receives the problem’s practice marks. Hosted marking reads the same proof twice and quotes the student’s own words for each award of credit. An unresolved reading stays open for human review.</div><p>Self-assessments are labeled and reviewer names are unverified. No CMI/ISI professor or olympiad examiner is connected to this workspace. Two reviews from the same model can share mistakes; agreement is not an independent guarantee.</p></section></div>${benchmarkReport()}<section class="card spacer"><h3>Your workspace and your data</h3><p>Attempts, drafts and assessments are saved in this browser’s local storage. They are not synced across devices. Test and certificate checks use the loaded checker on this device. If that checker is unavailable, the answer is sent to the hosted checker on Cloudflare. Select Mark my proof to request two model readings. Transcribe photo sends the selected page to Cloudflare for transcription. You review the text before adding it to your answer. The optional local model downloads its weights and keeps your writing on your device. Export a practice review with its proof or attempt. Worked solutions are visible in the learning app.</p></section>`
   );
+}
+// Saved data this release could not read, kept aside for the learner rather than written over.
+function unreadableData() {
+  return [
+    ...(workspaceStore.held !== null ? [{ key: KEY, savedAt: null }] : []),
+    // Text under the earlier app name that had no room for a copy stays there, and is listed there.
+    ...(workspaceStore.legacy ? [{ key: workspaceStore.legacy, savedAt: null }] : []),
+    ...workspaceStore.copies(),
+    ...workspaceStore.copies(modelReviewKey),
+  ].map((c) => ({
+    ...c,
+    label: c.key.startsWith(modelReviewKey) ? "Saved practice reviews" : "Saved workspace",
+  }));
+}
+function storageNotices() {
+  const copies = unreadableData();
+  return `${copies.length ? `<div class="notice warning"><strong>Some saved data could not be read.</strong><p>It was kept unchanged${workspaceStore.held !== null ? ", and new work is not saved on this device until you delete it" : ""}. Download it to keep a copy, then delete it here to free browser storage.</p>${copies.map((c) => `<div class="button-group"><span class="tiny">${c.label}${c.savedAt ? ` · kept ${new Date(c.savedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}` : ""}</span><button class="button small secondary" data-unreadable-download="${esc(c.key)}">Download ↓</button><button class="button small ghost" data-unreadable-delete="${esc(c.key)}">Delete</button></div>`).join("")}</div>` : ""}`;
 }
 function progress() {
   const results = history.flatMap((a) => a.results || []),
@@ -386,6 +619,7 @@ function progress() {
       "Your completed sessions and review records, stored on this device.",
       '<button class="button secondary" id="export-backup">Export backup ↓</button>',
     ) +
+    storageNotices() +
     `<div class="stats"><div class="stat"><span class="stat-icon">▤</span><div><strong>${history.length}</strong><small>Completed sessions</small></div></div><div class="stat"><span class="stat-icon">✓</span><div><strong>${nums.length ? Math.round((correct / nums.length) * 100) + "%" : "—"}</strong><small>First-attempt numeric accuracy</small></div></div><div class="stat"><span class="stat-icon">∴</span><div><strong>${results.filter((r) => r.type !== "numeric").length}</strong><small>Proof / reference responses</small></div></div><div class="stat"><span class="stat-icon">✧</span><div><strong>${reviews.length}</strong><small>Recorded assessments</small></div></div></div><p class="tiny">Accuracy uses the first answered attempt at each distinct numeric question. Retries, blank responses, unavailable checks and proof marks are excluded. This is practice feedback, not an exam prediction.</p><div class="section-heading"><h2>Your chapter map</h2></div><div class="topic-progress">${summary.topics.map((t) => `<article><h3>${topicLabels[t.topic]}</h3><div class="progress-bar"><span style="width:${t.accuracy || 0}%"></span></div><small>${t.attempted ? `${t.correct} / ${t.attempted} first attempts correct` : "Ready for your first question"}</small></article>`).join("")}</div><div class="section-heading"><h2>Session history</h2></div>${history.length ? `<div class="card table-wrap"><table class="table"><thead><tr><th>SESSION</th><th>COMPLETED</th><th>RESPONSES</th><th>REVIEW</th></tr></thead><tbody>${history.map((a) => `<tr><td>${esc(a.title)}</td><td>${new Date(a.finishedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</td><td>${Object.values(a.answers).filter((x) => String(x).trim()).length} / ${a.questions.length}</td><td><button class="text-link" data-report="${a.attemptId}">View ↗</button></td></tr>`).join("")}</tbody></table></div>` : '<div class="empty"><strong>Your story starts with the first attempt.</strong><p>Complete a practice session to see it here.</p><button class="button" data-go="tests">Find a challenge ↗</button></div>'}${reviews.length ? `<h2 class="compact-heading">Assessment records</h2><div class="stack">${reviews.map((r) => `<div class="card"><div class="question-top"><h3>${esc(r.questionTitle)}</h3>${badge(r.score + " / " + r.maxMarks, "mint")}</div><p>${esc(r.reviewer)} · identity unverified<br>${esc(r.rationale)}</p></div>`).join("")}</div>` : ""}<div class="card spacer"><h3>Restore a backup</h3><p>Import an Avenquellis backup or a backup exported under its previous name. Restored numeric results are recalculated; assessment records are treated as unverified local records.</p><input class="file-input" id="import-backup" type="file" accept="application/json,.json" aria-label="Import practice backup"></div>`
   );
 }
@@ -404,7 +638,7 @@ function sessionView() {
     answered = Object.values(session.answers).filter((a) =>
       String(a).trim(),
     ).length;
-  return `<div class="session-top"><div><span class="eyebrow">${session.reference ? "OFFICIAL-PAPER COMPANION" : "ORIGINAL PRACTICE"}</span><h1>${esc(session.title)}</h1></div><div><label>TIME REMAINING</label><div class="timer" id="timer">${timeText(remainingSeconds(session))}</div></div></div><div class="session-layout"><section><article class="question-box"><div class="question-top"><div>${badge("QUESTION " + (session.current + 1))}${badge(topicLabels[q.topic] || "Official reference")}</div><span class="tiny">${q.maxMarks ?? "See paper"} marks · ${q.type}</span></div><h2 class="compact-heading">${esc(q.title)}</h2><div class="question-statement">${esc(q.statement)}</div>${q.source?.url ? `<a class="button secondary" href="${esc(q.source.url)}" target="_blank" rel="noopener noreferrer">Open official question ↗</a><p class="tiny spacer">Keep the official PDF open alongside this writing workspace.</p>` : ""}${q.type === "proof" ? certificateGuide(q) : ""}<label for="session-answer">${q.type === "numeric" ? "Your answer · exact number, fraction or expression" : "Your proof / working"}</label>${q.type === "numeric" ? `<input id="session-answer" inputmode="text" maxlength="4096" placeholder="e.g. (1/3 + 1/6) * 4" value="${esc(session.answers[q.id] || "")}">` : `<textarea class="text-area" id="session-answer" maxlength="50000" placeholder="Write your reasoning here…">${esc(session.answers[q.id] || "")}</textarea>`}<div class="saved-text" id="answer-saved">${storageOK ? "Saved locally. You can leave and resume." : "Storage unavailable. Keep this tab open and export your work."}</div><div class="session-actions"><button class="button ghost" id="previous" ${session.current === 0 ? "disabled" : ""}>← Previous</button><button class="button ghost" id="flag">${session.flags[q.id] ? "★ Flagged" : "☆ Flag for review"}</button><button class="button secondary" id="next" ${session.current === session.questions.length - 1 ? "disabled" : ""}>Next →</button></div></article></section><aside class="card"><h3>Your questions</h3><p class="tiny">${answered} of ${session.questions.length} answered</p><div class="progress-bar"><span style="width:${(answered / session.questions.length) * 100}%"></span></div><div class="question-nav">${session.questions.map((q, i) => `<button data-qindex="${i}" aria-label="Question ${i + 1}${session.answers[q.id]?.trim() ? ", answered" : ""}${session.flags[q.id] ? ", flagged" : ""}"${i === session.current ? ' aria-current="step"' : ""} class="${i === session.current ? "current" : ""} ${session.answers[q.id]?.trim() ? "answered" : ""} ${session.flags[q.id] ? "flagged" : ""}">${i + 1}</button>`).join("")}</div><p class="tiny">Green: answered<br>Amber underline: flagged</p><button class="button" id="submit-session" style="width:100%">Finish & review ↗</button><button class="text-link spacer" id="export-active">Export answers ↓</button></aside></div>`;
+  return `<div class="session-top"><div><span class="eyebrow">${session.reference ? "OFFICIAL-PAPER COMPANION" : "ORIGINAL PRACTICE"}</span><h1>${esc(session.title)}</h1></div><div><label>TIME REMAINING</label><div class="timer" id="timer">${timeText(remainingSeconds(session))}</div></div></div><div class="session-layout"><section><article class="question-box"><div class="question-top"><div>${badge("QUESTION " + (session.current + 1))}${badge(topicLabels[q.topic] || "Official reference")}</div><span class="tiny">${q.maxMarks ?? "See paper"} marks · ${q.type}</span></div><h2 class="compact-heading">${esc(q.title)}</h2><div class="question-statement">${esc(q.statement)}</div>${q.source?.url ? `<a class="button secondary" href="${esc(q.source.url)}" target="_blank" rel="noopener noreferrer">Open official question ↗</a><p class="tiny spacer">Keep the official PDF open alongside this writing workspace.</p>` : ""}${q.type === "proof" ? certificateGuide(q) : ""}<label for="session-answer">${q.type === "numeric" ? "Your answer · exact number, fraction or expression" : "Your proof / working"}</label>${q.type === "numeric" ? `<input id="session-answer" inputmode="text" maxlength="4096" placeholder="e.g. (1/3 + 1/6) * 4" value="${esc(session.answers[q.id] || "")}">` : `<textarea class="text-area" id="session-answer" maxlength="50000" placeholder="Write your reasoning here…">${esc(session.answers[q.id] || "")}</textarea>`}<div class="saved-text" id="answer-saved">${!storageOK ? "Storage unavailable. Keep this tab open and export your work." : saves.pending ? "Saving…" : "Saved locally. You can leave and resume."}</div><div class="session-actions"><button class="button ghost" id="previous" ${session.current === 0 ? "disabled" : ""}>← Previous</button><button class="button ghost" id="flag">${session.flags[q.id] ? "★ Flagged" : "☆ Flag for review"}</button><button class="button secondary" id="next" ${session.current === session.questions.length - 1 ? "disabled" : ""}>Next →</button></div></article></section><aside class="card"><h3>Your questions</h3><p class="tiny">${answered} of ${session.questions.length} answered</p><div class="progress-bar"><span style="width:${(answered / session.questions.length) * 100}%"></span></div><div class="question-nav">${session.questions.map((q, i) => `<button data-qindex="${i}" aria-label="Question ${i + 1}${session.answers[q.id]?.trim() ? ", answered" : ""}${session.flags[q.id] ? ", flagged" : ""}"${i === session.current ? ' aria-current="step"' : ""} class="${i === session.current ? "current" : ""} ${session.answers[q.id]?.trim() ? "answered" : ""} ${session.flags[q.id] ? "flagged" : ""}">${i + 1}</button>`).join("")}</div><p class="tiny">Green: answered<br>Amber underline: flagged</p><button class="button" id="submit-session" style="width:100%">Finish & review ↗</button><button class="text-link spacer" id="export-active">Export answers ↓</button></aside></div>`;
 }
 function timeText(n) {
   return `${Math.floor(n / 3600)
@@ -427,28 +661,34 @@ function report() {
     ),
     earned = checked.reduce((s, r) => s + r.score, 0),
     max = checked.reduce((s, r) => s + r.maxMarks, 0),
-    pending = a.results.filter((r) => (r.status === "needs_review" || r.status === "checker_unavailable") && !reviews.some((v) => v.attemptId === a.attemptId && v.questionId === r.id)).length;
+    pending = pendingReviews(a, reviews);
   return (
     heading(
       "Look closer. Learn more.",
       esc(a.title),
       '<button class="button secondary" id="export-report">Export this attempt ↓</button>',
     ) +
-    `<section class="card"><div class="question-top"><div><span class="eyebrow">AUTOMATICALLY CHECKED MARKS</span><div class="result-number">${max ? `${earned} <span class="muted" style="font-size:22px">/ ${max}</span>` : "—"}</div></div><div>${badge(`${plural(pending, "response needs", "responses need")} review`, "violet")}</div></div><p class="subtitle">This total includes numeric answers and fully verified structured proofs. Model marks for free-form proofs appear separately under each response. Official-paper responses require human review.</p><button class="button small ghost spacer" id="retry-session">Retry this set ↻</button></section>${a.questions
+    `<section class="card"><div class="question-top"><div><span class="eyebrow">AUTOMATICALLY CHECKED MARKS</span><div class="result-number">${max ? `${earned} <span class="muted" style="font-size:22px">/ ${max}</span>` : "—"}</div></div><div>${badge(`${plural(pending, "response needs", "responses need")} review`, "violet")}</div></div><p class="subtitle">This total includes numeric answers and fully verified structured proofs. Model marks for free-form proofs appear separately under each response. Official-paper responses are not marked or counted here: compare each with the official paper.</p><button class="button small ghost spacer" id="retry-session">Retry this set ↻</button></section>${a.questions
       .map((q, i) => {
         const r = a.results[i],
           record = reviews.find(
             (v) => v.attemptId === a.attemptId && v.questionId === q.id,
-          );
-        return `<article class="report-section"><div class="question-top"><h3>${i + 1}. ${esc(q.title)}</h3>${badge(r.type === "numeric" ? (r.status === "checker_unavailable" ? "Exact checker unavailable" : r.score ? "Correct" : "Incorrect / blank") : r.status === "verified_certificate" ? `Verified proof: ${r.score}/${r.maxMarks}` : record ? `Recorded review: ${record.score}/${record.maxMarks}` : "Needs human review", r.score ? "mint" : "")}</div><div class="question-statement" style="font-size:16px">${esc(q.statement)}</div>${record ? `<p class="tiny">${esc(record.reviewer)} · identity unverified · ${esc(record.rationale)}</p>` : ""}${r.checker ? `<p class="tiny">Checked by ${r.checker === "axiom-cpp-wasm" ? "AxiomMath C++ / WebAssembly" : r.checker === "exact-literal-fallback" ? "exact literal arithmetic" : esc(r.checker)}${r.diagnostic ? " · " + esc(r.diagnostic) : ""}</p>` : ""}${r.certificate ? certificateResult(r.certificate) : ""}<label>Your response</label><div class="solution">${esc(r.answer || "No response submitted.")}</div>${q.source?.url ? `<a class="text-link" href="${esc(q.source.url)}" target="_blank" rel="noopener noreferrer">View official source ↗</a>` : `<details class="details"><summary>Worked solution & rubric</summary><div class="solution">${esc(q.solution)}</div>${rubric(q)}</details>`}${q.type === "proof" ? `<div data-model-report="${i}"></div><button class="button small secondary spacer" data-review-q="${i}">Mark or review this proof ∴</button>` : ""}</article>`;
+          ),
+          // A blank response has nothing to review.
+          answered = !!String(r.answer ?? "").trim();
+        return `<article class="report-section"><div class="question-top"><h3>${i + 1}. ${esc(q.title)}</h3>${badge(r.type === "numeric" ? (r.status === "checker_unavailable" ? "Exact checker unavailable" : r.status === "beyond_checker_bounds" ? "Too large to check exactly" : r.score ? "Correct" : "Incorrect / blank") : r.status === "verified_certificate" ? `Verified proof: ${r.score}/${r.maxMarks}` : record ? `Recorded review: ${record.score}/${record.maxMarks}` : !answered ? "No response" : r.type === "reference" ? "Compare with the official paper" : "Needs human review", r.score ? "mint" : "")}</div><div class="question-statement" style="font-size:16px">${esc(q.statement)}</div>${record ? `<p class="tiny">${esc(record.reviewer)} · identity unverified · ${esc(record.rationale)}</p>` : ""}${r.status === "beyond_checker_bounds" ? `<p class="tiny">This answer is beyond the limits of exact checking, so it is not marked and needs no review. Compare it with the worked solution.${r.diagnostic ? " · " + esc(r.diagnostic) : ""}</p>` : r.checker ? `<p class="tiny">Checked by ${r.checker === "axiom-cpp-wasm" ? "AxiomMath C++ / WebAssembly" : r.checker === "exact-literal-fallback" ? "exact literal arithmetic" : esc(r.checker)}${r.diagnostic ? " · " + esc(r.diagnostic) : ""}</p>` : ""}${r.certificate ? certificateResult(r.certificate) : ""}<label>Your response</label><div class="solution">${esc(r.answer || "No response submitted.")}</div>${q.source?.url ? `<a class="text-link" href="${esc(q.source.url)}" target="_blank" rel="noopener noreferrer">View official source ↗</a>` : `<details class="details"><summary>Worked solution & rubric</summary><div class="solution">${esc(q.solution)}</div>${rubric(q)}</details>`}${q.type === "proof" ? `<div data-model-report="${i}"></div><button class="button small secondary spacer" data-review-q="${i}">${answered ? "Mark or review this proof" : "Write this proof"} ∴</button>` : ""}</article>`;
       })
       .join("")}`
   );
 }
 let cancelGeneration=null;
-function render() {
+// A search box redraws its page on every keystroke. Such a `typing` redraw does not read the stored
+// workspace to look for other tabs' work: the storage and visibility listeners below bring that in.
+function render(typing = false) {
   cancelGeneration?.();
   cancelGeneration=null;
+  // Show work saved in another tab instead of drawing, and later saving, an older copy.
+  if (!typing) syncWorkspace();
   stopOrbit();
   page = (location.hash.slice(1) || "overview").split("?")[0];
   if (!Object.hasOwn(pageNames, page)) page = "overview";
@@ -479,24 +719,37 @@ function render() {
     session: sessionView,
     report,
   }[page]();
+  redrawDue = redrawNow = false;
   bind();
   if (page === "overview") mountOrbit($("#orbit"), paused);
   if (page === "chapters") $("#chapter-select").value = chapter;
-  persist();
+  // Search boxes redraw on every keystroke; the save waits for a pause.
+  persistSoon();
 }
-function download(name, data) {
-  if (data?.schema === "avenquellis-backup-v1")
+const bankProofIds = new Set(
+  questionBank.filter((q) => q.type === "proof").map((q) => q.id),
+);
+function download(name, data, type = "application/json") {
+  if (data?.schema === "avenquellis-backup-v1") {
+    const exported = data.history.slice(0, 100),
+      // Backups hold 500 drafts. Empty drafts and unedited copies of submitted answers give way first.
+      drafts = backupDrafts(data.proofDrafts, exported, {
+        prefer: (slot) => slot === data.proofId || bankProofIds.has(slot),
+      });
     data = {
       ...data,
       modelReviews: modelReviewRecords(),
-      history: data.history.slice(0, 100),
+      history: exported,
       reviews: data.reviews.slice(0, 100),
-      proofDrafts: Object.fromEntries(
-        Object.entries(data.proofDrafts || {}).slice(-500),
-      ),
+      proofDrafts: drafts.drafts,
     };
-  const blob = new Blob([JSON.stringify(data, null, 2)], {
-      type: "application/json",
+    if (drafts.omitted)
+      toast(
+        `This backup leaves out ${plural(drafts.omitted, "older proof draft", "older proof drafts")}: a backup holds at most 500.`,
+      );
+  }
+  const blob = new Blob([typeof data === "string" ? data : JSON.stringify(data, null, 2)], {
+      type,
     }),
     a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
@@ -537,10 +790,13 @@ function start(mock) {
 }
 let completingSession = null;
 async function complete() {
+  // Another tab may have finished this test or saved newer answers to it.
+  syncWorkspace();
+  showLatest();
   if (!session || completingSession === session) return;
   const original = session;
   completingSession = original;
-  session.submittedAt ??= Date.now();
+  session.submittedAt ??= submissionTime(session);
   persist();
   const submitted = structuredClone(session);
   const finishedAt = submitted.submittedAt;
@@ -563,6 +819,8 @@ async function complete() {
     }
     if(session!==original)return;
     const result=finishSession(submitted,finishedAt,(q)=>assessments.get(q.id));
+    // A restored copy of an attempt that is already saved finishes as a new attempt: ids stay unique.
+    if(attemptTaken(result.attemptId))result.attemptId=freshAttemptId();
     history.unshift(result);
     history=history.slice(0,100);activeReport=result;session=null;
     persist();go("report");
@@ -642,7 +900,7 @@ function bind() {
       filters: bankFilters,
       onChange: (f) => {
         bankFilters = f;
-        render();
+        render(true);
       },
       onBookmark: (id) => {
         bookmarks = bookmarks.includes(id)
@@ -717,7 +975,7 @@ function bind() {
     $("#paper-search").oninput = (e) => {
       const pos = e.target.selectionStart;
       search = e.target.value;
-      render();
+      render(true);
       $("#paper-search").focus();
       $("#paper-search").setSelectionRange(pos, pos);
     };
@@ -822,23 +1080,32 @@ function bind() {
         (button.onclick = () => {
           const field = $("#proof-answer");
           const start = field.selectionStart,
-            end = field.selectionEnd;
+            end = field.selectionEnd,
+            limit = field.maxLength >= 0 ? field.maxLength : 50000;
+          // Script edits bypass maxlength, and a longer draft would not fit the editor or a backup.
+          if (field.value.length - (end - start) + button.dataset.insert.length > limit)
+            return toast(`Your argument has reached the ${limit.toLocaleString("en-IN")}-character limit.`);
           field.setRangeText(button.dataset.insert, start, end, "end");
           field.dispatchEvent(new Event("input", { bubbles: true }));
           field.focus();
         }),
     );
     $("#audit-proof").onclick = () => {
-      const result = auditArithmetic(
-        proofDraft,
-        mathReady ? mathApi.checkExact : compareExactLiterals,
-      );
+      let result;
+      try {
+        result = auditArithmetic(
+          proofDraft,
+          mathReady ? mathApi.checkExact : compareExactLiterals,
+        );
+      } catch (err) {
+        return toast(err.message);
+      }
       $("#arithmetic-feedback").innerHTML =
         `<section class="notice ${result.contradictions ? "warning" : ""}"><strong>${result.checked} arithmetic ${result.checked === 1 ? "equality" : "equalities"} checked · ${result.contradictions} ${result.contradictions === 1 ? "contradiction" : "contradictions"}</strong>${result.claims.map((c) => `<div class="arithmetic-claim"><span class="${c.status === "verified" ? "pass" : c.status === "contradiction" ? "fail" : ""}">Line ${c.line} · ${esc(c.status)}</span><code>${esc(c.left)} = ${esc(c.right)}</code>${c.error ? `<span class="tiny">${esc(c.error)}</span>` : ""}</div>`).join("")}<p class="tiny spacer">${esc(result.notice)}</p></section>`;
     };
     $("#proof-question").onchange = (e) => {
       if (e.target.value === "custom") return;
-      proofDrafts[draftSlot()] = proofDraft;
+      leaveDraft();
       proofId = e.target.value;
       reviewQuestion = null;
       reviewAttemptId = null;
@@ -855,10 +1122,28 @@ function bind() {
       proofResult = null;
       $("#proof-feedback").innerHTML = "";
       $("#arithmetic-feedback").innerHTML = "";
-      persist();
-      $("#proof-save").textContent =
-        `${storageOK ? "Draft saved" : "Storage unavailable"} · ${draftWords()}`;
+      persistSoon();
+      showDraftSaved(false);
     };
+    const showSubmitted = $("#show-submitted"),
+      showEdited = $("#show-edited");
+    if (showSubmitted)
+      showSubmitted.onclick = () => {
+        leaveDraft();
+        proofDraft = submittedAnswer() ?? proofDraft;
+        proofAttemptId = reviewAttemptId;
+        proofResult = null;
+        persist();
+        render();
+      };
+    if (showEdited)
+      showEdited.onclick = () => {
+        proofDraft = proofDrafts[draftSlot()] ?? proofDraft;
+        proofAttemptId = null;
+        proofResult = null;
+        persist();
+        render();
+      };
     $("#assess").onclick = async () => {
       const draft=proofDraft,question=currentProof,button=$("#assess");
       if (!proofDraft.trim())
@@ -899,10 +1184,8 @@ function bind() {
     if (["proof","reference"].includes(session.questions[session.current].type)) mountHandwriting($("#session-answer"));
     $("#session-answer").oninput = (e) => {
       session.answers[session.questions[session.current].id] = e.target.value;
-      persist();
-      $("#answer-saved").textContent = storageOK
-        ? "Answer saved on this device."
-        : "Storage unavailable. Keep this tab open.";
+      persistSoon();
+      showAnswerSaved(false);
     };
     $("#previous").onclick = () => {
       if (session.current > 0) {
@@ -963,7 +1246,7 @@ function bind() {
       $("#retry-session").onclick = () =>
         start({
           id: a.id,
-          title: a.title + " · retry",
+          title: retryTitle(a.title),
           questions: a.questions,
           durationMinutes: a.durationMinutes,
           reference: a.reference,
@@ -973,11 +1256,18 @@ function bind() {
         (e) =>
           (e.onclick = () => {
             const i = Number(e.dataset.reviewQ);
-            if (currentProof) proofDrafts[draftSlot()] = proofDraft;
+            if (currentProof) leaveDraft();
             reviewQuestion = a.questions[i];
-            proofAttemptId = a.attemptId;
             reviewAttemptId = a.attemptId;
-            proofDraft = a.answers[reviewQuestion.id] || "";
+            // An edited copy of this proof opens again; the studio offers the submitted answer beside it.
+            const open = reopenSubmittedProof(
+              proofDrafts,
+              a.attemptId,
+              reviewQuestion.id,
+              a.answers[reviewQuestion.id] || "",
+            );
+            proofDraft = open.text;
+            proofAttemptId = open.linked ? a.attemptId : null;
             proofResult = null;
             go("proof");
           }),
@@ -1008,6 +1298,32 @@ function bind() {
         }),
     );
     $("#import-backup").onchange = importBackup;
+    document.querySelectorAll("[data-unreadable-download]").forEach(
+      (e) =>
+        (e.onclick = () => {
+          const key = e.dataset.unreadableDownload;
+          let text = key === KEY ? workspaceStore.held : null;
+          try {
+            text ??= localStorage.getItem(key);
+          } catch {}
+          if (text != null) download(`${key}.txt`, text, "text/plain");
+        }),
+    );
+    document.querySelectorAll("[data-unreadable-delete]").forEach(
+      (e) =>
+        (e.onclick = () => {
+          modal(
+            `<h2 class="modal-title">Delete this saved data?</h2><p class="subtitle">This version of Avenquellis could not read it. Download it first if you may need it: deleted data cannot be recovered.</p><div class="button-group spacer"><button class="button" id="confirm-delete-unreadable">Delete</button><button class="button secondary" id="cancel-delete-unreadable">Cancel</button></div>`,
+          );
+          $("#confirm-delete-unreadable").onclick = () => {
+            workspaceStore.discard(e.dataset.unreadableDelete);
+            $("#modal").close();
+            persist();
+            render();
+          };
+          $("#cancel-delete-unreadable").onclick = () => $("#modal").close();
+        }),
+    );
   }
 }
 function bindForge() {
@@ -1025,7 +1341,7 @@ function bindForge() {
       download("avenquellis-question.json", generated);
   if ($("#proof-generated"))
     $("#proof-generated").onclick = () => {
-      if (currentProof) proofDrafts[draftSlot()] = proofDraft;
+      if (currentProof) leaveDraft();
       proofAttemptId = null;
       reviewAttemptId = null;
       reviewQuestion = generated;
@@ -1072,6 +1388,13 @@ function bindReview() {
     }
   };
 }
+// Like starting a new test, a restore never replaces a submitted test before it is checked and saved.
+const stillChecking = () => {
+  syncWorkspace();
+  return session?.submittedAt != null;
+};
+const checkingMessage =
+  "Your submitted test is still being checked. Restore the backup once its report is ready.";
 async function importBackup(e) {
   const file = e.target.files[0];
   // Clear the choice so that choosing the same file again, after Cancel or a rejected file, is noticed.
@@ -1080,8 +1403,11 @@ async function importBackup(e) {
   try {
     if (file.size > 10000000) throw Error("Backup exceeds 10 MB.");
     const restored = validateBackup(JSON.parse(await file.text()));
+    if (stillChecking()) throw Error(checkingMessage);
+    const finished =
+      restored.mode === "active" && attemptTaken(restored.session?.attemptId);
     modal(
-      `<h2 class="modal-title">Restore this ${restored.mode === "active" ? "active draft" : "backup"}?</h2><p class="subtitle">${restored.mode === "active" ? "This replaces the current active test. History and proof drafts stay in place." : "This replaces completed sessions, assessments, the active test and proof drafts. Backups that contain model reviews also replace this device’s saved practice reviews."} Export your current backup first if needed. Saved deadlines are preserved.</p><div class="button-group spacer"><button class="button" id="confirm-import">Restore backup</button><button class="button secondary" id="export-before-import">Export current backup ↓</button><button class="button ghost" id="cancel-import">Cancel</button></div>`,
+      `<h2 class="modal-title">Restore this ${restored.mode === "active" ? "active draft" : "backup"}?</h2><p class="subtitle">${restored.mode === "active" ? `This replaces the current active test. History and proof drafts stay in place.${finished ? " You finished this test already, so the draft continues as a new attempt and the finished one stays in your history." : ""}` : "This replaces completed sessions, assessments, the active test and proof drafts. Backups that contain model reviews also replace this device’s saved practice reviews."} Export your current backup first if needed. Saved deadlines are preserved.</p><div class="button-group spacer"><button class="button" id="confirm-import">Restore backup</button><button class="button secondary" id="export-before-import">Export current backup ↓</button><button class="button ghost" id="cancel-import">Cancel</button></div>`,
     );
     $("#export-before-import").onclick = () =>
       download("avenquellis-before-restore.json", {
@@ -1098,11 +1424,35 @@ async function importBackup(e) {
         bookmarks,
       });
     $("#confirm-import").onclick = () => {
+      if (stillChecking()) {
+        $("#modal").close();
+        toast(checkingMessage);
+        return;
+      }
+      // Whether this device was holding the workspace before the restore. Only then is a backup it has no
+      // room for refused; when storage is unavailable, the backup loads into this tab, which says so.
+      const saving = persist().ok;
+      // A restore writes two saved keys, the practice reviews and then the workspace. When storage that was
+      // saving the workspace has no room for the backup's, the reviews and this tab go back to how they
+      // were: never half a restore.
+      const before = { history, reviews, session, proofDraft, proofId, reviewQuestion, proofDrafts,
+          proofAttemptId, reviewAttemptId, bookmarks, proofResult, activeReport },
+        replacesReviews = restored.mode !== "active" && restored.modelReviews !== null,
+        deviceReviews = replacesReviews ? modelReviewText() : null,
+        reviewsSaved = replacesReviews && replaceModelReviews(restored.modelReviews),
+        // Practice reviews in the backup that browser storage did not take stay in the file only.
+        reviewsLeft =
+          replacesReviews && !reviewsSaved && restored.modelReviews.length
+            ? " Its practice reviews could not be restored: they remain in the backup file."
+            : "";
+      // Working storage that cannot take the practice reviews refuses the restore. On a device that was not
+      // saving the workspace either, the rest of the backup loads into this tab, as below.
+      if (replacesReviews && !reviewsSaved && saving) {
+        $("#modal").close();
+        toast("Browser storage could not restore the practice reviews. Your workspace was left as it was.");
+        return;
+      }
       if (restored.mode !== "active") {
-        if (restored.modelReviews !== null && !replaceModelReviews(restored.modelReviews)) {
-          toast("Browser storage could not restore the practice reviews. Your workspace was left as it was.");
-          return;
-        }
         history = restored.history.map((a) => finishSession(a, a.finishedAt));
         reviews = restored.reviews.map((r) => ({
           ...r,
@@ -1120,11 +1470,51 @@ async function importBackup(e) {
         activeReport = null;
         bookmarks = restored.bookmarks || [];
       }
-      session = restored.session || null;
-      persist();
+      // A draft of a test that is already in the history continues as a new attempt: ids stay unique.
+      session =
+        restored.session && attemptTaken(restored.session.attemptId)
+          ? { ...restored.session, attemptId: freshAttemptId() }
+          : restored.session || null;
+      // When browser storage is full, the oldest completed sessions make room, as for any save. A whole backup
+      // replaces the completed sessions, so its own oldest make room, and they stay in the backup file.
+      const saved = persist();
       $("#modal").close();
+      if (!saved.ok && saved.full && saving) {
+        ({ history, reviews, session, proofDraft, proofId, reviewQuestion, proofDrafts, proofAttemptId,
+          reviewAttemptId, bookmarks, proofResult, activeReport } = before);
+        const reviewsBack = !reviewsSaved || putBackModelReviews(deviceReviews);
+        persist();
+        render();
+        toast(
+          `Browser storage could not hold this backup, so it was not restored. Your workspace was left as it was${reviewsBack ? "." : ", but the backup’s practice reviews replaced this device’s."}`,
+        );
+        return;
+      }
       render();
-      toast("Backup restored. Numeric results recalculated.");
+      if (!saved.ok) {
+        // Storage is unavailable, or was already refusing this tab's work: the backup stays in this tab, and
+        // the workspace saved on this device is left as it was. At most its practice reviews were saved.
+        const cause =
+          workspaceStore.held !== null
+            ? "saved data that could not be read is still on this device (see Your progress)"
+            : saved.full
+              ? "browser storage is full"
+              : "browser storage is unavailable";
+        toast(
+          `Backup restored in this tab only: ${cause}, so ${reviewsSaved ? "only its practice reviews are" : "it is not"} saved on this device. Keep this tab open and export your work.${reviewsLeft}`,
+        );
+        return;
+      }
+      // Storage took a whole backup only after its oldest completed sessions made room. Say how many stayed in
+      // the backup file, in place of the notice about sessions removed from this device.
+      const n = restored.mode === "active" ? 0 : saved.removed.length;
+      if (n) clearTimeout(roomNotice);
+      toast(
+        (!n
+          ? "Backup restored. Numeric results recalculated."
+          : `Backup restored, but browser storage is full, so its ${plural(n, "oldest session was", "oldest sessions were")} not saved on this device. ${n === 1 ? "It remains" : "They remain"} in the backup file.`) +
+          reviewsLeft,
+      );
     };
     $("#cancel-import").onclick = () => $("#modal").close();
   } catch (err) {
@@ -1166,21 +1556,54 @@ window.addEventListener("hashchange", () => {
   render();
   window.scrollTo(0, 0);
 });
+// Another open tab saved work: take it in, and show it where the open page shows that work. While the
+// page holds input a redraw would discard, this tab keeps its own copy instead: its next save combines
+// the two, and the timer below looks again once the input is saved or gone.
+function refreshFromOtherTabs() {
+  if (document.hidden) return;
+  otherTabsWaiting = pageBusy();
+  if (!otherTabsWaiting) syncWorkspace();
+  showLatest();
+}
+window.addEventListener("storage", (event) => {
+  if (event.key === KEY || event.key === null) refreshFromOtherTabs();
+});
+document.addEventListener("visibilitychange", refreshFromOtherTabs);
+window.addEventListener("pageshow", refreshFromOtherTabs);
+// Typing waits briefly to be saved; leaving or hiding the page saves it at once.
+const saveWaiting = () => {
+  if (saves.pending) persist();
+};
+window.addEventListener("pagehide", saveWaiting);
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) saveWaiting();
+});
 setInterval(() => {
+  // A refresh that waited for the page to finish with its input is tried again.
+  if (otherTabsWaiting || redrawDue) refreshFromOtherTabs();
   if (!session) return;
-  const remaining = remainingSeconds(session);
-  if ($("#timer")) $("#timer").textContent = timeText(remaining);
-  if ((remaining === 0 || session.submittedAt != null) && completingSession !== session) {
-    const expired = session.submittedAt == null;
-    if ($("#modal").open) $("#modal").close();
-    void complete();
-    if (expired) toast("Time is up. Your work has been saved.");
-  }
+  if ($("#timer")) $("#timer").textContent = timeText(remainingSeconds(session));
+  const due = () =>
+    session &&
+    (remainingSeconds(session) === 0 || session.submittedAt != null) &&
+    completingSession !== session;
+  if (!due()) return;
+  // Another tab may already have finished this test: never complete an older copy of it.
+  syncWorkspace();
+  showLatest();
+  if (!due()) return;
+  const expired = session.submittedAt == null;
+  if ($("#modal").open) $("#modal").close();
+  void complete();
+  if (expired) toast("Time is up. Your work has been saved.");
 }, 1000);
 render();
+// The first save runs at once: until a save has run, the page says work is saved even where storage is unavailable.
+persist();
 
+// Typing still waiting to be saved also defers a deployed update's reload.
 window.appUpdateCanReload = () => canApplyAppUpdate({ready: true, storageOK,
-  session, completingSession, page});
+  session, completingSession, page, savePending: saves.pending});
 
 offlineNotices.deliver((event) => {
   if (event.type === "avenquellis:offline-update-ready") {
@@ -1189,8 +1612,16 @@ offlineNotices.deliver((event) => {
   }
   const status = document.querySelector("#offline-status");
   if (status) {
-    status.textContent = "Ready offline · source PDFs need internet";
+    // New questions come from the hosted generator, which the saved app cannot reach offline.
+    status.textContent = "Ready offline · new questions and source PDFs need internet";
     status.title =
-      "The app and exact C++ engine are saved on this device. Browser storage may be cleared by your browser.";
+      "The app, the problem collection and the exact C++ engine are saved on this device. Generating new questions and opening source PDFs need a connection. Browser storage may be cleared by your browser.";
   }
 });
+// After the notices held during startup, so that an update notice does not replace this warning.
+if (loaded.unreadable)
+  toast(
+    workspaceStore.held === null
+      ? "Saved work on this device could not be read. It was kept unchanged: see Your progress."
+      : "Saved work on this device could not be read. It was left unchanged and new work is not being saved: see Your progress.",
+  );
