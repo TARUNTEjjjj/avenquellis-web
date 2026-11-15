@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {onRequest} from '../functions/api/generate.js';
+import {onRequest,createGenerationHandler} from '../functions/api/generate.js';
 import {getNativeGenerator} from '../server/native-generator/index.js';
 import {generateQuestion,generateMock} from '../dist/lib/questions.js';
 
@@ -8,6 +8,26 @@ const base='https://avenquellis.pages.dev';
 const post=(body,headers={})=>onRequest({request:new Request(base+'/api/generate',{
   method:'POST',headers:{'Content-Type':'application/json',Origin:base,...headers},body:JSON.stringify(body)
 })});
+test('bounded uploads return promptly even when reading or cancellation never settles',async()=>{
+  const handler=createGenerationHandler({bodyTimeoutMs:10});
+  for(const oversized of [false,true]) {
+    let cancelled=false;
+    const stream=new ReadableStream({
+      start(controller){if(oversized)controller.enqueue(new Uint8Array(4097));},
+      cancel(){cancelled=true;return new Promise(()=>{});}
+    });
+    const request=new Request(base+'/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:stream,duplex:'half'});
+    let timer;
+    try {
+      const response=await Promise.race([handler({request}),new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('handler stalled')),500);})]);
+      assert.equal(response.status,oversized?413:408);
+      assert.equal((await response.json()).error.code,oversized?'payload_too_large':'request_timeout');
+      assert.equal(cancelled,true);
+      assert.equal(stream.locked,false);
+    }finally{clearTimeout(timer);}
+  }
+  assert.equal((await post({mode:'question',seed:'after-stall'})).status,200);
+});
 test('Pages endpoint returns actual C++ questions, chapter sections, and full mocks',async()=>{
   for(const [mode,opts] of [
     ['question',{topic:'algebra',difficulty:'olympiad',exam:'ISI',seed:'😀'.repeat(65)}],

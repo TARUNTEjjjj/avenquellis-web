@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "project": "avenquellis-web",
+  "title": "Avenquellis resource library",
+  "minStars": 500,
+  "maxPerCategory": 12,
+  "categories": [
+    {
+      "id": "mathematics",
+      "title": "Mathematics and visualization",
+      "queries": [
+        "topic:mathematics"
+      ],
+      "seeds": [
+        "sympy/sympy",
+        "3b1b/manim"
+      ]
+    },
+    {
+      "id": "proofs",
+      "title": "Formal proof references",
+      "queries": [
+        "topic:theorem-proving"
+      ],
+      "seeds": [
+        "leanprover-community/mathlib4",
+        "leanprover/lean4",
+        "z3prover/z3"
+      ]
+    }
+  ]
+}

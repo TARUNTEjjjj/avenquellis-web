@@ -21,14 +21,17 @@ async function runtime(directory,files){
     async open(key){if(!storage.has(key))storage.set(key,new Map());const data=storage.get(key);return {async put(url,response){data.set(String(url),response.clone());},async match(url){return data.get(String(url))?.clone();}};},
     async keys(){return [...storage.keys()];},async has(key){return storage.has(key);},async delete(key){return storage.delete(key);}
   };
-  const context=vm.createContext({URL,Response,Request,Headers,AbortController,Uint8Array,TextEncoder,console,setTimeout,clearTimeout,crypto:webcrypto,caches,
-    self:{registration:{scope:'https://math.example/lab/'},addEventListener(type,callback){handlers[type]=callback;},async skipWaiting(){skipCalls++;},clients:{async claim(){claimCalls++;}}},
+  let safe=true;
+  const client={id:'window-1',url:'https://math.example/lab/',postMessage(data,ports){ports[0].postMessage({type:'APP_UPDATE_SAFETY',nonce:data.nonce,safe});}};
+  const context=vm.createContext({URL,Response,Request,Headers,AbortController,Uint8Array,TextEncoder,MessageChannel,console,setTimeout,clearTimeout,crypto:webcrypto,caches,
+    self:{registration:{scope:'https://math.example/lab/'},addEventListener(type,callback){const previous=handlers[type];handlers[type]=event=>{previous?.(event);callback(event);};},async skipWaiting(){skipCalls++;},clients:{async claim(){claimCalls++;},async matchAll(){return [client];}}},
     fetch:async url=>{networkCalls++;const path=new URL(url).pathname.replace('/lab/','')||'index.html';if(!(path in files))return new Response('missing',{status:404});return new Response(files[path]);}
   });
   vm.runInContext(await readFile(join(directory,'sw.js'),'utf8'),context);
   async function lifecycle(type){let pending;handlers[type]({waitUntil(p){pending=p;}});await pending;}
   async function request(url,{method='GET',mode='cors'}={}){let pending;handlers.fetch({request:{url,method,mode},respondWith(p){pending=p;}});return pending?await pending:undefined;}
-  return {context,storage,caches,handlers,lifecycle,request,counters:()=>({networkCalls,skipCalls,claimCalls})};
+  async function message(data){let reply;const pending=[];handlers.message({source:client,data,ports:[{postMessage(value){reply=value;}}],waitUntil(value){pending.push(value);}});await Promise.all(pending);return reply;}
+  return {context,storage,caches,handlers,lifecycle,request,message,setSafe(value){safe=value;},counters:()=>({networkCalls,skipCalls,claimCalls})};
 }
 test('offline build hashes recursive wasm and is stable without manifest recursion',async t=>{
   const {directory}=await fixture(t);
@@ -73,8 +76,21 @@ test('activation cleans only this app scope and never forces an active-page relo
   const {directory,files}=await fixture(t);await buildOffline({directory});const app=await runtime(directory,files);
   await app.lifecycle('install');app.storage.set('avenquellis-offline:/lab/:old',new Map());app.storage.set('avenquellis-offline:/different/:old',new Map());app.storage.set('unrelated-cache',new Map());
   await app.lifecycle('activate');
-  assert.ok(!app.storage.has('avenquellis-offline:/lab/:old'));assert.ok(app.storage.has('avenquellis-offline:/different/:old'));assert.ok(app.storage.has('unrelated-cache'));
+  assert.ok(app.storage.has('avenquellis-offline:/lab/:old'));assert.ok(app.storage.has('avenquellis-offline:/different/:old'));assert.ok(app.storage.has('unrelated-cache'));
   assert.equal(app.counters().skipCalls,0);assert.equal(app.counters().claimCalls,0);
+});
+
+test('early activation requires complete verified cache and every window to allow the exact version',async t=>{
+ const {directory,files}=await fixture(t);await buildOffline({directory});const app=await runtime(directory,files);
+ const before=await app.message({type:'GET_APP_UPDATE_STATUS'});assert.equal(before.ready,false);
+ const command={type:'ACTIVATE_APP_UPDATE',version:before.version,nonce:'a'.repeat(32)};
+ assert.equal((await app.message(command)).accepted,false);
+ await app.lifecycle('install');assert.equal((await app.message({type:'GET_APP_UPDATE_STATUS'})).ready,true);
+ app.setSafe(false);assert.equal((await app.message(command)).accepted,false);assert.equal(app.counters().skipCalls,0);
+ app.setSafe(true);assert.equal(await app.message({...command,version:'unknown'}),undefined);
+ assert.equal((await app.message(command)).accepted,true);assert.equal(app.counters().skipCalls,1);
+ assert.equal(await app.request('https://math.example/lab/app-version.json'),undefined);
+ assert.equal(await app.request('https://math.example/lab/?__app_update_check='+'b'.repeat(64)),undefined,'A deployment probe must bypass the old immutable shell before reload');
 });
 test('offline navigation falls back after network failure and status confirms complete cache',async t=>{
   const {directory,files}=await fixture(t);const manifest=await buildOffline({directory});const app=await runtime(directory,files);await app.lifecycle('install');
@@ -110,4 +126,54 @@ test('canonical index redirects are avoided during install, navigation and cache
   assert.ok(cache.has(indexUrl));
   assert.equal(networkUrls.filter(url=>url===root).length,3);
   assert.ok(!networkUrls.includes(indexUrl));
+});
+
+
+test('nested app indexes survive Pages redirects and navigate offline at their directory URL',async t=>{
+  const {directory,files}=await fixture(t);
+  await mkdir(join(directory,'guides'));
+  files['guides/index.html']='<!doctype html><h1>App guide</h1>';
+  files['guides/catalog.json']='{"schemaVersion":1,"items":[]}';
+  for(const path of ['guides/index.html','guides/catalog.json'])await writeFile(join(directory,path),files[path]);
+  await buildOffline({directory});
+  const app=await runtime(directory,files);
+  const nested='https://math.example/lab/guides/';
+  const network=[];const serve=app.context.fetch;
+  app.context.fetch=async(url,options)=>{
+    network.push(url);
+    if(url.endsWith('/index.html'))throw new TypeError('Pages index redirect rejected');
+    if(url===nested)return new Response(files['guides/index.html']);
+    return serve(url,options);
+  };
+  await app.lifecycle('install');
+  assert.ok(network.includes(nested));
+  assert.ok(!network.some(url=>url.endsWith('/index.html')));
+  app.context.fetch=async()=>{throw new TypeError('offline');};
+  assert.equal(await(await app.request(nested,{mode:'navigate'})).text(),files['guides/index.html']);
+  assert.equal(await(await app.request(nested+'index.html',{mode:'navigate'})).text(),files['guides/index.html']);
+  assert.equal(await(await app.request(nested+'catalog.json')).text(),files['guides/catalog.json']);
+  assert.equal(await app.request('https://raw.githubusercontent.com/TARUNTEjjjj/avenquellis-web/main/resources/catalog.json'),undefined,'External refreshed metadata bypasses the app snapshot cache');
+  const cache=[...app.storage.values()][0];cache.delete(nested+'index.html');
+  app.context.fetch=async url=>{assert.equal(url,nested);return new Response(files['guides/index.html']);};
+  assert.equal(await(await app.request(nested,{mode:'navigate'})).text(),files['guides/index.html']);
+  assert.ok(cache.has(nested+'index.html'));
+});
+
+test('the main app leaves all resource-library files and cache ownership to the scoped worker',async t=>{
+  const {directory,files}=await fixture(t);
+  await mkdir(join(directory,'resources'));
+  for(const file of ['index.html','explorer.mjs','offline-worker.js','catalog.json']) {
+    files['resources/'+file]='Public library asset';
+    await writeFile(join(directory,'resources',file),files['resources/'+file]);
+  }
+  const manifest=await buildOffline({directory});
+  assert.ok(manifest.skipped.includes('resources'));
+  assert.ok(!manifest.assets.some(asset=>asset.url.startsWith('resources/')));
+  const app=await runtime(directory,files);
+  const libraryCache='resource-library-shell:/resources/:current';
+  app.storage.set(libraryCache,new Map());
+  await app.lifecycle('install');await app.lifecycle('activate');
+  assert.ok(app.storage.has(libraryCache));
+  for(const path of ['resources/','resources/index.html','resources/explorer.mjs','resources/offline-worker.js','resources/catalog.json'])
+    assert.equal(await app.request('https://math.example/lab/'+path,{mode:path.endsWith('/')?'navigate':'cors'}),undefined,path);
 });

@@ -11,7 +11,14 @@
     "deploy": "npm test && npm run build && npm run stage:pages && cd .wrangler/release && npx --yes wrangler@4.156.2 pages deploy dist --project-name avenquellis --branch main",
     "stage:pages": "node scripts/pack-pages.mjs .wrangler/release",
     "start:static": "node scripts/serve.mjs",
-    "dev:pages": "npm run build && npm run stage:pages && cd .wrangler/release && npx --yes wrangler@4.156.2 pages dev dist --ip 127.0.0.1 --port 4173"
+    "dev:pages": "npm run build && npm run stage:pages && cd .wrangler/release && npx --yes wrangler@4.156.2 pages dev dist --ip 127.0.0.1 --port 4173",
+    "resources:stage": "node scripts/stage-resource-explorer.mjs dist/resources",
+    "prebuild": "npm run resources:stage",
+    "prestart:static": "npm run resources:stage",
+    "test:resources:ui": "node --test scripts/resource-*.test.mjs",
+    "resources:refresh": "node scripts/resources/resource-server.mjs refresh --config resources/sources.json --output resources/catalog.json",
+    "resources:serve": "node scripts/resources/resource-server.mjs serve --config resources/sources.json --snapshot resources/catalog.json",
+    "test:resources": "node --test scripts/resources/resource-catalog.test.mjs && node scripts/resources/check-catalog.mjs"
   },
   "engines": {
     "node": ">=20"
