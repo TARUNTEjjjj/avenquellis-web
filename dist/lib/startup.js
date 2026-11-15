@@ -27,3 +27,17 @@ export function loadWorkspaceResources({loadMath, loadGrader, fetchImpl = global
     }),
   ]);
 }
+
+/** Hold events that arrive before the workspace can show them. deliver() replays them in order, then forwards later ones. */
+export function bufferEvents(target, types) {
+  const queued = [];
+  let handler = null;
+  const receive = event => { if (handler) handler(event); else queued.push(event); };
+  for (const type of types) target.addEventListener(type, receive);
+  return {
+    deliver(next) {
+      handler = next;
+      for (const event of queued.splice(0)) next(event);
+    },
+  };
+}

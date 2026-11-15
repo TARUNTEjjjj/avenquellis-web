@@ -49,6 +49,23 @@ test('real official archive reference sets round-trip including RMO combined sol
  const p=archive.papers[0],s=makeSession({id:'reference-test',title:'References',durationMinutes:180,reference:true,maxMarks:null,questions:[{id:'r1',title:'Question',statement:'Question',topic:'geometry',type:'reference',maxMarks:null,source:{kind:p.kind,label:p.label,url:p.url}}]},1000000);
  for(const malicious of ['javascript:alert(1)','https://www.cmi.ac.in.evil.example/x','https://www.cmi.ac.in@evil.example/x','https://evil.example/x','https://user:pass@www.cmi.ac.in/x','http://www.cmi.ac.in/x']){const bad=clone(s);bad.questions[0].source.url=malicious;assert.throws(()=>validateBackup(bad));}
 });
+test('every chapter reference set from the official archive round-trips, including question ranges',async()=>{
+ const archive=JSON.parse(await readFile(new URL('../dist/archive.json',import.meta.url),'utf8'));
+ // The same question shape as referenceQuestion in app.js. Range ids such as cmi-2024-a2–a3 use an en dash.
+ const questions=archive.questionReferences.map(r=>({id:r.id,title:r.title,statement:`Open ${r.exam} ${r.year}, question ${r.questionNumber}, in the official PDF below.`,topic:r.topic,type:'reference',maxMarks:r.maxMarks??null,source:{kind:r.sourceKind,label:r.sourceLabel,url:r.url}}));
+ assert.ok(questions.some(q=>q.id.includes('–')));
+ for(let i=0;i<questions.length;i+=6){
+  const s=makeSession({id:'chapter-1000000',title:'Official references',reference:true,durationMinutes:120,questions:questions.slice(i,i+6),maxMarks:null},1000000);
+  for(const q of s.questions)s.answers[q.id]='Working for '+q.id;
+  const ids=s.questions.map(q=>q.id);
+  assert.deepEqual(validateBackup(clone(s)).session.questions.map(q=>q.id),ids);
+  const b=backup();b.history=[finishSession(s,1100000)];
+  const restored=validateBackup(clone(b)).history[0];
+  assert.deepEqual(restored.questions.map(q=>q.id),ids);
+  assert.deepEqual(restored.answers,s.answers);
+ }
+ const s=active();s.questions[0].id='a2–a3 ';assert.throws(()=>validateBackup(s));
+});
 test('rejects unsafe draft maps and strips nested unknown metadata',()=>{
  const b=backup();b.proofDrafts=JSON.parse('{"__proto__":"bad"}');assert.throws(()=>validateBackup(b));
  const s=active();s.questions[0].unsafe={script:'evil'};const v=validateBackup(s);assert.equal(v.session.questions[0].unsafe,undefined);

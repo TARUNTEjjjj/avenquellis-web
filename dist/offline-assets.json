@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "version": "67b9f8946caaaee33d4c0474",
-  "totalBytes": 722220,
-  "assetCount": 40,
+  "version": "1c3b93a5c2c848ebe483f91c",
+  "totalBytes": 726415,
+  "assetCount": 41,
   "assets": [
     {
       "url": "app.js",
-      "bytes": 67298,
-      "sha256": "cd309dfbb4184ca52907ba41a06077471488e64abb4e65fb8446ec9a35720c48"
+      "bytes": 68279,
+      "sha256": "d1c6f2eb8e9dfa94224f97850de66ce4eb928eef14eda9afbd097cc24941646d"
     },
     {
       "url": "archive.json",
@@ -16,8 +16,8 @@
     },
     {
       "url": "backend.js",
-      "bytes": 2571,
-      "sha256": "b17bbded32ef8483999e6617c7a61eeaf21ab782dac9ba259688644c3423dd23"
+      "bytes": 2806,
+      "sha256": "ea17c441606a6656976c92f5e716966730c360ef7c27e7b1623b372bf69e96eb"
     },
     {
       "url": "benchmark-report.js",
@@ -26,8 +26,8 @@
     },
     {
       "url": "certificate-ui.js",
-      "bytes": 6463,
-      "sha256": "576e3ebd4c9796a16753395e2048122bbd4cb1aafefb3900a46eb3cca73db917"
+      "bytes": 7107,
+      "sha256": "23c1574e57bb03c3e92c21c1195fd9b208ea9552159775940e7767a3edf7703c"
     },
     {
       "url": "handwriting.css",
@@ -47,7 +47,7 @@
     {
       "url": "index.html",
       "bytes": 4497,
-      "sha256": "fd92f8f6b69d01f1cdd19b774cd87c893c5367f2e0a5cb169e3775906274f515"
+      "sha256": "2fae4a5d2a9f93aed8c42ec85238aa062400a88435ed4614792763d0d8dab2c0"
     },
     {
       "url": "lib/advanced-templates.js",
@@ -66,8 +66,8 @@
     },
     {
       "url": "lib/backup.js",
-      "bytes": 16438,
-      "sha256": "24dfdf5b3860ed236f991b6e9dff705e94e489d1b69de8b8a328cad537f74826"
+      "bytes": 16643,
+      "sha256": "45d1a4e34f2849725d561f209dbc98737bdb924301cee1c253671e74f194779f"
     },
     {
       "url": "lib/certificate.js",
@@ -141,13 +141,18 @@
     },
     {
       "url": "lib/startup.js",
-      "bytes": 1018,
-      "sha256": "1d85dd906e1009e898cb2614259b57d4bc3bc3bbe60064eb7535712a0bb5d468"
+      "bytes": 1512,
+      "sha256": "5f03f6455ce01a56919c6a509d1451e376d3ebdae43f7b5f59e96564e1e1a750"
     },
     {
       "url": "lib/vendor-provenance.json",
       "bytes": 9869,
       "sha256": "0aaded2562bd01f816af5810b0e2ffb436bd3aa1850f60f2c5a6fb79a8c3385d"
+    },
+    {
+      "url": "lib/workspace-storage.js",
+      "bytes": 1337,
+      "sha256": "0c1ae24a77696728bf9a46733b59674bba63435836f4e7c1fd9ae08efcdf339d"
     },
     {
       "url": "manifest.webmanifest",
@@ -181,8 +186,8 @@
     },
     {
       "url": "model-review.js",
-      "bytes": 12076,
-      "sha256": "294294b674687160e43a33241077de0885166b888e1a23021a648ab5b66de293"
+      "bytes": 12375,
+      "sha256": "e874484f2920b25c318b4c1dd5b0338c2536d495ebc693fed77f8ff5b69a8aef"
     },
     {
       "url": "orbit.js",

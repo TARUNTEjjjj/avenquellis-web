@@ -1,6 +1,7 @@
-import { assessOnServer } from "./backend.js";
-import { assessNative } from "./lib/native-grader.js";
+import { assessForPractice } from "./backend.js";
+import { preloadNativeGrader } from "./lib/native-grader.js";
 import { certificateHelp } from "./lib/certificate.js";
+import { optionalResource } from "./lib/startup.js";
 
 const escape = (value) =>
   String(value ?? "").replace(
@@ -84,6 +85,19 @@ export function certificateResult(result) {
   </section>`;
 }
 
+/**
+ * Check with the C++ checker loaded in this browser, as Prepare review does. Being online
+ * does not mean the API is reachable (a static preview answers it with 405), so the hosted
+ * checker is only a fallback. A stalled checker download, which startup already stopped
+ * waiting for, gets a short wait before the hosted checker is used instead.
+ * Resolves to the certificate result, or null for prose.
+ */
+export async function checkCertificate(question, answer, loadLocal = preloadNativeGrader) {
+  const local = await optionalResource(loadLocal, 3000);
+  const assessment = await assessForPractice(question, answer, local);
+  return assessment?.lowerBoundPoints != null ? assessment : null;
+}
+
 /** Pass an onCheck callback only on practice pages. Timed sessions get insertion alone. */
 export function bindCertificateGuide(question, textarea, { onCheck } = {}) {
   if (!textarea) return;
@@ -107,9 +121,8 @@ export function bindCertificateGuide(question, textarea, { onCheck } = {}) {
     check.onclick = async () => {
       const answer=textarea.value;check.disabled=true;
       try {
-        const assessment=await (navigator.onLine?assessOnServer(question,answer):assessNative(question,answer));
+        const result=await checkCertificate(question,answer);
         if(!guide.isConnected || textarea.value!==answer)return;
-        const result=assessment?.lowerBoundPoints!=null?assessment:null;
         output.innerHTML = certificateResult(result);
         onCheck(result);
       } catch {

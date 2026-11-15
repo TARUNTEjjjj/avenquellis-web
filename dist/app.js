@@ -19,6 +19,7 @@ import {
   configureProofChecker,
 } from "./lib/session.js";
 import { validateBackup } from "./lib/backup.js";
+import { saveWorkspace } from "./lib/workspace-storage.js";
 import { mountOrbit, stopOrbit } from "./orbit.js";
 import { mathLabView, bindMathLab } from "./math-lab.js";
 import { libraryView, bindLibrary } from "./question-library.js";
@@ -26,13 +27,19 @@ import { auditArithmetic } from "./lib/arithmetic-audit.js";
 import { canApplyAppUpdate } from "./lib/app-update-guard.js";
 import { compareExactLiterals } from "./lib/exact-rational.js";
 import { summarizeProgress } from "./lib/progress.js";
-import { loadWorkspaceResources } from "./lib/startup.js";
+import { loadWorkspaceResources, bufferEvents } from "./lib/startup.js";
 import {
   certificateGuide,
   bindCertificateGuide,
   certificateExamples,
   certificateResult,
 } from "./certificate-ui.js";
+// register-offline.js reports on window load, which does not wait for the top-level
+// await below. Hold its notices until the workspace can show them.
+const offlineNotices = bufferEvents(window, [
+  "avenquellis:offline-ready",
+  "avenquellis:offline-update-ready",
+]);
 // Load independent optional resources together. Slow requests must not hide the
 // workspace indefinitely; existing literal, hosted-checker and catalog fallbacks remain usable.
 window.appUpdateCanReload = () => false;
@@ -158,23 +165,32 @@ const draftSlot = () =>
     : proofQuestion().id;
 function persist() {
   try {
-    localStorage.setItem(
-      KEY,
-      JSON.stringify({
-        history: history.slice(0, 100),
-        reviews: reviews.slice(0, 100),
-        session,
-        proofDraft,
-        proofId,
-        paused,
-        reviewQuestion,
-        proofDrafts,
-        proofAttemptId,
-        reviewAttemptId,
-        bookmarks,
-      }),
-    );
+    const recent = history.slice(0, 100);
+    const kept = saveWorkspace(localStorage, KEY, {
+      history: recent,
+      reviews: reviews.slice(0, 100),
+      session,
+      proofDraft,
+      proofId,
+      paused,
+      reviewQuestion,
+      proofDrafts,
+      proofAttemptId,
+      reviewAttemptId,
+      bookmarks,
+    });
     storageOK = true;
+    if (kept < recent.length) {
+      // Storage was full, so the oldest completed sessions made room for current work.
+      // Show this after any message from the action that saved, which would replace it.
+      const removed = recent.length - kept;
+      history = history.slice(0, kept);
+      setTimeout(() =>
+        toast(
+          `Browser storage is full, so ${removed === 1 ? "the oldest completed session was" : `the ${removed} oldest completed sessions were`} removed from this device to make room.`,
+        ),
+      );
+    }
   } catch {
     storageOK = false;
   }
@@ -1054,6 +1070,8 @@ function bindReview() {
 }
 async function importBackup(e) {
   const file = e.target.files[0];
+  // Clear the choice so that choosing the same file again, after Cancel or a rejected file, is noticed.
+  e.target.value = "";
   if (!file) return;
   try {
     if (file.size > 10000000) throw Error("Backup exceeds 10 MB.");
@@ -1160,7 +1178,11 @@ render();
 window.appUpdateCanReload = () => canApplyAppUpdate({ready: true, storageOK,
   session, completingSession, page});
 
-window.addEventListener("avenquellis:offline-ready", () => {
+offlineNotices.deliver((event) => {
+  if (event.type === "avenquellis:offline-update-ready") {
+    toast(event.detail.message);
+    return;
+  }
   const status = document.querySelector("#offline-status");
   if (status) {
     status.textContent = "Ready offline · source PDFs need internet";
@@ -1168,6 +1190,3 @@ window.addEventListener("avenquellis:offline-ready", () => {
       "The app and exact C++ engine are saved on this device. Browser storage may be cleared by your browser.";
   }
 });
-window.addEventListener("avenquellis:offline-update-ready", (event) =>
-  toast(event.detail.message),
-);
