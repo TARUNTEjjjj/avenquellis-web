@@ -25,6 +25,7 @@ import { mathLabView, bindMathLab } from "./math-lab.js";
 import { libraryView, bindLibrary } from "./question-library.js";
 import { auditArithmetic } from "./lib/arithmetic-audit.js";
 import { canApplyAppUpdate } from "./lib/app-update-guard.js";
+import { retryInterrupted } from "./lib/interrupted-check.js";
 import { compareExactLiterals } from "./lib/exact-rational.js";
 import { summarizeProgress } from "./lib/progress.js";
 import { loadWorkspaceResources, bufferEvents } from "./lib/startup.js";
@@ -548,12 +549,15 @@ async function complete() {
     main.replaceChildren(Object.assign(document.createElement("p"),{textContent:"Checking proofs and saving your attempt…"}));
   }
   const assessments=new Map();
+  // A reload cancels the hosted check. Only a page that stays open may give up on the checker;
+  // otherwise the page being unloaded would save this attempt as finished and unchecked.
+  const hostedCheck = retryInterrupted();
   try {
     const proofs=submitted.questions.filter(q=>q.type==="proof" && submitted.answers[q.id]?.trim());
     for (let offset = 0; offset < proofs.length; offset += 2) {
       await Promise.all(proofs.slice(offset, offset + 2).map(async question => {
         const answer = submitted.answers[question.id];
-        try { assessments.set(question.id, await assessForPractice(question, answer, nativeGrader)); }
+        try { assessments.set(question.id, await hostedCheck(() => assessForPractice(question, answer, nativeGrader))); }
         catch { assessments.set(question.id, nativeCertificate(question, answer)); }
       }));
     }
