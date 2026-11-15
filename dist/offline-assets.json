@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "version": "1c3b93a5c2c848ebe483f91c",
-  "totalBytes": 726415,
-  "assetCount": 41,
+  "version": "ff14f6a356578d643852f0ca",
+  "totalBytes": 728138,
+  "assetCount": 42,
   "assets": [
     {
       "url": "app.js",
-      "bytes": 68279,
-      "sha256": "d1c6f2eb8e9dfa94224f97850de66ce4eb928eef14eda9afbd097cc24941646d"
+      "bytes": 68589,
+      "sha256": "64e3024fd80bd3446fd55bc1d0e6add906213e95fd78b4839f0202d330634d99"
     },
     {
       "url": "archive.json",
@@ -47,7 +47,7 @@
     {
       "url": "index.html",
       "bytes": 4497,
-      "sha256": "2fae4a5d2a9f93aed8c42ec85238aa062400a88435ed4614792763d0d8dab2c0"
+      "sha256": "619899a3f1c3a58d2e6688dbd10ad53274c286423a2d0b199d0ea57d17cae910"
     },
     {
       "url": "lib/advanced-templates.js",
@@ -88,6 +88,11 @@
       "url": "lib/handwriting-image.js",
       "bytes": 4703,
       "sha256": "3ecc29ed40e63f8cecc5df8c60fc50d77425ab8ea0c8a2462cad391b5e3b1e8c"
+    },
+    {
+      "url": "lib/interrupted-check.js",
+      "bytes": 1413,
+      "sha256": "95c13d66ce5b1cd491ace81e07cb0fd587874bf909989aca836cc89cf321e24d"
     },
     {
       "url": "lib/native-consensus.js",

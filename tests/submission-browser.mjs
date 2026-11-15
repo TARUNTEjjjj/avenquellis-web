@@ -1,4 +1,4 @@
-/** Optional regression check for navigation and reload while a submission is being assessed. */
+/** Regression check, run in CI, for navigation, reload and a dropped connection while a submission is being assessed. */
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {createStaticServer} from '../scripts/serve.mjs';
@@ -86,9 +86,67 @@ async function exercisePendingSubmission(restoreAnotherDraft) {
   console.log('Submission survived navigation and reload with one saved attempt and its original answer and timestamp.');
   await context.close();
 }
+// A dropped connection fails like the request a reload cancels, but this page stays open and must ask again.
+async function exerciseLostConnection(recovers) {
+  const context = await browser.newContext({serviceWorkers:'block'});
+  const page = await context.newPage();
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.route('**/lib/native-grade/*.wasm', route => route.abort());
+  await page.route('**/api/generate', route => route.fulfill({json:{
+    engine:'cpp-wasm', result:generateMock({exam:'RMO', count:6, seed:'submission-regression'})
+  }}));
+  await page.route('**/api/grade-status', route => route.fulfill({json:{available:false}}));
+  let requests = 0, markRetried;
+  const retried = new Promise(resolve => {markRetried = resolve;});
+  const held = new Promise(resolve => {release = resolve;});
+  await page.route('**/api/assess', async route => {
+    if (++requests === 1 || !recovers) return route.abort('failed');
+    markRetried();
+    await held;
+    await route.fulfill({json:{questionId:route.request().postDataJSON().questionId, status:'incomplete_certificate',
+      complete:false, score:null, lowerBoundPoints:4, maxMarks:10, criteria:[], feedback:[]}});
+  });
+  await page.goto(origin + '/#generator');
+  await page.locator('#gen-exam').selectOption('RMO');
+  await page.locator('#assemble').click();
+  await page.locator('#start-generated-mock').click();
+  await page.locator('#session-answer').fill('My submitted proof.');
+  await page.locator('#submit-session').click();
+  await page.locator('#confirm-finish').click();
+  if (recovers) {
+    // Until the second request is answered the attempt must still be the pending submission.
+    await Promise.race([retried, page.locator('.result-number').waitFor().catch(() => {})]);
+    const pending = await page.evaluate(() => JSON.parse(localStorage.getItem('avenquellis.workspace.v1')));
+    assert(Number.isSafeInteger(pending.session?.submittedAt), 'The attempt was saved as finished without asking the checker again.');
+    assert.equal(pending.history.length, 0);
+    release();
+  }
+  await page.locator('.result-number').waitFor();
+  const state = await page.evaluate(() => JSON.parse(localStorage.getItem('avenquellis.workspace.v1')));
+  assert.equal(state.session, null);
+  assert.equal(state.history.length, 1);
+  const proof = state.history[0].results[0];
+  assert.equal(proof.answer, 'My submitted proof.');
+  if (recovers) {
+    assert.equal(requests, 2);
+    assert.equal(proof.certificate.lowerBoundPoints, 4);
+  } else {
+    assert.ok(requests > 1, 'An unreachable checker must be asked again before the attempt is saved unchecked.');
+    assert.equal(proof.status, 'needs_review');
+    assert.equal(proof.certificate, undefined);
+  }
+  assert.deepEqual(errors, []);
+  await context.close();
+  console.log(recovers
+    ? 'A check cut off by a dropped connection stayed pending and was answered on the next try.'
+    : 'A checker that stayed out of reach did not hold the attempt back: it was saved for review.');
+}
 try {
   await exercisePendingSubmission(false);
   await exercisePendingSubmission(true);
+  await exerciseLostConnection(true);
+  await exerciseLostConnection(false);
 } finally {
   release?.();
   await browser.close();
