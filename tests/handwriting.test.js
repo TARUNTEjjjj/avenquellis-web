@@ -57,11 +57,37 @@ test('denies disabled, cross-origin, malformed, oversized and arbitrary requests
   assert.equal((await handler({request:post(huge),env})).status,413);assert.equal(calls,0);
 });
 test('timeouts, truncated output, refusals and provider errors return bounded safe messages',async()=>{
-  for(const [reply,status]of [[{choices:[{finish_reason:'length',message:{content:'partial'}}]},502],[{response:'<think>unclosed'},502],[{response:''},502],[{choices:[{finish_reason:'stop',message:{content:'Not a transcription',refusal:'refused'}}]},502],[new Error('INTERNAL_SECRET_123'),503]]){
+  for(const [reply,status]of [[{choices:[{finish_reason:'length',message:{content:'partial'}}]},502],[{response:'<think>unclosed'},502],[{response:''},502],[{choices:[{finish_reason:'stop',message:{content:'Not a transcription',refusal:'refused'}}]},502],[{response:'Not a transcription',refusal:'refused',finish_reason:'stop'},502],[new Error('INTERNAL_SECRET_123'),503]]){
     const handle=createTranscriptionHandler();const resp=await handle({request:post(),env:enabled(async()=>{if(reply instanceof Error)throw reply;return reply;})});assert.equal(resp.status,status);assert.ok(!(await resp.text()).includes('INTERNAL_SECRET_123'));
   }
   let release;const pending=new Promise(resolve=>{release=resolve;});const timed=createTranscriptionHandler({timeoutMs:5});
   assert.equal((await timed({request:post(),env:enabled(()=>pending)})).status,504);release({response:'eventually'});
+});
+test('already-aborted photos are cancelled without inference or a cooldown',{timeout:1000},async()=>{
+  let cancelled=false,calls=0;const controller=new AbortController();
+  const body=new ReadableStream({start(c){c.enqueue(photo);c.close();},cancel(){cancelled=true;return new Promise(()=>{});}});
+  const request=new Request(origin+'/api/transcribe',{method:'POST',body,duplex:'half',signal:controller.signal,headers:{'content-type':'image/jpeg',origin,'cf-connecting-ip':ip}});
+  controller.abort(new Error('private upload detail'));
+  const handler=createTranscriptionHandler(),env=enabled(async()=>{calls++;return {response:'n is even'};});
+  const response=await handler({request,env});
+  assert.equal(response.status,400);assert.deepEqual(await response.json(),{error:'The photo upload was stopped. Your answer was not changed.'});
+  assert.equal(cancelled,true);assert.equal(body.locked,false);assert.equal(calls,0);
+  assert.equal((await handler({request:post(),env})).status,200);assert.equal(calls,1);
+});
+test('aborting a pending photo promptly frees its upload slot even when cleanup never settles',{timeout:1000},async()=>{
+  let cancelled=false,calls=0;const controller=new AbortController();
+  const body=new ReadableStream({start(c){c.enqueue(photo.subarray(0,2));},cancel(){cancelled=true;return new Promise(()=>{});}});
+  const request=new Request(origin+'/api/transcribe',{method:'POST',body,duplex:'half',signal:controller.signal,headers:{'content-type':'image/jpeg',origin,'cf-connecting-ip':ip}});
+  const handler=createTranscriptionHandler({uploadMs:100}),env=enabled(async()=>{calls++;return {response:'n is even'};});
+  const pending=handler({request,env});await Promise.resolve();controller.abort(new Error('private upload detail'));
+  const response=await pending;
+  assert.equal(response.status,400);assert.deepEqual(await response.json(),{error:'The photo upload was stopped. Your answer was not changed.'});
+  assert.equal(cancelled,true);assert.equal(body.locked,false);assert.equal(calls,0);
+  assert.equal((await handler({request:post(),env})).status,200);assert.equal(calls,1);
+});
+test('a normal top-level transcription with no refusal remains accepted',async()=>{
+  const response=await createTranscriptionHandler()({request:post(),env:enabled(async()=>({response:'n is even',refusal:null,finish_reason:'stop'}))});
+  assert.equal(response.status,200);assert.equal((await response.json()).text,'n is even');
 });
 test('at most two simultaneous native inferences are admitted in an isolate',async()=>{
   let calls=0,finish;const waiting=new Promise(resolve=>{finish=resolve;});const env=enabled(()=>{calls++;return waiting;});const handler=createTranscriptionHandler();

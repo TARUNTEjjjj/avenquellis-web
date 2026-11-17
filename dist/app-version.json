@@ -1,17 +1,17 @@
 {
   "schemaVersion": 1,
   "project": "avenquellis-web",
-  "version": "340e41a5b5416d62c99415498463c0bf6207dc326276e756e48a3f254e2bcb9a",
+  "version": "eb2015fe5b20ed733341e50c80a32e13bcdfa5d843d08626877f03891dfe0189",
   "workers": [
     {
       "scope": "/",
       "script": "/sw.js",
-      "version": "340e41a5b5416d62c99415498463c0bf6207dc326276e756e48a3f254e2bcb9a"
+      "version": "eb2015fe5b20ed733341e50c80a32e13bcdfa5d843d08626877f03891dfe0189"
     },
     {
       "scope": "/resources/",
       "script": "/resources/offline-worker.js",
-      "version": "340e41a5b5416d62c99415498463c0bf6207dc326276e756e48a3f254e2bcb9a"
+      "version": "eb2015fe5b20ed733341e50c80a32e13bcdfa5d843d08626877f03891dfe0189"
     }
   ]
 }

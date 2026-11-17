@@ -12,18 +12,26 @@ function toBase64(data) {
 }
 // A photo still arriving at the deadline is a slow connection, not an unreadable image.
 class UploadTimeout extends Error {}
+class UploadAborted extends Error {}
 async function readPhoto(request,uploadMs) {
+  if(request.signal.aborted){void request.body?.cancel().catch(()=>{});throw new UploadAborted();}
   const declared=request.headers.get('Content-Length');
   if(declared!==null && (!/^\d+$/.test(declared)||Number(declared)>limits.uploadBytes))throw new RangeError('Photo exceeds the upload size limit.');
   const reader=request.body?.getReader();if(!reader)throw new Error('Empty photo.');
-  const parts=[];let size=0,timer,expired=false;
-  const deadline=new Promise((_,reject)=>{timer=setTimeout(()=>{expired=true;reject(new UploadTimeout('Image upload timed out.'));void reader.cancel().catch(()=>{});},uploadMs);});
+  const parts=[];let size=0,timer,abort,expired=false;
+  const deadline=new Promise((_,reject)=>{
+    abort=()=>{reject(new UploadAborted());void reader.cancel().catch(()=>{});};
+    request.signal.addEventListener('abort',abort,{once:true});
+    if(request.signal.aborted)abort();
+    timer=setTimeout(()=>{expired=true;reject(new UploadTimeout('Image upload timed out.'));void reader.cancel().catch(()=>{});},uploadMs);
+  });
   try {
     for(;;){const {done,value}=await Promise.race([reader.read(),deadline]);if(done)break;size+=value.byteLength;
       if(size>limits.uploadBytes){void reader.cancel().catch(()=>{});throw new RangeError('Photo exceeds the upload size limit.');}parts.push(value);}
+    if(request.signal.aborted)throw new UploadAborted();
     if(expired)throw new UploadTimeout('Image upload timed out.');
     if(!size)throw new Error('Empty photo.');
-  }finally{clearTimeout(timer);reader.releaseLock();}
+  }finally{clearTimeout(timer);request.signal.removeEventListener('abort',abort);reader.releaseLock();}
   const bytes=new Uint8Array(size);let pos=0;for(const part of parts){bytes.set(part,pos);pos+=part.length;}
   const clean=inspectJpeg(bytes,true);
   if(Math.max(clean.width,clean.height)>limits.uploadEdge)throw new RangeError('Crop the page and resize the image first.');
@@ -31,6 +39,7 @@ async function readPhoto(request,uploadMs) {
 }
 function extractText(output) {
   const choice=output?.choices?.[0];
+  if(output?.refusal)throw new Error('incomplete');
   if(choice?.message?.refusal || (choice?.finish_reason && choice.finish_reason!=='stop'))throw new Error('incomplete');
   if(output?.finish_reason && output.finish_reason!=='stop')throw new Error('incomplete');
   let content=choice?.message?.content??output?.response;
@@ -65,9 +74,13 @@ export function createTranscriptionHandler({timeoutMs=45000,uploadMs=10000,now=D
     let photo;
     try{photo=await readPhoto(request,uploadMs);}
     catch(e){
+      if(e instanceof UploadAborted)return deny('The photo upload was stopped. Your answer was not changed.',400);
       if(e instanceof UploadTimeout)return deny('The photo took too long to upload. Check your connection, or crop the page so the photo is smaller, then try again.',408);
       return deny(e instanceof RangeError?'The image exceeds the allowed size or dimensions.':'The image could not be read. Choose a complete JPEG page.',e instanceof RangeError?413:400);
     }finally{if(uploading.get(ip)===upload)uploading.delete(ip);}
+    // Cancellation may arrive as the completed upload resolves. It must not start
+    // inference or consume the one-minute allowance before a photo is admitted.
+    if(request.signal.aborted)return deny('The photo upload was stopped. Your answer was not changed.',400);
     if((recent.get(ip)||0)>now())return deny('Wait a minute before transcribing another page.',429,60);
     if(active>=2)return deny('Two photos are being processed. Try again shortly.',429,15);
     recent.set(ip,now()+60000);
