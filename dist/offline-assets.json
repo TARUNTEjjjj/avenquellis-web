@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "version": "56a386a2e2b28402d21a655e",
+  "version": "ea4cfb93fb3a2c86f7d2ac14",
   "totalBytes": 774269,
   "assetCount": 43,
   "assets": [
@@ -47,7 +47,7 @@
     {
       "url": "index.html",
       "bytes": 4497,
-      "sha256": "f5d8eef8d3e2b110cdfdf7661b8ace8a498e4192fd472551e8754a5b8784a0cb"
+      "sha256": "dbf3403a90de8ad4d4dd3987aba525c519ea0399aeeab46be57ce576d1452f4c"
     },
     {
       "url": "lib/advanced-templates.js",
