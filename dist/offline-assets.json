@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "version": "f0600e45cf777b2dfd6eff7c",
+  "version": "1bfecc859103c5d3880fca71",
   "totalBytes": 774269,
   "assetCount": 43,
   "assets": [
@@ -47,7 +47,7 @@
     {
       "url": "index.html",
       "bytes": 4497,
-      "sha256": "763a48972c69f942eb7fc1f4b3785a8405256fb4e5f2627007e797f1f209c518"
+      "sha256": "10e26a300d18e1a1ba044bf781f43d2575b335d9d58db345ac542f516e200b3d"
     },
     {
       "url": "lib/advanced-templates.js",
@@ -152,7 +152,7 @@
     {
       "url": "lib/vendor-provenance.json",
       "bytes": 9869,
-      "sha256": "0aaded2562bd01f816af5810b0e2ffb436bd3aa1850f60f2c5a6fb79a8c3385d"
+      "sha256": "e9fffd3c3a7411827cf523e1cd580f192c7512e76cb5eb20cf1c7abf38ab2e45"
     },
     {
       "url": "lib/workspace-storage.js",

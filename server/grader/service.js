@@ -8,7 +8,8 @@ function tokenEqual(given,expected) {
   for (let i=0;i<Math.max(given.length,expected.length);i++) different|=(given.charCodeAt(i)||0) ^ (expected.charCodeAt(i)||0);
   return different === 0;
 }
-export async function readJson(request) {
+export async function readJson(request,{timeoutMs=10000}={}) {
+  if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 10 || timeoutMs > 60000) throw new RangeError('Request timeout must be an integer from 10 to 60000 milliseconds.');
   // Cleanup is best-effort: a slow or failed cancellation must not delay the
   // validation response or replace it with an implementation-specific error.
   const discardBody=()=>{void request.body?.cancel().catch(()=>{});};
@@ -17,9 +18,19 @@ export async function readJson(request) {
   const reader=request.body?.getReader();
   if (!reader) throw new TypeError('A JSON request body is required.');
   const decoder=new TextDecoder('utf-8',{fatal:true}); let bytes=0,text='';
-  try {
+  // A byte limit alone never completes a request whose sender stops uploading.
+  // Race the whole read against one deadline, even if stream cleanup hangs.
+  let timer,abort;
+  const interrupted=new Promise((resolve,reject)=>{
+    abort=()=>reject(Object.assign(new Error('Request body was interrupted.'),{status:400}));
+    timer=setTimeout(()=>reject(Object.assign(new Error('Request body deadline exceeded.'),{status:408})),timeoutMs);
+    if (request.signal.aborted) abort();
+    else request.signal.addEventListener('abort',abort,{once:true});
+  });
+  const read=async()=>{
     while (true) {
-      const {done,value}=await reader.read();if(done)break;
+      // Stream errors can contain transport details or private submitted text.
+      const {done,value}=await reader.read().catch(()=>{throw new TypeError('Request body could not be read.');});if(done)break;
       bytes+=value.byteLength;
       if (bytes > MAX_REQUEST_BYTES) throw Object.assign(new Error('Request too large.'),{status:413});
       try {text+=decoder.decode(value,{stream:true});}
@@ -31,10 +42,17 @@ export async function readJson(request) {
     catch {throw new TypeError('Malformed UTF-8 JSON request.');}
     if (!input || typeof input !== 'object' || Array.isArray(input)) throw new TypeError('A JSON object is required.');
     return input;
+  };
+  try {
+    return await Promise.race([interrupted,read()]);
   } catch(error) {
     void reader.cancel().catch(()=>{});
     throw error;
-  } finally {reader.releaseLock();}
+  } finally {
+    clearTimeout(timer);
+    request.signal.removeEventListener('abort',abort);
+    reader.releaseLock();
+  }
 }
 /** One handler instance maintains a small concurrency bound; public deployments require a secret. */
 export function createRequestHandler({env={},publicDeployment=true,fetchImpl=globalThis.fetch}={}) {

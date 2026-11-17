@@ -68,7 +68,7 @@
       "destination": "server/grader/service.js",
       "packageName": "@avenquellis/proof-grader",
       "version": "0.8.0",
-      "sha256": "38e6e7064678be8808f62c8c9d737fffeef4d27b73d0e92431e0be8ea46685c7"
+      "sha256": "99f6510a526c7c3eb70abec55e6da98d007dd57189bf1ce48ded9fc7e02738e3"
     },
     {
       "repository": "avenquellis-proof-grader",
