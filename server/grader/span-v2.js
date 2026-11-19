@@ -1,4 +1,6 @@
 /** Hosted V2 only. Convert model-selected source indexes to exact excerpts before shared validation. */
+import {isWellFormedText} from './index.js';
+
 export const SPAN_REVIEW_VERSION = 'noether-workers-ai-span-review-2026-11-03-v2';
 const TEXT_LIMIT = 280;
 
@@ -74,7 +76,7 @@ export function resolveSpanReview(question, submission, output) {
   for (const criterion of question.rubric) {
     const row = output[criterion.id];
     if (!sameKeys(row,['points','spans','reason']) || !Array.isArray(row.spans) || typeof row.reason !== 'string' ||
-        !row.reason.trim() || row.reason.length > 1200) fail('invalid_schema','A rubric row has missing or invalid fields.');
+        !row.reason.trim() || row.reason.length > 1200 || !isWellFormedText(row.reason)) fail('invalid_schema','A rubric row has missing or invalid fields.');
     if (!Number.isSafeInteger(row.points) || row.points < 0 || row.points > criterion.points) {
       fail('invalid_marks','A criterion score falls outside its rubric bounds.');
     }

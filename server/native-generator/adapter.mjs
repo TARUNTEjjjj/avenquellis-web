@@ -3,7 +3,7 @@ const encoder = new TextEncoder();
 const decoder = new TextDecoder('utf-8', {fatal:true});
 const modes = {question:1,mock:2,chapter:3};
 const optionKeys = new Set(['mode','topic','exam','difficulty','type','seed','count']);
-const refKeys = new Set(['id','templateId','seed','exam','difficulty']);
+const refKeys = new Set(['id','templateId','seed','exam','difficulty','version']);
 const record = value => value !== null && typeof value === 'object' && !Array.isArray(value) &&
   [null,Object.prototype].includes(Object.getPrototypeOf(value));
 const fail = message => { throw Object.assign(new Error(message),{code:'invalid_input'}); };
@@ -70,7 +70,8 @@ export function createNativeGenerator(module) {
     },
     resolve(ref) {
       if(!record(ref)||Object.keys(ref).some(k=>!refKeys.has(k))||typeof ref.id!=='string'||ref.id.length>160)return null;
-      const fields=[ref.id,ref.templateId,ref.seed,ref.exam,ref.difficulty];
+      // The content version follows as a sixth field only when the reference has one.
+      const fields=[ref.id,ref.templateId,ref.seed,ref.exam,ref.difficulty,...(ref.version===undefined?[]:[ref.version])];
       if(fields.some(s=>s!==undefined && (typeof s!=='string'||s.length>256||!wellFormed(s))))return null;
       return invoke(4,fields);
     },

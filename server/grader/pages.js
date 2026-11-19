@@ -1,5 +1,5 @@
 /** Same-origin Cloudflare Pages Function entry for a host-managed practice catalog and quota. */
-import {boundedInput, evaluateProof, readEvaluatorConfig, EvaluatorError} from './provider.js';
+import {boundedInput, evaluateProof, readEvaluatorConfig, reserveBindingSlots, EvaluatorError} from './provider.js';
 import {makeSpanReviewRequest} from './span-v2.js';
 import {isWellFormedText} from './index.js';
 import {readJson} from './service.js';
@@ -68,6 +68,10 @@ export function createPagesReviewHandler({resolveQuestion, admit, loadGrader, as
       const prepared = boundedInput({question, answer: input.answer});
       if (config.protocol === 'span-v2') makeSpanReviewRequest(prepared.question, prepared.answer, 0, config.maxTokens);
       if (active >= 2) return json({error: 'Two reviews are already running in this instance.'}, 429);
+      // Calls from earlier reviews can hold the binding past their deadline, so both passes are
+      // reserved here, before admission, and held until the evaluation starts them.
+      const reservation = reserveBindingSlots(config);
+      if (!reservation) return json({error: 'The evaluator is busy. Try again later.', code: 'provider_busy'}, 429);
       active++;
       try {
         let admitted;
@@ -75,12 +79,13 @@ export function createPagesReviewHandler({resolveQuestion, admit, loadGrader, as
         catch { return json({error: 'The review admission service is unavailable.'}, 503); }
         if (admitted instanceof Response) return admitted;
         if (admitted !== true) return json({error: 'This review was not admitted.'}, 429);
-        const result = await evaluateProof({question, answer: input.answer}, {env: configEnv});
+        const result = await evaluateProof({question, answer: input.answer}, {env: configEnv, reservation});
         if (!grader) return json(result);
         try { return json(applyNativeConsensus(question,input.answer,result,grader)); }
         catch { return json({error:'The native proof review could not be validated.',code:'native_validation_failed'},503); }
       } finally {
         active--;
+        reservation.release();
       }
     } catch (error) {
       if (error instanceof EvaluatorError) return json({error: error.message, code: error.code}, 503);

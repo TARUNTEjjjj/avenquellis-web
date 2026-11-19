@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "version": "0cbb338510c011a1930da320",
-  "totalBytes": 774269,
+  "version": "d508cb9572b633220c280ad3",
+  "totalBytes": 782759,
   "assetCount": 43,
   "assets": [
     {
@@ -47,12 +47,12 @@
     {
       "url": "index.html",
       "bytes": 4497,
-      "sha256": "8f97fc9d9b699aa6beb8166445d34ca78c8ba059e87c5cefbb52e6f2c81853e1"
+      "sha256": "ace3b87da2f60a62258806a4c3a174592c272ba5e43615613a23f98df7dc2587"
     },
     {
       "url": "lib/advanced-templates.js",
-      "bytes": 32978,
-      "sha256": "43358ea316f24fd0ae56fde2687e8f3b1d706f04a689f7a3caa6601606290ed8"
+      "bytes": 33265,
+      "sha256": "9b672233c69d0e513874d1982cd8104f31a648a62f8f527234ee36ba2534fc13"
     },
     {
       "url": "lib/app-update-guard.js",
@@ -81,8 +81,8 @@
     },
     {
       "url": "lib/grader.js",
-      "bytes": 9944,
-      "sha256": "3de2590a69027bf07a9a1c65cdf944761870ef432d99b180024f56b332529c15"
+      "bytes": 11547,
+      "sha256": "faa34e17d96373de7d5fb9c2887ad37e564ce8e240e45d6627244322110fbce7"
     },
     {
       "url": "lib/handwriting-image.js",
@@ -102,17 +102,17 @@
     {
       "url": "lib/native-grade/avenquellis-grader-runtime.js",
       "bytes": 16405,
-      "sha256": "286587de5217e5375959b08bcf379a21958c3ee7cf9098c53e906481bcde6722"
+      "sha256": "1b2096fb65bbe4b50085d1d399bda54c4a7a8b31aef9c522221d08e366c14a85"
     },
     {
       "url": "lib/native-grade/avenquellis-grader-runtime.wasm",
-      "bytes": 298268,
-      "sha256": "1d24f60527caf49eb020a23008d341de02b1409dea8d0ec9d1629bf324d78f00"
+      "bytes": 298559,
+      "sha256": "274d216f4b58cb1e6c49e418b637c8bbd388e2348fd7663b585d375a70378e2e"
     },
     {
       "url": "lib/native-grade/build-info.json",
       "bytes": 1845,
-      "sha256": "5c286cdd8667717d64941ef7c81fbda9be4ce892208bb16aed1893dbf5dbd035"
+      "sha256": "692829617c46c000834fea46748e7e51328d97d279193eed3ca828c7c6ae20e8"
     },
     {
       "url": "lib/native-grade/native-grader.js",
@@ -136,8 +136,8 @@
     },
     {
       "url": "lib/questions.js",
-      "bytes": 27757,
-      "sha256": "9afaff9741d78f8f2908ea073e0d28b3dffd61ada499e13f9b5aaa43b44fd037"
+      "bytes": 33033,
+      "sha256": "71a744796a66b48b7d4c7c75021a5bcb503b427c40d2a3e922697b88262b794d"
     },
     {
       "url": "lib/session.js",
@@ -151,8 +151,8 @@
     },
     {
       "url": "lib/vendor-provenance.json",
-      "bytes": 9869,
-      "sha256": "e9fffd3c3a7411827cf523e1cd580f192c7512e76cb5eb20cf1c7abf38ab2e45"
+      "bytes": 9803,
+      "sha256": "e16cab4ac79af5bfbfa4b06f2afa8b3d66f26b3bba5379d275681f0583ed2f8c"
     },
     {
       "url": "lib/workspace-storage.js",
@@ -181,18 +181,18 @@
     },
     {
       "url": "math/axiom-math-runtime.wasm",
-      "bytes": 43058,
-      "sha256": "00429e69e3cdcdda5a9b6cf86acc912fdb2b6f7c4b0347a1168641f1a758f3e5"
+      "bytes": 44157,
+      "sha256": "78789360c403e2a157585b2ce80496eeeeb17e2020c0ee3b276de34d75d69e71"
     },
     {
       "url": "math/build-info.json",
       "bytes": 2201,
-      "sha256": "a89f1d56e5baad99f345df19bd90e43e60079e3a0fe85ebe889796b03f1e16ac"
+      "sha256": "0d11f097f16e23d205eb473838e4236ce18bf5961161d17695a0b2dd47e4577c"
     },
     {
       "url": "math/exact-math.js",
       "bytes": 2607,
-      "sha256": "aca510769378e3867ddb161c9ab6df4eb72de455c838473847b6e209c3c319fe"
+      "sha256": "22aafe3f49c0fc519205e2d3bae4b2fcb37604eccaec828bea5b18b4336644c9"
     },
     {
       "url": "model-review.js",

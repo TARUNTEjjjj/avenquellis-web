@@ -1,6 +1,6 @@
 {
   "source": "https://github.com/TARUNTEjjjj/axiom-math",
-  "commit": "ae5b38257b7825db603ecd5c7b28ade32c1a613f",
+  "commit": "f922f9ce6bcc21d6f557ac8e644b9cb91c6d325c",
   "license": "MIT",
   "toolchain": "Emscripten 6.0.13",
   "target": "wasm32-unknown-emscripten",
@@ -50,8 +50,8 @@
       "sha256": "b1666eb486d938084b14d424be4facf0c4c2b943162a66ff306eb04320927e2b"
     },
     "axiom-math-runtime.wasm": {
-      "bytes": 43058,
-      "sha256": "00429e69e3cdcdda5a9b6cf86acc912fdb2b6f7c4b0347a1168641f1a758f3e5"
+      "bytes": 44157,
+      "sha256": "78789360c403e2a157585b2ce80496eeeeb17e2020c0ee3b276de34d75d69e71"
     }
   }
 }

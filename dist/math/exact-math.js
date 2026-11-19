@@ -1,7 +1,7 @@
 import createAxiomMath from './axiom-math-runtime.js';
 
 export const exactMathInfo=Object.freeze({
-  name:'AxiomMath',version:'ae5b38257b7825db603ecd5c7b28ade32c1a613f',
+  name:'AxiomMath',version:'f922f9ce6bcc21d6f557ac8e644b9cb91c6d325c',
   implementation:'C++20 compiled to WebAssembly',
   source:'https://github.com/TARUNTEjjjj/axiom-math',
   limits:Object.freeze({expressionBytes:4096,tokens:1024,nesting:64,integerDigits:19,fractionalDigits:18}),

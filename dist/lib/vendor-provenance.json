@@ -1,9 +1,9 @@
 {
   "formatVersion": 3,
   "description": "Byte-for-byte copies from the private sibling repositories; compiled artifacts verified against build-info.json. Run npm run sync:engines after engine changes.",
-  "engineBuildCommit": "00a970492492c054776a206548db3a3a90c77de6",
-  "generatorBuildCommit": "783719e6134d71a77d49f7a2f98cb7988a614e04",
-  "graderBuildCommit": "fc98be4841d5ce1d5b6354bd0bfb6b8ae5176a58",
+  "engineBuildCommit": "9bb5dcf3f26df3a78500abca5bdfa1f6b290df22",
+  "generatorBuildCommit": "d8cbddf82742ccbe83b8bd17710350054c8bfaa3",
+  "graderBuildCommit": "ddd2632c1ae6851bce69c7d89d2088d7be65d317",
   "components": [
     {
       "repository": "avenquellis-question-engine",
@@ -11,7 +11,7 @@
       "destination": "dist/lib/advanced-templates.js",
       "packageName": "@avenquellis/question-engine",
       "version": "0.1.0",
-      "sha256": "43358ea316f24fd0ae56fde2687e8f3b1d706f04a689f7a3caa6601606290ed8"
+      "sha256": "9b672233c69d0e513874d1982cd8104f31a648a62f8f527234ee36ba2534fc13"
     },
     {
       "repository": "avenquellis-question-engine",
@@ -19,7 +19,7 @@
       "destination": "dist/lib/questions.js",
       "packageName": "@avenquellis/question-engine",
       "version": "0.1.0",
-      "sha256": "9afaff9741d78f8f2908ea073e0d28b3dffd61ada499e13f9b5aaa43b44fd037"
+      "sha256": "71a744796a66b48b7d4c7c75021a5bcb503b427c40d2a3e922697b88262b794d"
     },
     {
       "repository": "avenquellis-proof-grader",
@@ -27,7 +27,7 @@
       "destination": "dist/lib/grader.js",
       "packageName": "@avenquellis/proof-grader",
       "version": "0.8.0",
-      "sha256": "3de2590a69027bf07a9a1c65cdf944761870ef432d99b180024f56b332529c15"
+      "sha256": "faa34e17d96373de7d5fb9c2887ad37e564ce8e240e45d6627244322110fbce7"
     },
     {
       "repository": "avenquellis-proof-grader",
@@ -51,7 +51,7 @@
       "destination": "server/grader/index.js",
       "packageName": "@avenquellis/proof-grader",
       "version": "0.8.0",
-      "sha256": "3de2590a69027bf07a9a1c65cdf944761870ef432d99b180024f56b332529c15"
+      "sha256": "faa34e17d96373de7d5fb9c2887ad37e564ce8e240e45d6627244322110fbce7"
     },
     {
       "repository": "avenquellis-proof-grader",
@@ -59,8 +59,7 @@
       "destination": "server/grader/provider.js",
       "packageName": "@avenquellis/proof-grader",
       "version": "0.8.0",
-      "sha256": "c4a5efa51d74d659a559feefd19a723e2a7c69f11390014f3db2b377ac17a774",
-      "sourceCommit": "eea838db366b17137b57b9fcfdc0f3467aee5398"
+      "sha256": "9c6f2537c07ae0b1c128c2a7e49ca0bdbf8431a56c72cd957db926035d5148c0"
     },
     {
       "repository": "avenquellis-proof-grader",
@@ -76,7 +75,7 @@
       "destination": "server/grader/pages.js",
       "packageName": "@avenquellis/proof-grader",
       "version": "0.8.0",
-      "sha256": "f4c42d9d75395e29fcde634318ede2b19dcd90ef0ad27c58d59c471fa1b1b1ba"
+      "sha256": "61cb954e254d22e85fc37cbac8574d68535490ef2859445374e03435a334fbe8"
     },
     {
       "repository": "avenquellis-proof-grader",
@@ -84,7 +83,7 @@
       "destination": "server/grader/span-v2.js",
       "packageName": "@avenquellis/proof-grader",
       "version": "0.8.0",
-      "sha256": "b7c39c48f3d7d9156eb0cd784393e167cc12bc07515bf22fd4f15860551070ee"
+      "sha256": "504f6589869c474d02edd605d1555593eaa52613869216e3e28fb4171d81d8be"
     },
     {
       "repository": "avenquellis-proof-grader",
@@ -100,7 +99,7 @@
       "destination": "server/native-generator/adapter.mjs",
       "packageName": "@avenquellis/question-engine",
       "version": "0.1.0",
-      "sha256": "cd078b57ef622ffa4a4af115c79da5c8abfb5dd005b1f7918eb3748a5e4429d9"
+      "sha256": "332049130240ef3b1642176dce712a053abf61aaf9fd895c66e9b1304e4b7690"
     },
     {
       "repository": "avenquellis-question-engine",
@@ -108,7 +107,7 @@
       "destination": "server/native-generator/manifest.json",
       "packageName": "@avenquellis/question-engine",
       "version": "0.1.0",
-      "sha256": "450bef3b29080feb18c3d162114e88586809bce43067043d85b2838a8c0870c1"
+      "sha256": "fcfc3a0474e26ffc6cadf419f89be2acca21ff396646945048c3327ec0683258"
     },
     {
       "repository": "avenquellis-question-engine",
@@ -116,7 +115,7 @@
       "destination": "server/native-generator/avenquellis-questions.wasm",
       "packageName": "@avenquellis/question-engine",
       "version": "0.1.0",
-      "sha256": "669739ff7da9364aedd12c07926f6f2797d43afdf41a9a70d562153eee5846b9"
+      "sha256": "db4eb3c964c9d45a6d9256c9d74bb1be3f5514ec5fd8b379cd9721a2496691bb"
     },
     {
       "repository": "avenquellis-question-engine",
@@ -148,7 +147,7 @@
       "destination": "dist/lib/native-grade/avenquellis-grader-runtime.js",
       "packageName": "@avenquellis/proof-grader",
       "version": "0.8.0",
-      "sha256": "286587de5217e5375959b08bcf379a21958c3ee7cf9098c53e906481bcde6722"
+      "sha256": "1b2096fb65bbe4b50085d1d399bda54c4a7a8b31aef9c522221d08e366c14a85"
     },
     {
       "repository": "avenquellis-proof-grader",
@@ -156,7 +155,7 @@
       "destination": "dist/lib/native-grade/avenquellis-grader-runtime.wasm",
       "packageName": "@avenquellis/proof-grader",
       "version": "0.8.0",
-      "sha256": "1d24f60527caf49eb020a23008d341de02b1409dea8d0ec9d1629bf324d78f00"
+      "sha256": "274d216f4b58cb1e6c49e418b637c8bbd388e2348fd7663b585d375a70378e2e"
     },
     {
       "repository": "avenquellis-proof-grader",
@@ -164,7 +163,7 @@
       "destination": "dist/lib/native-grade/build-info.json",
       "packageName": "@avenquellis/proof-grader",
       "version": "0.8.0",
-      "sha256": "5c286cdd8667717d64941ef7c81fbda9be4ce892208bb16aed1893dbf5dbd035"
+      "sha256": "692829617c46c000834fea46748e7e51328d97d279193eed3ca828c7c6ae20e8"
     },
     {
       "repository": "avenquellis-proof-grader",
@@ -172,7 +171,7 @@
       "destination": "dist/lib/native-grade/source-commit.txt",
       "packageName": "@avenquellis/proof-grader",
       "version": "0.8.0",
-      "sha256": "3d1d3b14b859c13025d77f73a3b19c2cdeaf64d2662674a383dc096a419d2edd"
+      "sha256": "369e14c18781ab8a63aa3f331a91371f4d7b3e175639e625d4d64f916cc83a7d"
     },
     {
       "repository": "avenquellis-proof-grader",
@@ -188,7 +187,7 @@
       "destination": "dist/math/exact-math.js",
       "packageName": "@avenquellis/question-engine",
       "version": "0.1.0",
-      "sha256": "aca510769378e3867ddb161c9ab6df4eb72de455c838473847b6e209c3c319fe"
+      "sha256": "22aafe3f49c0fc519205e2d3bae4b2fcb37604eccaec828bea5b18b4336644c9"
     },
     {
       "repository": "avenquellis-question-engine",
@@ -204,7 +203,7 @@
       "destination": "dist/math/axiom-math-runtime.wasm",
       "packageName": "@avenquellis/question-engine",
       "version": "0.1.0",
-      "sha256": "00429e69e3cdcdda5a9b6cf86acc912fdb2b6f7c4b0347a1168641f1a758f3e5"
+      "sha256": "78789360c403e2a157585b2ce80496eeeeb17e2020c0ee3b276de34d75d69e71"
     },
     {
       "repository": "avenquellis-question-engine",
@@ -212,7 +211,7 @@
       "destination": "dist/math/build-info.json",
       "packageName": "@avenquellis/question-engine",
       "version": "0.1.0",
-      "sha256": "a89f1d56e5baad99f345df19bd90e43e60079e3a0fe85ebe889796b03f1e16ac"
+      "sha256": "0d11f097f16e23d205eb473838e4236ce18bf5961161d17695a0b2dd47e4577c"
     },
     {
       "repository": "avenquellis-question-engine",
@@ -220,7 +219,7 @@
       "destination": "dist/math/source-commit.txt",
       "packageName": "@avenquellis/question-engine",
       "version": "0.1.0",
-      "sha256": "f3db74bf9d5f3501edffb80c1c815cee67437f38a78712729906dae02338dcd8"
+      "sha256": "f7669db1c6f379393309892e3e5a9dbad7c38ceb580763e628d575b9ab2f0697"
     },
     {
       "repository": "avenquellis-question-engine",
