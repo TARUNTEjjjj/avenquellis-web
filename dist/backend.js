@@ -1,3 +1,4 @@
+import {questionReference} from './lib/question-reference.js';
 // The creation API is the C++ generator running in Cloudflare Pages Functions.
 export async function generateOnServer(mode, options, {signal} = {}) {
   const controller=new AbortController();
@@ -33,7 +34,7 @@ export async function generateOnServer(mode, options, {signal} = {}) {
 }
 
 export function proofRequest(question, answer) {
-  return {questionId:question.id,reference:{templateId:question.templateId,seed:question.generator?.seed,exam:question.exam,difficulty:question.requestedDifficulty},answer};
+  return {questionId:question.id,reference:questionReference(question),answer};
 }
 
 // Certificate preparation uses the same C++ checker on device and on the server.

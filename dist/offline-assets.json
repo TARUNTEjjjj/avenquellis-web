@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "version": "d508cb9572b633220c280ad3",
-  "totalBytes": 782759,
-  "assetCount": 43,
+  "version": "8ffaceb5f72de91ba29fd804",
+  "totalBytes": 784610,
+  "assetCount": 44,
   "assets": [
     {
       "url": "app.js",
@@ -16,8 +16,8 @@
     },
     {
       "url": "backend.js",
-      "bytes": 3247,
-      "sha256": "feb985cad068baae39ee6052b05d024b7900babdd9768d5051afb3177f98a0a8"
+      "bytes": 3216,
+      "sha256": "ba1d187057422ef6c40f3048266f931940aa03dcecde6706ec8f42b66984fc2e"
     },
     {
       "url": "benchmark-report.js",
@@ -47,7 +47,7 @@
     {
       "url": "index.html",
       "bytes": 4497,
-      "sha256": "ace3b87da2f60a62258806a4c3a174592c272ba5e43615613a23f98df7dc2587"
+      "sha256": "1d5a0772e10dd5501d55f9b99f208bd42f32ace96cc5979417c50d876b3e58c8"
     },
     {
       "url": "lib/advanced-templates.js",
@@ -135,6 +135,11 @@
       "sha256": "3a233cb90de3819fdc6ac90a8707476cfbc05c4e05801c37497f88584f0f7888"
     },
     {
+      "url": "lib/question-reference.js",
+      "bytes": 974,
+      "sha256": "44198f260821db6b3f81445fb709fb290aa60db9aa6b9f12c800013b3f6d3ebf"
+    },
+    {
       "url": "lib/questions.js",
       "bytes": 33033,
       "sha256": "71a744796a66b48b7d4c7c75021a5bcb503b427c40d2a3e922697b88262b794d"
@@ -171,8 +176,8 @@
     },
     {
       "url": "math-lab.js",
-      "bytes": 4833,
-      "sha256": "b64553c761c514e82d63ecfe2c3a1baaea8cec7d60ce5ad13b7077fb9b4da015"
+      "bytes": 5759,
+      "sha256": "83f20a2989e35123c1f2a6a729bafa89fa671ed367b878a765e1a64ff30e8786"
     },
     {
       "url": "math/axiom-math-runtime.js",
@@ -196,8 +201,8 @@
     },
     {
       "url": "model-review.js",
-      "bytes": 13436,
-      "sha256": "97f0ccdbfb3a39853f15f66b6881eb4d7304714b134addc33cac44808dcae5f1"
+      "bytes": 13418,
+      "sha256": "d888d4f2f4fb678c49d8fc4417035668618d72812506c089550871f309b2bde5"
     },
     {
       "url": "orbit.js",
