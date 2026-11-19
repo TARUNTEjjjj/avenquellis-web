@@ -14,9 +14,10 @@ jobs:
       - run: npm run build
       - run: git diff --exit-code -- dist/offline-assets.json dist/sw.js
       # Uses the runner's installed Chrome; playwright-core downloads no browser.
-      - name: Check pending submissions in Chrome
+      - name: Check pending submissions, saved references and arithmetic traces in Chrome
         run: |
           npm install --no-save playwright-core@1.62.1
           node tests/submission-browser.mjs
+          node tests/reference-trace-browser.mjs
         env:
           BROWSER_EXECUTABLE: /usr/bin/google-chrome

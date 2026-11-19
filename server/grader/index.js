@@ -1,8 +1,9 @@
 /** Browser-safe review core. This module never infers proof correctness from words. */
+// Every entry is frozen too, and each result gets its own copy, so editing one result's sources cannot change another's.
 export const gradingSources = Object.freeze([
   {id:'imo-coordination', title:'IMO General Regulations, §7: Coordination', url:'https://www.imo-official.org/regulations/', checked:'2026-11-03', adaptation:'Problem-specific schemes, independent review, documented resolution of disagreement.'},
   {id:'ukmt-olympiad-marking', title:'UKMT BMO1 2023 — Markers’ report, pp. 1–2', url:'https://ukmt.org.uk/wp-content/uploads/2023/12/BMO1-2023-Markers-Report-.pdf', checked:'2026-11-03', adaptation:'Assess the complete logical argument and viable strategy; credit meaningful progress under a problem-specific scheme.'}
-]);
+].map(source => Object.freeze(source)));
 
 export function validateQuestion(question) {
   if (!question || typeof question !== 'object' || typeof question.id !== 'string' || !question.id.trim()) throw new TypeError('A question with a nonempty id is required.');
@@ -54,7 +55,7 @@ export function assessProof({question, answer}) {
     submissionSpans:extractSpans(answer), feedback,
     reviewChecklist:['Evaluate the whole strategy before assigning points.', 'Verify each claimed deduction; examples alone may not prove a universal claim.', 'Accept valid alternative solutions; adapt the rubric explicitly when necessary.', 'Document gaps and meaningful partial progress.'],
     notice:'Mathematical correctness has not been evaluated. Marks require a reviewer; writing length and terminology do not earn points.',
-    sources:gradingSources
+    sources:gradingSources.map(source => ({...source}))
   };
 }
 
@@ -68,14 +69,27 @@ function validateScores(question, criterionScores) {
   }
 }
 
+// An RFC 3339 date-time with an explicit offset is unambiguous in every engine and time zone.
+// Date.parse alone is implementation-defined: V8 accepts 'Teacher 1' and rolls 2026-02-30 over to March.
+// The profile is stricter than RFC 3339: JavaScriptCore rejects a lowercase z and V8 a leap second (:60).
+const timestamp = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d{1,9})?(?:Z|[+-](\d{2}):(\d{2}))$/;
+function isTimestamp(value) {
+  const parts = typeof value === 'string' && timestamp.exec(value);
+  if (!parts) return false;
+  const [year, month, day, hour, minute, second, offsetHour, offsetMinute] = parts.slice(1).map(part => Number(part ?? 0));
+  const leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const days = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1];
+  return day >= 1 && day <= days && hour <= 23 && minute <= 59 && second <= 59 && offsetHour <= 23 && offsetMinute <= 59;
+}
+
 /** Record an explicit human decision. Caller must authenticate/authorize reviewers in production. */
 export function finalizeReview({question, criterionScores, reviewer, rationale, answer = '', reviewedAt = new Date().toISOString()}) {
   validateQuestion(question);
   validateAnswer(answer);
   validateScores(question, criterionScores);
-  if (typeof reviewer !== 'string' || !reviewer.trim() || reviewer.length > 200) throw new TypeError('A reviewer identity is required (maximum 200 characters).');
-  if (typeof rationale !== 'string' || !rationale.trim()) throw new TypeError('A mathematical rationale is required.');
-  if (typeof reviewedAt !== 'string' || !Number.isFinite(Date.parse(reviewedAt))) throw new TypeError('reviewedAt must be a valid date string.');
+  if (typeof reviewer !== 'string' || !reviewer.trim() || reviewer.length > 200 || !isWellFormedText(reviewer)) throw new TypeError('A well-formed reviewer identity is required (maximum 200 UTF-16 code units).');
+  if (typeof rationale !== 'string' || !rationale.trim() || !isWellFormedText(rationale)) throw new TypeError('A well-formed mathematical rationale is required.');
+  if (!isTimestamp(reviewedAt)) throw new TypeError('reviewedAt must be a timestamp such as 2026-11-09T10:00:00Z or 2026-11-09T15:30:00.123+05:30: RFC 3339 with uppercase T and Z, seconds 00–59 and at most 9 fraction digits.');
   const criteria = question.rubric.map(c => ({...c, awarded:criterionScores[c.id]}));
   return {
     schemaVersion:'1.0', questionId:question.id, status:'human_reviewed',
@@ -86,7 +100,7 @@ export function finalizeReview({question, criterionScores, reviewer, rationale, 
   };
 }
 
-/** Validate an external critique. Quoted evidence must occur verbatim in the submission. */
+/** Validate an external critique. Quoted evidence must occur verbatim in the submission, and every criterion awarded points needs a quote, as in native compare. */
 export function validateCritique({question, answer, critique}) {
   validateQuestion(question);
   validateAnswer(answer);
@@ -97,6 +111,7 @@ export function validateCritique({question, answer, critique}) {
   for (const entry of critique.evidence) {
     if (!entry || !question.rubric.some(c => c.id === entry.criterionId) || typeof entry.quote !== 'string' || !entry.quote.trim() || !isWellFormedText(entry.quote) || !answer.includes(entry.quote)) throw new TypeError('Evidence must quote the submitted answer exactly and name an existing criterion.');
   }
+  if (question.rubric.some(c => critique.criterionScores[c.id] > 0 && !critique.evidence.some(e => e.criterionId === c.id))) throw new TypeError('Every credited criterion must cite exact submission evidence.');
   if (critique.gaps.some(g => typeof g !== 'string' || !isWellFormedText(g))) throw new TypeError('Every gap must be plain text.');
   return {criterionScores:{...critique.criterionScores}, rationale:critique.rationale, evidence:critique.evidence.map(e => ({criterionId:e.criterionId, quote:e.quote})), gaps:[...critique.gaps], score:question.rubric.reduce((sum,c) => sum + critique.criterionScores[c.id],0)};
 }

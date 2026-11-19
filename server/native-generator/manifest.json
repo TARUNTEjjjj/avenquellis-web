@@ -1,12 +1,12 @@
 {
   "component": "Avenquellis question engine",
   "abi": 1,
-  "sourceCommit": "783719e6134d71a77d49f7a2f98cb7988a614e04",
+  "sourceCommit": "d8cbddf82742ccbe83b8bd17710350054c8bfaa3",
   "toolchain": "Emscripten 6.0.13",
   "wasm": "avenquellis-questions.wasm",
-  "bytes": 237076,
-  "sha256": "669739ff7da9364aedd12c07926f6f2797d43afdf41a9a70d562153eee5846b9",
-  "adapterSha256": "cd078b57ef622ffa4a4af115c79da5c8abfb5dd005b1f7918eb3748a5e4429d9",
+  "bytes": 238117,
+  "sha256": "db4eb3c964c9d45a6d9256c9d74bb1be3f5514ec5fd8b379cd9721a2496691bb",
+  "adapterSha256": "332049130240ef3b1642176dce712a053abf61aaf9fd895c66e9b1304e4b7690",
   "imports": [
     {
       "module": "wasi_snapshot_preview1",

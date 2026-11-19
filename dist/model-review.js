@@ -3,12 +3,13 @@ import {preloadNativeGrader} from './lib/native-grader.js';
 import {applyNativeConsensus} from './lib/native-consensus.js';
 import {validateModelReviews} from './lib/backup.js';
 import {resolveQuestionRef} from './lib/questions.js';
+import {questionReference} from './lib/question-reference.js';
 import {optionalResource} from './lib/startup.js';
 import {keepUnreadable} from './lib/workspace-store.js';
 const storageKey='avenquellis.prose-reviews.v1';
 export const modelReviewKey=storageKey;
 const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const refFor=q=>({templateId:q.templateId,seed:q.generator?.seed,exam:q.exam,difficulty:q.requestedDifficulty});
+const refFor=questionReference;
 const rubricRows=r=>(r||[]).map(c=>({id:c.id,description:c.description,points:c.points}));
 // Earlier releases hashed advanced-template rubrics in this row order; their saved reviews keep matching.
 const legacyRows=r=>(r||[]).map(c=>({id:c.id,points:c.points,description:c.description}));
