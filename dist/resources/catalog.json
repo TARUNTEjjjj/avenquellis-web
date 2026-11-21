@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "project": "avenquellis-web",
   "title": "Avenquellis resource library",
-  "fetchedAt": "2026-11-20T11:31:02.038Z",
-  "attemptedAt": "2026-11-20T11:30:44.036Z",
+  "fetchedAt": "2026-11-21T10:57:08.993Z",
+  "attemptedAt": "2026-11-21T10:56:51.905Z",
   "status": "live",
   "errors": [],
   "excludedSeeds": [],
@@ -45,11 +45,11 @@
       ],
       "stars": 3351,
       "forks": 1610,
-      "pushedAt": "2026-11-20T11:22:00.000Z",
+      "pushedAt": "2026-11-21T10:18:43.000Z",
       "license": null,
       "category": "mathematics",
       "sourceQuery": "topic:mathematics",
-      "fetchedAt": "2026-11-20T11:30:46.935Z",
+      "fetchedAt": "2026-11-21T10:56:54.545Z",
       "provenance": "github",
       "stale": false,
       "sourceQueries": [
@@ -73,11 +73,11 @@
       ],
       "stars": 1500,
       "forks": 218,
-      "pushedAt": "2026-11-20T11:14:07.000Z",
+      "pushedAt": "2026-11-21T10:54:02.000Z",
       "license": "LGPL-3.0",
       "category": "mathematics",
       "sourceQuery": "topic:mathematics",
-      "fetchedAt": "2026-11-20T11:30:46.935Z",
+      "fetchedAt": "2026-11-21T10:56:54.545Z",
       "provenance": "github",
       "stale": false,
       "sourceQueries": [
@@ -106,13 +106,13 @@
       "license": "MIT",
       "category": "mathematics",
       "sourceQuery": "topic:mathematics",
-      "fetchedAt": "2026-11-20T11:30:46.935Z",
+      "fetchedAt": "2026-11-21T10:56:54.545Z",
       "provenance": "github",
       "stale": false,
       "sourceQueries": [
         "topic:mathematics"
       ],
-      "score": 84.24,
+      "score": 84.22,
       "reason": "Mathematics and visualization resource; 1855 GitHub stars."
     },
     {
@@ -135,13 +135,13 @@
       "license": "Unlicense",
       "category": "mathematics",
       "sourceQuery": "topic:mathematics",
-      "fetchedAt": "2026-11-20T11:30:46.935Z",
+      "fetchedAt": "2026-11-21T10:56:54.545Z",
       "provenance": "github",
       "stale": false,
       "sourceQueries": [
         "topic:mathematics"
       ],
-      "score": 80.73,
+      "score": 80.72,
       "reason": "Mathematics and visualization resource; 504 GitHub stars."
     },
     {
@@ -177,7 +177,7 @@
       "license": "MIT",
       "category": "mathematics",
       "sourceQuery": "topic:mathematics",
-      "fetchedAt": "2026-11-20T11:30:46.935Z",
+      "fetchedAt": "2026-11-21T10:56:54.545Z",
       "provenance": "github",
       "stale": false,
       "sourceQueries": [
@@ -209,20 +209,20 @@
         "search",
         "sort"
       ],
-      "stars": 34896,
+      "stars": 34899,
       "forks": 7901,
       "pushedAt": "2026-10-03T10:34:43.000Z",
       "license": "MIT",
       "category": "mathematics",
       "sourceQuery": "topic:mathematics",
-      "fetchedAt": "2026-11-20T11:30:46.935Z",
+      "fetchedAt": "2026-11-21T10:56:54.545Z",
       "provenance": "github",
       "stale": false,
       "sourceQueries": [
         "topic:mathematics"
       ],
-      "score": 71.55,
-      "reason": "Mathematics and visualization resource; 34896 GitHub stars."
+      "score": 71.53,
+      "reason": "Mathematics and visualization resource; 34899 GitHub stars."
     },
     {
       "id": 85371262,
@@ -251,20 +251,20 @@
         "traveling-salesman",
         "tree-algorithms"
       ],
-      "stars": 18912,
+      "stars": 18914,
       "forks": 4521,
       "pushedAt": "2026-11-09T15:46:08.000Z",
       "license": "MIT",
       "category": "mathematics",
       "sourceQuery": "topic:mathematics",
-      "fetchedAt": "2026-11-20T11:30:46.935Z",
+      "fetchedAt": "2026-11-21T10:56:54.545Z",
       "provenance": "github",
       "stale": false,
       "sourceQueries": [
         "topic:mathematics"
       ],
-      "score": 71.1,
-      "reason": "Mathematics and visualization resource; 18912 GitHub stars."
+      "score": 71.07,
+      "reason": "Mathematics and visualization resource; 18914 GitHub stars."
     },
     {
       "id": 68885535,
@@ -284,13 +284,13 @@
       "license": "MIT",
       "category": "mathematics",
       "sourceQuery": "topic:mathematics",
-      "fetchedAt": "2026-11-20T11:30:46.935Z",
+      "fetchedAt": "2026-11-21T10:56:54.545Z",
       "provenance": "github",
       "stale": false,
       "sourceQueries": [
         "topic:mathematics"
       ],
-      "score": 69.15,
+      "score": 69.12,
       "reason": "Mathematics and visualization resource; 8016 GitHub stars."
     },
     {
@@ -320,20 +320,20 @@
         "utilities",
         "utils"
       ],
-      "stars": 6031,
-      "forks": 1353,
-      "pushedAt": "2026-11-20T11:29:50.000Z",
+      "stars": 6032,
+      "forks": 1355,
+      "pushedAt": "2026-11-21T08:37:19.000Z",
       "license": "Apache-2.0",
       "category": "mathematics",
       "sourceQuery": "topic:mathematics",
-      "fetchedAt": "2026-11-20T11:30:46.935Z",
+      "fetchedAt": "2026-11-21T10:56:54.545Z",
       "provenance": "github",
       "stale": false,
       "sourceQueries": [
         "topic:mathematics"
       ],
       "score": 68.9,
-      "reason": "Mathematics and visualization resource; 6031 GitHub stars."
+      "reason": "Mathematics and visualization resource; 6032 GitHub stars."
     },
     {
       "id": 97086543,
@@ -356,20 +356,20 @@
         "sort",
         "sorting-algorithms"
       ],
-      "stars": 34267,
+      "stars": 34268,
       "forks": 5818,
       "pushedAt": "2026-03-07T14:45:13.000Z",
       "license": "GPL-3.0",
       "category": "mathematics",
       "sourceQuery": "topic:mathematics",
-      "fetchedAt": "2026-11-20T11:30:46.935Z",
+      "fetchedAt": "2026-11-21T10:56:54.545Z",
       "provenance": "github",
       "stale": false,
       "sourceQueries": [
         "topic:mathematics"
       ],
       "score": 68.53,
-      "reason": "Mathematics and visualization resource; 34267 GitHub stars."
+      "reason": "Mathematics and visualization resource; 34268 GitHub stars."
     },
     {
       "id": 847885,
@@ -389,20 +389,20 @@
         "svg",
         "typography"
       ],
-      "stars": 10953,
+      "stars": 10954,
       "forks": 1189,
       "pushedAt": "2026-07-03T13:37:32.000Z",
       "license": "Apache-2.0",
       "category": "mathematics",
       "sourceQuery": "topic:mathematics",
-      "fetchedAt": "2026-11-20T11:30:46.935Z",
+      "fetchedAt": "2026-11-21T10:56:54.545Z",
       "provenance": "github",
       "stale": false,
       "sourceQueries": [
         "topic:mathematics"
       ],
-      "score": 67.43,
-      "reason": "Mathematics and visualization resource; 10953 GitHub stars."
+      "score": 67.41,
+      "reason": "Mathematics and visualization resource; 10954 GitHub stars."
     },
     {
       "id": 1149023093,
@@ -430,20 +430,20 @@
         "speech-processing",
         "statistics"
       ],
-      "stars": 7724,
-      "forks": 951,
+      "stars": 7729,
+      "forks": 952,
       "pushedAt": "2026-07-18T22:19:35.000Z",
       "license": "Apache-2.0",
       "category": "mathematics",
       "sourceQuery": "topic:mathematics",
-      "fetchedAt": "2026-11-20T11:30:46.935Z",
+      "fetchedAt": "2026-11-21T10:56:54.545Z",
       "provenance": "github",
       "stale": false,
       "sourceQueries": [
         "topic:mathematics"
       ],
-      "score": 66.9,
-      "reason": "Mathematics and visualization resource; 7724 GitHub stars."
+      "score": 66.88,
+      "reason": "Mathematics and visualization resource; 7729 GitHub stars."
     },
     {
       "id": 1377159,
@@ -456,20 +456,20 @@
         "proof-assistant",
         "theorem-proving"
       ],
-      "stars": 5674,
+      "stars": 5675,
       "forks": 774,
-      "pushedAt": "2026-11-18T14:20:45.000Z",
+      "pushedAt": "2026-11-21T08:42:49.000Z",
       "license": "LGPL-2.1",
       "category": "proofs",
       "sourceQuery": "topic:theorem-proving",
-      "fetchedAt": "2026-11-20T11:30:54.780Z",
+      "fetchedAt": "2026-11-21T10:57:01.889Z",
       "provenance": "github",
       "stale": false,
       "sourceQueries": [
         "topic:theorem-proving"
       ],
-      "score": 73.72,
-      "reason": "Formal proof references resource; 5674 GitHub stars."
+      "score": 73.77,
+      "reason": "Formal proof references resource; 5675 GitHub stars."
     },
     {
       "id": 937280308,
@@ -504,13 +504,13 @@
       "license": "MIT",
       "category": "proofs",
       "sourceQuery": "topic:theorem-proving",
-      "fetchedAt": "2026-11-20T11:30:54.780Z",
+      "fetchedAt": "2026-11-21T10:57:01.889Z",
       "provenance": "github",
       "stale": false,
       "sourceQueries": [
         "topic:theorem-proving"
       ],
-      "score": 71.59,
+      "score": 71.57,
       "reason": "Formal proof references resource; 2911 GitHub stars."
     },
     {
@@ -538,20 +538,20 @@
         "sparql",
         "theorem-proving"
       ],
-      "stars": 2935,
+      "stars": 2939,
       "forks": 327,
-      "pushedAt": "2026-11-20T10:41:02.000Z",
+      "pushedAt": "2026-11-20T13:54:09.000Z",
       "license": "MIT",
       "category": "proofs",
       "sourceQuery": "topic:theorem-proving",
-      "fetchedAt": "2026-11-20T11:30:54.780Z",
+      "fetchedAt": "2026-11-21T10:57:01.889Z",
       "provenance": "github",
       "stale": false,
       "sourceQueries": [
         "topic:theorem-proving"
       ],
-      "score": 57.34,
-      "reason": "Formal proof references resource; 2935 GitHub stars."
+      "score": 57.32,
+      "reason": "Formal proof references resource; 2939 GitHub stars."
     },
     {
       "id": 684776900,
@@ -569,20 +569,20 @@
         "proof",
         "theorem-proving"
       ],
-      "stars": 25639,
-      "forks": 820,
+      "stars": 25709,
+      "forks": 821,
       "pushedAt": "2026-11-18T18:05:38.000Z",
       "license": "Apache-2.0",
       "category": "proofs",
       "sourceQuery": "topic:theorem-proving",
-      "fetchedAt": "2026-11-20T11:30:54.780Z",
+      "fetchedAt": "2026-11-21T10:57:01.889Z",
       "provenance": "github",
       "stale": false,
       "sourceQueries": [
         "topic:theorem-proving"
       ],
-      "score": 47,
-      "reason": "Formal proof references resource; 25639 GitHub stars."
+      "score": 46.98,
+      "reason": "Formal proof references resource; 25709 GitHub stars."
     },
     {
       "id": 18411972,
@@ -604,20 +604,20 @@
         "theorem-proving",
         "verification"
       ],
-      "stars": 3149,
+      "stars": 3150,
       "forks": 268,
       "pushedAt": "2026-11-18T22:21:52.000Z",
       "license": "Apache-2.0",
       "category": "proofs",
       "sourceQuery": "topic:theorem-proving",
-      "fetchedAt": "2026-11-20T11:30:54.780Z",
+      "fetchedAt": "2026-11-21T10:57:01.889Z",
       "provenance": "github",
       "stale": false,
       "sourceQueries": [
         "topic:theorem-proving"
       ],
-      "score": 42.45,
-      "reason": "Formal proof references resource; 3149 GitHub stars."
+      "score": 42.42,
+      "reason": "Formal proof references resource; 3150 GitHub stars."
     },
     {
       "id": 689172454,
@@ -639,13 +639,13 @@
       "license": "MIT",
       "category": "proofs",
       "sourceQuery": "topic:theorem-proving",
-      "fetchedAt": "2026-11-20T11:30:54.780Z",
+      "fetchedAt": "2026-11-21T10:57:01.889Z",
       "provenance": "github",
       "stale": false,
       "sourceQueries": [
         "topic:theorem-proving"
       ],
-      "score": 40.55,
+      "score": 40.53,
       "reason": "Formal proof references resource; 1347 GitHub stars."
     },
     {
@@ -664,11 +664,11 @@
       ],
       "stars": 1231,
       "forks": 112,
-      "pushedAt": "2026-11-20T04:05:34.000Z",
+      "pushedAt": "2026-11-20T21:44:11.000Z",
       "license": "BSD-3-Clause",
       "category": "proofs",
       "sourceQuery": "topic:theorem-proving",
-      "fetchedAt": "2026-11-20T11:30:54.780Z",
+      "fetchedAt": "2026-11-21T10:57:01.889Z",
       "provenance": "github",
       "stale": false,
       "sourceQueries": [
@@ -706,17 +706,17 @@
       ],
       "stars": 936,
       "forks": 84,
-      "pushedAt": "2026-11-20T00:31:21.000Z",
+      "pushedAt": "2026-11-20T20:07:27.000Z",
       "license": "Apache-2.0",
       "category": "proofs",
       "sourceQuery": "topic:theorem-proving",
-      "fetchedAt": "2026-11-20T11:30:54.780Z",
+      "fetchedAt": "2026-11-21T10:57:01.889Z",
       "provenance": "github",
       "stale": false,
       "sourceQueries": [
         "topic:theorem-proving"
       ],
-      "score": 39.85,
+      "score": 39.84,
       "reason": "Formal proof references resource; 936 GitHub stars."
     },
     {
@@ -725,20 +725,20 @@
       "url": "https://github.com/Z3Prover/z3",
       "description": "The Z3 Theorem Prover",
       "topics": [],
-      "stars": 12964,
-      "forks": 1733,
-      "pushedAt": "2026-11-20T11:07:09.000Z",
+      "stars": 12970,
+      "forks": 1732,
+      "pushedAt": "2026-11-21T08:21:21.000Z",
       "license": null,
       "category": "proofs",
       "sourceQuery": "repo:z3prover/z3",
-      "fetchedAt": "2026-11-20T11:31:02.038Z",
+      "fetchedAt": "2026-11-21T10:57:08.993Z",
       "provenance": "github",
       "stale": false,
       "sourceQueries": [
         "repo:z3prover/z3"
       ],
       "score": 30.56,
-      "reason": "Formal proof references resource; 12964 GitHub stars."
+      "reason": "Formal proof references resource; 12970 GitHub stars."
     },
     {
       "id": 129571436,
@@ -749,20 +749,20 @@
         "lean",
         "lean4"
       ],
-      "stars": 10071,
-      "forks": 1117,
-      "pushedAt": "2026-11-20T11:27:11.000Z",
+      "stars": 10104,
+      "forks": 1119,
+      "pushedAt": "2026-11-21T08:22:21.000Z",
       "license": "Apache-2.0",
       "category": "proofs",
       "sourceQuery": "repo:leanprover/lean4",
-      "fetchedAt": "2026-11-20T11:30:59.677Z",
+      "fetchedAt": "2026-11-21T10:57:06.622Z",
       "provenance": "github",
       "stale": false,
       "sourceQueries": [
         "repo:leanprover/lean4"
       ],
       "score": 30.02,
-      "reason": "Formal proof references resource; 10071 GitHub stars."
+      "reason": "Formal proof references resource; 10104 GitHub stars."
     },
     {
       "id": 365697493,
@@ -772,20 +772,20 @@
       "topics": [
         "lean4"
       ],
-      "stars": 4504,
-      "forks": 1874,
-      "pushedAt": "2026-11-20T10:01:31.000Z",
+      "stars": 4516,
+      "forks": 1878,
+      "pushedAt": "2026-11-21T10:32:11.000Z",
       "license": "Apache-2.0",
       "category": "proofs",
       "sourceQuery": "repo:leanprover-community/mathlib4",
-      "fetchedAt": "2026-11-20T11:30:57.250Z",
+      "fetchedAt": "2026-11-21T10:57:04.265Z",
       "provenance": "github",
       "stale": false,
       "sourceQueries": [
         "repo:leanprover-community/mathlib4"
       ],
       "score": 28.27,
-      "reason": "Formal proof references resource; 4504 GitHub stars."
+      "reason": "Formal proof references resource; 4516 GitHub stars."
     },
     {
       "id": 787574978,
@@ -797,20 +797,20 @@
         "physics",
         "theorem-proving"
       ],
-      "stars": 842,
+      "stars": 843,
       "forks": 232,
-      "pushedAt": "2026-11-20T05:51:57.000Z",
+      "pushedAt": "2026-11-21T10:40:31.000Z",
       "license": "Apache-2.0",
       "category": "proofs",
       "sourceQuery": "topic:theorem-proving",
-      "fetchedAt": "2026-11-20T11:30:54.780Z",
+      "fetchedAt": "2026-11-21T10:57:01.889Z",
       "provenance": "github",
       "stale": false,
       "sourceQueries": [
         "topic:theorem-proving"
       ],
-      "score": 24.62,
-      "reason": "Formal proof references resource; 842 GitHub stars."
+      "score": 24.63,
+      "reason": "Formal proof references resource; 843 GitHub stars."
     }
   ]
 }
