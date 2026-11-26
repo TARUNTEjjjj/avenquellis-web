@@ -442,8 +442,11 @@ function overview() {
         <button type="button" data-surface="torus" aria-pressed="true">Torus</button>
         <button type="button" data-surface="mobius" aria-pressed="false">Möbius strip</button>
         <button type="button" data-surface="saddle" aria-pressed="false">Saddle</button>
+        <button type="button" data-surface="enneper" aria-pressed="false">Enneper</button>
       </div>
-      <canvas id="orbit" role="img" tabindex="0" aria-label="Interactive torus. Drag or use arrow keys to rotate." aria-describedby="surface-controls surface-formula"></canvas>
+      <div class="surface-stage">
+        <canvas id="orbit" role="img" tabindex="0" aria-label="Interactive torus. Drag or use arrow keys to rotate." aria-describedby="surface-controls surface-formula"></canvas>
+      </div>
       <figcaption><div aria-live="polite"><strong data-surface-name>Torus</strong><span id="surface-formula" data-surface-equation>(√(x² + y²) − 1)² + z² = 0.36²</span></div><small id="surface-controls">Drag or use arrow keys to rotate · Home resets view</small></figcaption>
     </figure></section><div class="engine-status"><span class="live-dot"></span><span>${mathReady ? "AxiomMath C++ is running in your browser. Exact answers, without rounding." : "Exact fraction checking is available. The C++ expression engine could not load."}</span><a href="#arithmetic">Open exact math lab ↗</a></div><div class="stats"><div class="stat"><span class="stat-icon">▤</span><div><strong>${archive.papers.length}</strong><small>Official papers & samples</small></div></div><div class="stat"><span class="stat-icon">✧</span><div><strong>${engineInfo.templateCount}</strong><small>Original question families</small></div></div><div class="stat"><span class="stat-icon">▦</span><div><strong>6</strong><small>Core mathematics chapters</small></div></div><div class="stat"><span class="stat-icon">↗</span><div><strong>${history.length.toString().padStart(2, "0")}</strong><small>Sessions completed by you</small></div></div></div><div class="section-heading"><h2>Choose your challenge</h2><a class="text-link" href="#tests">Explore test arena &nbsp; ↗</a></div><div class="grid3">${[
       [

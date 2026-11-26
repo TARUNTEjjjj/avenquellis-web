@@ -1858,8 +1858,17 @@ nav .nav-label {
   border-color: #518f82;
   background: #193331;
 }
+.surface-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 7px;
+}
 .hero-interactive .surface-lab canvas {
-  position: static;
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   min-height: 0;
@@ -1937,3 +1946,29 @@ nav .nav-label {
 
 .brand {letter-spacing:-.035em;}
 .brand-mark {flex-shrink:0;}
+
+@media (prefers-reduced-motion: no-preference) {
+  .tilt-3d {
+    position: relative;
+    transform-style: preserve-3d;
+    transform: perspective(920px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+    transition: transform 200ms cubic-bezier(.22, 1, .36, 1), border-color 180ms ease, box-shadow 200ms ease;
+  }
+  .tilt-3d::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: var(--sheen, 0);
+    background: radial-gradient(280px circle at var(--mx, 50%) var(--my, 50%), rgba(138, 239, 208, .18), transparent 72%);
+    transition: opacity 180ms ease;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tilt-3d, .tilt-3d::after {
+    transition: none !important;
+    transform: none !important;
+    animation: none !important;
+  }
+}
